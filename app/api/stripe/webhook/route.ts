@@ -29,12 +29,20 @@ export async function POST(req: Request) {
     const supabase = createClient(cookies());
 
     // move cart rows into orders table then clear cart (simple SQL in-call)
-    await supabase.rpc("migrate_cart_to_order", {
+    const { error } = await supabase.rpc("migrate_cart_to_order", {
       p_session_id: session_id,
       p_user_id: user_id ?? null,
       p_stripe_session_id: session.id,
       p_email: session.customer_details?.email,
     });
+
+    if (error) {
+      console.error("Supabase RPC Error:", JSON.stringify(error, null, 2));
+      return NextResponse.json(
+        { error: "Error processing order.", details: error },
+        { status: 500 }
+      );
+    }
   }
 
   return NextResponse.json({ ok: true });
