@@ -1,13 +1,11 @@
-import { OpenAI } from "@ai-sdk/openai"
+import { openai } from "@ai-sdk/openai"
 import { streamText, type Message } from "ai"
 import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server" // Server client for Supabase
 
 export const runtime = "edge" // Optional: use edge runtime for faster responses
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+const model = openai.chat(process.env.OPENAI_MODEL || "gpt-4.1-nano")
 
 export async function POST(req: Request) {
   const { messages }: { messages: Message[] } = await req.json()
@@ -57,10 +55,10 @@ Or, if you prefer a warm drink, a simple herbal tea might be nice, though we spe
 What sounds better to you?`
 
   const result = await streamText({
-    model: openai.chat(process.env.OPENAI_MODEL || "gpt-4o"), // Or your preferred model
+    model,
     system: systemPrompt,
     messages,
   })
 
-  return result.toAIStreamResponse()
+  return result.toDataStreamResponse()
 }
