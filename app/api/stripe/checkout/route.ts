@@ -1,7 +1,7 @@
 import Stripe from "stripe"
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
 import { getSessionId } from "@/lib/session"
 
 export async function POST() {
@@ -29,6 +29,16 @@ export async function POST() {
   }
   const stripe = new Stripe(stripeSecret)
 
+    // Determine base URL with scheme (required by Stripe)
+  let baseUrl = process.env.NEXT_PUBLIC_SITE_URL
+  if (!baseUrl) {
+    const host = headers().get("host")
+    baseUrl = host ? `https://${host}` : undefined
+  }
+  if (!baseUrl?.startsWith("http")) {
+    return NextResponse.json({ error: "BASE_URL missing or invalid" }, { status: 500 })
+  }
+
   // For demo: assume a single Stripe Price ID stored in env VAR
   const priceId = process.env.STRIPE_TEST_PRICE_ID!
 
@@ -40,8 +50,8 @@ export async function POST() {
   const checkout = await stripe.checkout.sessions.create({
     mode: "payment",
     line_items: lineItems,
-    success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/success`,
-    cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/cart`,
+    success_url: `${baseUrl}/success`,
+    cancel_url: `${baseUrl}/cart`,
     metadata: {
       session_id: sessionId,
       user_id: user?.id ?? "anonymous",
