@@ -29,39 +29,55 @@ export async function GET(req: Request) {
 
   const order = orders[0] as any;
 
-  // Create PDF in memory
-  const doc = new PDFDocument({ margin: 50 });
-  const chunks: Uint8Array[] = [];
-  doc.on("data", (chunk: Uint8Array) => chunks.push(chunk));
-  const end = new Promise<Buffer>((res) =>
-    doc.on("end", () => res(Buffer.concat(chunks)))
-  );
+  try {
+    // Create PDF in memory
+    const doc = new PDFDocument({ margin: 50 });
+    const streamPromise = new Promise<Buffer>((resolve, reject) => {
+      const streamChunks: Buffer[] = [];
+      doc.on('data', (chunk) => {
+        streamChunks.push(Buffer.from(chunk));
+      });
+      doc.on('end', () => {
+        resolve(Buffer.concat(streamChunks));
+      });
+      doc.on('error', (err) => {
+        console.error("PDFKit stream error:", err); // Log pdfkit internal stream errors
+        reject(err);
+      });
+    });
 
-  doc.fontSize(20).text("The Water Bar", { align: "center" });
-  doc.moveDown();
-  doc.fontSize(14).text(`Receipt`, { align: "center" });
-  doc.moveDown();
+    doc.fontSize(20).text("The Water Bar", { align: "center" });
+    doc.moveDown();
+    doc.fontSize(14).text(`Receipt`, { align: "center" });
+    doc.moveDown();
 
-  doc.fontSize(12).text(`Order ID: ${order.id}`);
-  doc.text(`Date: ${new Date(order.created_at).toLocaleString()}`);
-  if (order.email) doc.text(`Email: ${order.email}`);
-  doc.moveDown();
+    doc.fontSize(12).text(`Order ID: ${order.id}`);
+    doc.text(`Date: ${new Date(order.created_at).toLocaleString()}`);
+    if (order.email) doc.text(`Email: ${order.email}`);
+    doc.moveDown();
 
-  doc.text("Items:");
-  order.order_items.forEach((item: any) => {
-    doc.text(`${item.qty}x ${item.name} - $${item.price}`);
-  });
-  doc.moveDown();
-  doc.text(`Total: $${order.total}`, { align: "right" });
+    doc.text("Items:");
+    order.order_items.forEach((item: any) => {
+      doc.text(`${item.qty}x ${item.name} - $${Number(item.price).toFixed(2)}`);
+    });
+    doc.moveDown();
+    doc.text(`Total: $${Number(order.total).toFixed(2)}`, { align: "right" });
 
-  doc.end();
-  const pdfBuffer = await end;
+    doc.end();
+    const pdfBuffer = await streamPromise;
 
-  return new NextResponse(pdfBuffer, {
-    status: 200,
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename=receipt-${order.id}.pdf`,
-    },
-  });
+    return new NextResponse(pdfBuffer, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename=receipt-${order.id}.pdf`,
+      },
+    });
+  } catch (pdfError: any) {
+    console.error("Error generating PDF:", pdfError);
+    return NextResponse.json(
+      { error: "Failed to generate PDF receipt.", details: pdfError.message },
+      { status: 500 }
+    );
+  }
 }
