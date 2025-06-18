@@ -54,7 +54,7 @@ export async function POST() {
     cancel_url: `${baseUrl}/cart`,
     metadata: {
       session_id: sessionId,
-      user_id: user?.id ?? "anonymous",
+      ...(user?.id && { user_id: user.id }),
     },
   })
 

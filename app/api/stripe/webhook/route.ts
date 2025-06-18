@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     // move cart rows into orders table then clear cart (simple SQL in-call)
     await supabase.rpc("migrate_cart_to_order", {
       p_session_id: session_id,
-      p_user_id: user_id === "anonymous" ? null : user_id,
+      p_user_id: user_id ?? null,
       p_stripe_session_id: session.id,
       p_email: session.customer_details?.email,
     });
