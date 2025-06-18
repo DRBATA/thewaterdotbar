@@ -15,7 +15,7 @@ export async function POST() {
   // fetch cart rows
   const { data: cartRows, error } = await supabase
     .from("cart")
-    .select("item_id, qty, products(name, price), experiences(name, price)")
+    .select("item_id, qty")
     .or(`user_id.eq.${user?.id},session_id.eq.${sessionId}`)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
