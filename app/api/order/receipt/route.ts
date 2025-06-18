@@ -2,35 +2,11 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import PDFDocument from "pdfkit";
+import path from "path";
 
 export const runtime = "nodejs";
 
-import fs from "fs";
-import path from "path";
 
-export async function GET(req: Request) {
-  // --- Start of Filesystem Debugging Block ---
-  try {
-    const cwd = process.cwd();
-    console.log("Current Working Directory:", cwd);
-    console.log("CWD Contents:", fs.readdirSync(cwd).join(', '));
-
-    const receiptApiPath = path.join(cwd, 'app/api/order/receipt');
-    if (fs.existsSync(receiptApiPath)) {
-      console.log("Receipt API Path Contents:", fs.readdirSync(receiptApiPath).join(', '));
-      const dataPath = path.join(receiptApiPath, 'data');
-      if (fs.existsSync(dataPath)) {
-        console.log("Data Path Contents:", fs.readdirSync(dataPath).join(', '));
-      } else {
-        console.log("Data directory NOT FOUND at", dataPath);
-      }
-    } else {
-      console.log("Receipt API directory NOT FOUND at", receiptApiPath);
-    }
-  } catch (e: any) {
-    console.error("Filesystem Debugging Error:", e.message);
-  }
-  // --- End of Filesystem Debugging Block ---
   const { searchParams } = new URL(req.url);
   const sessionId = searchParams.get("session");
   if (!sessionId) {
@@ -57,6 +33,25 @@ export async function GET(req: Request) {
   try {
     // Create PDF in memory
     const doc = new PDFDocument({ margin: 50 });
+
+    // Manually register fonts from our local data directory
+    // This is crucial for Vercel's serverless environment
+    try {
+      const fontDir = path.join(process.cwd(), 'app', 'api', 'order', 'receipt', 'data');
+      doc.registerFont('Helvetica', path.join(fontDir, 'Helvetica.afm'));
+      doc.registerFont('Helvetica-Bold', path.join(fontDir, 'Helvetica-Bold.afm'));
+      doc.registerFont('Helvetica-Oblique', path.join(fontDir, 'Helvetica-Oblique.afm'));
+      doc.registerFont('Helvetica-BoldOblique', path.join(fontDir, 'Helvetica-BoldOblique.afm'));
+      // Add other standard fonts if needed (e.g., Courier, Times)
+    } catch (fontError: any) {
+      console.error("Error registering fonts:", fontError);
+      // Potentially return an error response if font registration fails critically
+      return NextResponse.json(
+        { error: "Failed to register fonts for PDF generation.", details: fontError.message },
+        { status: 500 }
+      );
+    }
+
     const streamPromise = new Promise<Buffer>((resolve, reject) => {
       const streamChunks: Buffer[] = [];
       doc.on('data', (chunk) => {
