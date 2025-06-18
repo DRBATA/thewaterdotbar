@@ -4,8 +4,6 @@ import { createClient } from "@/lib/supabase/server"
 import { cookies } from "next/headers"
 import { getSessionId } from "@/lib/session"
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2023-10-16" })
-
 export async function POST() {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
@@ -23,6 +21,13 @@ export async function POST() {
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   if (!cartRows || cartRows.length === 0)
     return NextResponse.json({ error: "Cart is empty" }, { status: 400 })
+
+    // Initialise Stripe lazily so that missing env vars at build time don't crash.
+  const stripeSecret = process.env.STRIPE_SECRET_KEY
+  if (!stripeSecret) {
+    return NextResponse.json({ error: "STRIPE_SECRET_KEY env var missing" }, { status: 500 })
+  }
+  const stripe = new Stripe(stripeSecret)
 
   // For demo: assume a single Stripe Price ID stored in env VAR
   const priceId = process.env.STRIPE_TEST_PRICE_ID!
