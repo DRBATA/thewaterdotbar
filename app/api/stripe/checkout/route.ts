@@ -16,7 +16,7 @@ export async function POST() {
   const { data: cartRows, error } = await supabase
     .from("cart")
     .select("item_id, qty")
-    .or(`user_id.eq.${user?.id},session_id.eq.${sessionId}`)
+    .eq(user ? "user_id" : "session_id", user ? user.id : sessionId)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   if (!cartRows || cartRows.length === 0)
