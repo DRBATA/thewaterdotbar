@@ -1,5 +1,6 @@
 "use client"
 import { Button } from "@/components/ui/button"
+import { useState } from "react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
@@ -15,10 +16,29 @@ interface CartItem {
 interface CartSummaryProps {
   cartItems: CartItem[]
   total: number
-  onRemoveItem: (itemId: string) => void
+  onRemoveItemAction: (itemId: string) => void
 }
 
-export function CartSummary({ cartItems, total, onRemoveItem }: CartSummaryProps) {
+export function CartSummary({ cartItems, total, onRemoveItemAction }: CartSummaryProps) {
+  const [loading, setLoading] = useState(false)
+
+  const handleCheckout = async () => {
+    if (loading) return
+    setLoading(true)
+    try {
+      const res = await fetch("/api/stripe/checkout", { method: "POST" })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        alert(data.error || "Unable to start checkout")
+      }
+    } catch (err) {
+      alert("Network error starting checkout")
+    } finally {
+      setLoading(false)
+    }
+  }
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -52,7 +72,7 @@ export function CartSummary({ cartItems, total, onRemoveItem }: CartSummaryProps
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => onRemoveItem(item.id)}
+                    onClick={() => onRemoveItemAction(item.id)}
                     className="text-stone-500 hover:text-red-600"
                   >
                     <XCircle className="size-5" />
@@ -68,8 +88,13 @@ export function CartSummary({ cartItems, total, onRemoveItem }: CartSummaryProps
           <span>Total:</span>
           <span>${total.toFixed(2)}</span>
         </div>
-        <Button size="lg" className="w-full mt-6 bg-amber-700 text-white hover:bg-amber-800 h-12 text-lg">
-          Proceed to Checkout
+        <Button
+          size="lg"
+          className="w-full mt-6 bg-amber-700 text-white hover:bg-amber-800 h-12 text-lg"
+          onClick={handleCheckout}
+          disabled={loading || cartItems.length === 0}
+        >
+          {loading ? "Redirecting..." : "Proceed to Checkout"}
         </Button>
       </SheetContent>
     </Sheet>

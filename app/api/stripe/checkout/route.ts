@@ -1,0 +1,47 @@
+import Stripe from "stripe"
+import { NextResponse } from "next/server"
+import { createClient } from "@/lib/supabase/server"
+import { cookies } from "next/headers"
+import { getSessionId } from "@/lib/session"
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2023-10-16" })
+
+export async function POST() {
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const sessionId = getSessionId()
+
+  // fetch cart rows
+  const { data: cartRows, error } = await supabase
+    .from("cart")
+    .select("item_id, qty, products(name, price), experiences(name, price)")
+    .or(`user_id.eq.${user?.id},session_id.eq.${sessionId}`)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+  if (!cartRows || cartRows.length === 0)
+    return NextResponse.json({ error: "Cart is empty" }, { status: 400 })
+
+  // For demo: assume a single Stripe Price ID stored in env VAR
+  const priceId = process.env.STRIPE_TEST_PRICE_ID!
+
+  const lineItems = cartRows.map((row) => ({
+    price: priceId,
+    quantity: row.qty,
+  }))
+
+  const checkout = await stripe.checkout.sessions.create({
+    mode: "payment",
+    line_items: lineItems,
+    success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/success`,
+    cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/cart`,
+    metadata: {
+      session_id: sessionId,
+      user_id: user?.id ?? "anonymous",
+    },
+  })
+
+  return NextResponse.json({ url: checkout.url })
+}

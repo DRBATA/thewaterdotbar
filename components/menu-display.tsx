@@ -29,29 +29,33 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
     setTotal(newTotal)
   }, [cartItems])
 
-  const handleAddToCart = (item: MenuItem) => {
-    setCartItems((prevItems) => {
-      const existingItem = prevItems.find((cartItem) => cartItem.id === item.id)
-      if (existingItem) {
-        return prevItems.map((cartItem) =>
-          cartItem.id === item.id ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem,
-        )
-      } else {
-        return [...prevItems, { ...item, quantity: 1 }]
-      }
+  const handleAddToCart = async (item: MenuItem) => {
+    await fetch("/api/cart/add", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ itemId: item.id }),
+    })
+    // optimistic UI update
+    setCartItems((prev) => {
+      const found = prev.find((i) => i.id === item.id)
+      return found
+        ? prev.map((i) => (i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i))
+        : [...prev, { ...item, quantity: 1 }]
     })
   }
 
-  const handleRemoveFromCart = (itemId: string) => {
-    setCartItems((prevItems) => {
-      const existingItem = prevItems.find((cartItem) => cartItem.id === itemId)
-      if (existingItem && existingItem.quantity > 1) {
-        return prevItems.map((cartItem) =>
-          cartItem.id === itemId ? { ...cartItem, quantity: cartItem.quantity - 1 } : cartItem,
-        )
-      } else {
-        return prevItems.filter((cartItem) => cartItem.id !== itemId)
+  const handleRemoveFromCart = async (itemId: string) => {
+    await fetch("/api/cart/remove", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ itemId }),
+    })
+    setCartItems((prev) => {
+      const existing = prev.find((i) => i.id === itemId)
+      if (existing && existing.quantity > 1) {
+        return prev.map((i) => (i.id === itemId ? { ...i, quantity: i.quantity - 1 } : i))
       }
+      return prev.filter((i) => i.id !== itemId)
     })
   }
 
@@ -106,7 +110,7 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
           </div>
         </section>
       </main>
-      <CartSummary cartItems={cartItems} total={total} onRemoveItem={handleRemoveFromCart} />
+      <CartSummary cartItems={cartItems} total={total} onRemoveItemAction={handleRemoveFromCart} />
     </>
   )
 }
