@@ -32,7 +32,7 @@ export async function POST() {
     // Determine base URL with scheme (required by Stripe)
   let baseUrl = process.env.NEXT_PUBLIC_SITE_URL
   if (!baseUrl) {
-    const host = headers().get("host")
+    const host = (await headers()).get("host")
     baseUrl = host ? `https://${host}` : undefined
   }
   if (!baseUrl?.startsWith("http")) {
@@ -50,7 +50,7 @@ export async function POST() {
   const checkout = await stripe.checkout.sessions.create({
     mode: "payment",
     line_items: lineItems,
-    success_url: `${baseUrl}/success`,
+    success_url: `${baseUrl}/success?session={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/cart`,
     metadata: {
       session_id: sessionId,

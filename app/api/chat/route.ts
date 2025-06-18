@@ -17,11 +17,11 @@ export async function POST(req: Request) {
   // Fetch products and experiences from Supabase
   const { data: products, error: productsError } = await supabase
     .from("products")
-    .select("name, description, price, tags")
+    .select("id, name, short_description, price, tags, pairings")
 
   const { data: experiences, error: experiencesError } = await supabase
     .from("experiences")
-    .select("name, description, price, duration_minutes, tags")
+    .select("id, name, short_description, price, duration_min, tags, pairings")
 
   if (productsError || experiencesError) {
     console.error("Supabase error:", productsError || experiencesError)
@@ -42,10 +42,11 @@ ${JSON.stringify(menuItems, null, 2)}
 Engage in a natural conversation. Ask about their day, mood, flavor preferences, and budget.
 Based on their input and the available menu items, make 1-3 specific recommendations.
 Explain why you are recommending those items.
-If they mention a budget, try to respect it. Prices are in USD.
+If the guest voluntarily mentions cost, acknowledge it and suggest options within that range. Otherwise, focus on the value and benefits they are seeking. Prices are in USD.
 Keep your responses concise and helpful.
 Do not invent items not on the menu. If the user asks for something that is not in the list, politely inform them it’s unavailable and suggest the closest alternative from the menu.
 If you are unsure or cannot find a suitable item, politely say so and perhaps ask more clarifying questions.
+Each item may include a "pairings" array (with reasons). When it fits the guest's needs, feel free to suggest complementary drinks or experiences and cite the provided reason.
 Format your recommendations clearly, perhaps using bullet points if suggesting multiple items.
 Example interaction:
 User: I had a stressful day, looking for something calming.
