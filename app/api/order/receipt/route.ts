@@ -5,7 +5,32 @@ import PDFDocument from "pdfkit";
 
 export const runtime = "nodejs";
 
+import fs from "fs";
+import path from "path";
+
 export async function GET(req: Request) {
+  // --- Start of Filesystem Debugging Block ---
+  try {
+    const cwd = process.cwd();
+    console.log("Current Working Directory:", cwd);
+    console.log("CWD Contents:", fs.readdirSync(cwd).join(', '));
+
+    const receiptApiPath = path.join(cwd, 'app/api/order/receipt');
+    if (fs.existsSync(receiptApiPath)) {
+      console.log("Receipt API Path Contents:", fs.readdirSync(receiptApiPath).join(', '));
+      const dataPath = path.join(receiptApiPath, 'data');
+      if (fs.existsSync(dataPath)) {
+        console.log("Data Path Contents:", fs.readdirSync(dataPath).join(', '));
+      } else {
+        console.log("Data directory NOT FOUND at", dataPath);
+      }
+    } else {
+      console.log("Receipt API directory NOT FOUND at", receiptApiPath);
+    }
+  } catch (e: any) {
+    console.error("Filesystem Debugging Error:", e.message);
+  }
+  // --- End of Filesystem Debugging Block ---
   const { searchParams } = new URL(req.url);
   const sessionId = searchParams.get("session");
   if (!sessionId) {
