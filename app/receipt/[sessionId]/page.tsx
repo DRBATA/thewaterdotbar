@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import PrintButton from './PrintButton';
+import PrintButton from './PrintButton.tsx';
 
 type ReceiptPageProps = {
   params: {
