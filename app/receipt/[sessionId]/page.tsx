@@ -27,7 +27,7 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
       order_items (
         item_id,
         name, 
-        quantity,
+        qty,
         price
       )
     `
@@ -42,7 +42,7 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
 
   // Fetch image_urls for each order item
   const orderItemsWithImages = await Promise.all(
-    (orderData.order_items || []).map(async (item: any) => {
+    (orderData.order_items || []).map(async (item: { item_id: string; name: string; qty: number; price: number; /* other potential fields */ }) => {
       let imageUrl = '/placeholder.png'; // Default placeholder
       // Try fetching from products table
       const { data: product } = await supabase
@@ -107,10 +107,10 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
                   <div>
                     <div className="flex justify-between text-base font-medium text-gray-900">
                       <h3>{item.name}</h3>
-                      <p className="ml-4 font-semibold">{formatCurrency(item.price * item.quantity)}</p>
+                      <p className="ml-4 font-semibold">{formatCurrency(item.price * item.qty)}</p>
                     </div>
                     <p className="mt-1 text-sm text-gray-500">
-                      {item.quantity} x {formatCurrency(item.price)}
+                      Quantity: {item.qty} {formatCurrency(item.price)}
                     </p>
                   </div>
                 </div>
