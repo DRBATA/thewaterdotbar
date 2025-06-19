@@ -16,7 +16,7 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
   const supabase = createClient(cookieStore);
   const { sessionId } = params;
 
-  const { data: orders, error } = await supabase
+  const { data: orderData, error: orderError } = await supabase
     .from("orders")
     .select(
       `
@@ -25,25 +25,50 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
       total,
       email,
       order_items (
+        item_id,
+        name, 
         quantity,
-        price,
-        products (
-          name,
-          description,
-          image_url
-        )
+        price
       )
     `
     )
     .eq("stripe_session_id", sessionId)
-    .limit(1);
+    .single(); // Use .single() if stripe_session_id is unique and you expect one order
 
-  if (error || !orders || orders.length === 0) {
-    console.error("Error fetching order for receipt:", error);
+  if (orderError || !orderData) {
+    console.error("Error fetching order for receipt:", orderError);
     notFound();
   }
 
-  const order = orders[0] as any;
+  // Fetch image_urls for each order item
+  const orderItemsWithImages = await Promise.all(
+    (orderData.order_items || []).map(async (item: any) => {
+      let imageUrl = '/placeholder.png'; // Default placeholder
+      // Try fetching from products table
+      const { data: product } = await supabase
+        .from('products')
+        .select('image_url')
+        .eq('id', item.item_id)
+        .single();
+      
+      if (product && product.image_url) {
+        imageUrl = product.image_url;
+      } else {
+        // If not found in products or product has no image, try experiences table
+        const { data: experience } = await supabase
+          .from('experiences')
+          .select('image_url')
+          .eq('id', item.item_id)
+          .single();
+        if (experience && experience.image_url) {
+          imageUrl = experience.image_url;
+        }
+      }
+      return { ...item, image_url: imageUrl };
+    })
+  );
+
+  const order = { ...orderData, order_items: orderItemsWithImages } as any;
 
   return (
     <div className="bg-gray-50 min-h-screen font-sans flex items-center justify-center p-4 sm:p-6 lg:p-8 print:bg-white print:p-0">
@@ -71,8 +96,8 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
               <li key={index} className="flex py-6">
                 <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
                   <Image
-                    src={item.products.image_url || '/placeholder.png'}
-                    alt={item.products.name}
+                    src={item.image_url || '/placeholder.png'}
+                    alt={item.name}
                     width={96}
                     height={96}
                     className="h-full w-full object-cover object-center"
@@ -81,7 +106,7 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
                 <div className="ml-4 flex flex-1 flex-col">
                   <div>
                     <div className="flex justify-between text-base font-medium text-gray-900">
-                      <h3>{item.products.name}</h3>
+                      <h3>{item.name}</h3>
                       <p className="ml-4 font-semibold">{formatCurrency(item.price * item.quantity)}</p>
                     </div>
                     <p className="mt-1 text-sm text-gray-500">
@@ -100,14 +125,23 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
             <p>{formatCurrency(order.total)}</p>
           </div>
         </div>
-        
-        <div className="mt-10 text-center print:hidden">
-            <PrintButton />
+
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Important Event Information:</h3>
+          <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+            <li>Please present this receipt (digital or printed) and be prepared to confirm your email address ({order.email}) upon arrival.</li>
+            <li>To ensure you can schedule all your booked experiences, we advise arriving 15-20 minutes before your first desired session.</li>
+            <li>We look forward to welcoming you to The Water Bar!</li>
+          </ul>
+        </div>
+
+        <div className="mt-8 text-center print:hidden">
+          <PrintButton />
         </div>
 
         <div className="mt-12 text-center text-sm text-gray-500">
-            <p>Thank you for your purchase!</p>
-            <p>If you have any questions, please contact us.</p>
+          <p>Thank you for your purchase!</p>
+          <p>If you have any questions, please contact us.</p>
         </div>
       </div>
     </div>
