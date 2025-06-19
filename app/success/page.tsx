@@ -14,7 +14,7 @@ export default function SuccessPage({ searchParams }: Props) {
       </p>
       {searchParams.session && (
         <a
-          href={`/receipt/${sessionId}`}
+          href={`/receipt/${searchParams.session}`}
           className="text-indigo-600 hover:text-indigo-500 font-semibold"
           target="_blank"
           rel="noopener noreferrer"
