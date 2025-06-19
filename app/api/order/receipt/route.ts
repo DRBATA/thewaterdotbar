@@ -7,6 +7,7 @@ import path from "path";
 export const runtime = "nodejs";
 
 
+export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const sessionId = searchParams.get("session");
   if (!sessionId) {
