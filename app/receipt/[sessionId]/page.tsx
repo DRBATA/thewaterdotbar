@@ -1,3 +1,4 @@
+import { formatCurrency } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
@@ -81,10 +82,10 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
                   <div>
                     <div className="flex justify-between text-base font-medium text-gray-900">
                       <h3>{item.products.name}</h3>
-                      <p className="ml-4 font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
+                      <p className="ml-4 font-semibold">{formatCurrency(item.price * item.quantity)}</p>
                     </div>
                     <p className="mt-1 text-sm text-gray-500">
-                      {item.quantity} x ${item.price.toFixed(2)}
+                      {item.quantity} x {formatCurrency(item.price)}
                     </p>
                   </div>
                 </div>
@@ -96,7 +97,7 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
         <div className="border-t border-gray-200 pt-6">
           <div className="flex justify-between text-lg font-bold text-gray-900">
             <p>Total</p>
-            <p>${order.total.toFixed(2)}</p>
+            <p>{formatCurrency(order.total)}</p>
           </div>
         </div>
         

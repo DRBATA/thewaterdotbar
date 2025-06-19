@@ -1,3 +1,4 @@
+import { formatCurrency } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -39,7 +40,7 @@ export default async function GuestList({ searchParams }: { searchParams: Search
           <li key={order.id} className="border rounded p-4 bg-white shadow-sm">
             <div className="flex justify-between mb-2">
               <span className="font-medium">{order.email ?? "No email"}</span>
-              <span>${Number(order.total).toFixed(2)}</span>
+              <span>{formatCurrency(Number(order.total))}</span>
             </div>
             <ul className="list-disc list-inside text-sm text-stone-700">
               {order.order_items.map((item: any, idx: number) => (

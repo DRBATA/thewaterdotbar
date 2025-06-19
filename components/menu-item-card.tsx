@@ -1,5 +1,6 @@
 "use client"
 import Image from "next/image"
+import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Minus } from "lucide-react"
@@ -37,7 +38,7 @@ export function MenuItemCard({ item, onAddToCart, onRemoveFromCart, quantity }: 
         <CardDescription className="text-sm text-stone-500 mt-1">{item.description}</CardDescription>
       </CardHeader>
       <CardContent className="flex items-center justify-between p-5 pt-0">
-        <span className="text-xl font-bold text-amber-700">${item.price.toFixed(2)}</span>
+        <span className="text-xl font-bold text-amber-700">{formatCurrency(item.price)}</span>
         <div className="flex items-center space-x-2">
           <Button
             variant="ghost"
