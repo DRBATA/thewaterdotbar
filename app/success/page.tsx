@@ -14,11 +14,12 @@ export default function SuccessPage({ searchParams }: Props) {
       </p>
       {searchParams.session && (
         <a
-          href={`/api/order/receipt?session=${encodeURIComponent(searchParams.session)}`}
-          className="mt-4 inline-block text-blue-600 underline"
-          download
+          href={`/receipt/${sessionId}`}
+          className="text-indigo-600 hover:text-indigo-500 font-semibold"
+          target="_blank"
+          rel="noopener noreferrer"
         >
-          Download your receipt (PDF)
+          View your receipt
         </a>
       )}
     </main>
