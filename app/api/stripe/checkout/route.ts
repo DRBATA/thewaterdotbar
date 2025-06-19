@@ -48,6 +48,7 @@ export async function POST() {
   }))
 
   const checkout = await stripe.checkout.sessions.create({
+    allow_promotion_codes: true,
     mode: "payment",
     line_items: lineItems,
     success_url: `${baseUrl}/success?session={CHECKOUT_SESSION_ID}`,

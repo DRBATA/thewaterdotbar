@@ -64,6 +64,12 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
           imageUrl = experience.image_url;
         }
       }
+
+      // Ensure local image paths are absolute from the root
+      if (imageUrl && imageUrl !== '/placeholder.png' && !imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
+        imageUrl = '/' + imageUrl;
+      }
+
       return { ...item, image_url: imageUrl };
     })
   );
