@@ -15,7 +15,7 @@ export async function POST() {
   // fetch cart rows
   const { data: cartRows, error } = await supabase
     .from("cart")
-    .select("item_id, qty, name") // Assuming 'name' is in cart for error messages, item_id is key
+    .select("item_id, qty")
     .eq(user ? "user_id" : "session_id", user ? user.id : sessionId)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
@@ -66,7 +66,7 @@ export async function POST() {
       // This item from the cart doesn't have a corresponding stripe_price_id in products/experiences
       // Or it's missing from the products/experiences table entirely.
       // Throw an error or handle as appropriate. For now, we'll log and skip.
-      console.error(`Item '${row.name || row.item_id}' in cart is missing a Stripe Price ID. Skipping.`);
+      console.error(`Item '${row.item_id}' in cart is missing a Stripe Price ID. Skipping.`);
       return null; // This item will be skipped
     }
     return {
