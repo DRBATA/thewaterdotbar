@@ -15,7 +15,7 @@ export async function POST() {
   // fetch cart rows
   const { data: cartRows, error } = await supabase
     .from("cart")
-    .select("item_id, qty")
+    .select("item_id, qty, name") // Assuming 'name' is in cart for error messages, item_id is key
     .eq(user ? "user_id" : "session_id", user ? user.id : sessionId)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
@@ -39,13 +39,45 @@ export async function POST() {
     return NextResponse.json({ error: "BASE_URL missing or invalid" }, { status: 500 })
   }
 
-  // For demo: assume a single Stripe Price ID stored in env VAR
-  const priceId = process.env.STRIPE_TEST_PRICE_ID!
+  // Fetch all product and experience stripe_price_ids for lookup
+  const { data: productsData, error: productsError } = await supabase
+    .from("products")
+    .select("id, stripe_price_id");
+  if (productsError) {
+    console.error("Supabase error fetching products for stripe_price_ids:", productsError);
+    return NextResponse.json({ error: "Failed to fetch product pricing data" }, { status: 500 });
+  }
 
-  const lineItems = cartRows.map((row) => ({
-    price: priceId,
-    quantity: row.qty,
-  }))
+  const { data: experiencesData, error: experiencesError } = await supabase
+    .from("experiences")
+    .select("id, stripe_price_id");
+  if (experiencesError) {
+    console.error("Supabase error fetching experiences for stripe_price_ids:", experiencesError);
+    return NextResponse.json({ error: "Failed to fetch experience pricing data" }, { status: 500 });
+  }
+
+  const priceIdLookup: Record<string, string | null> = {};
+  (productsData || []).forEach(p => { priceIdLookup[p.id] = p.stripe_price_id; });
+  (experiencesData || []).forEach(e => { priceIdLookup[e.id] = e.stripe_price_id; });
+
+  const lineItems = cartRows.map((row) => {
+    const stripePriceId = priceIdLookup[row.item_id];
+    if (!stripePriceId) {
+      // This item from the cart doesn't have a corresponding stripe_price_id in products/experiences
+      // Or it's missing from the products/experiences table entirely.
+      // Throw an error or handle as appropriate. For now, we'll log and skip.
+      console.error(`Item '${row.name || row.item_id}' in cart is missing a Stripe Price ID. Skipping.`);
+      return null; // This item will be skipped
+    }
+    return {
+      price: stripePriceId,
+      quantity: row.qty,
+    };
+  }).filter(item => item !== null) as Stripe.Checkout.SessionCreateParams.LineItem[]; // Filter out nulls and assert type
+
+  if (lineItems.length === 0) {
+    return NextResponse.json({ error: "No items in cart have valid pricing information for checkout." }, { status: 400 });
+  }
 
   const checkout = await stripe.checkout.sessions.create({
     allow_promotion_codes: true,
