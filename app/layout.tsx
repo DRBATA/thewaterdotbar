@@ -9,6 +9,21 @@ export const metadata: Metadata = {
     icon: '/favicon.ico',
     apple: '/apple-touch-icon.png',
   },
+  openGraph: {
+    title: 'The Water Bar x Johnny Dar | AI Morning Party',
+    description: 'Book your morning party with our AI Barista.',
+    url: 'https://thewater.bar',
+    siteName: 'The Water Bar',
+    images: [
+      {
+        url: 'https://thewater.bar/apple-touch-icon.png',
+        width: 180,
+        height: 180,
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
 }
 
 export default function RootLayout({
