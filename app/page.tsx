@@ -36,8 +36,7 @@ export interface MenuItem {
 }
 
 export default async function HomePage() {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = createClient()
 
   const { data: drinksData, error: drinksError } = await supabase.from("products").select<"*", Product>("*")
   const { data: wellnessData, error: wellnessError } = await supabase.from("experiences").select<"*", Experience>("*")
