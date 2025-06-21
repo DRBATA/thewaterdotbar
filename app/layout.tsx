@@ -2,15 +2,15 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'The Water Bar x Johnny Dar | AI Morning Party',
-  description: 'Book your morning party with our AI Barista, a unique experience by The Water Bar and Johnny Dar.',
+  title: 'The Water Bar x Johny Dar | AI Morning Party',
+  description: 'Book your morning party with our AI Barista, a unique experience by The Water Bar and Johny Dar.',
   manifest: '/site.webmanifest',
   icons: {
     icon: '/favicon.ico',
     apple: '/apple-touch-icon.png',
   },
   openGraph: {
-    title: 'The Water Bar x Johnny Dar | AI Morning Party',
+    title: 'The Water Bar x Johny Dar | AI Morning Party',
     description: 'Book your morning party with our AI Barista.',
     url: 'https://thewater.bar',
     siteName: 'The Water Bar',
