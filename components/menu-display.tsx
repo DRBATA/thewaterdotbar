@@ -5,6 +5,7 @@ import { MenuItemCard } from "@/components/menu-item-card"
 import { CartSummary } from "@/components/cart-summary"
 import { Separator } from "@/components/ui/separator"
 import { VirtualBaristaChat } from "@/components/virtual-barista-chat"
+import { logEvent } from "@/lib/analytics"
 import type { MenuItem } from "@/app/page" // Import the MenuItem type
 
 interface CartItem extends MenuItem {
@@ -29,7 +30,12 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
     setTotal(newTotal)
   }, [cartItems])
 
+  useEffect(() => {
+    logEvent({ event_name: "page_view", step_name: "landing" })
+  }, [])
+
   const handleAddToCart = async (item: MenuItem) => {
+    logEvent({ event_name: "add_to_cart", step_name: "cart", metadata: { itemId: item.id, itemName: item.name } })
     await fetch("/api/cart/add", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -1,6 +1,8 @@
 "use client"
 
+import { useState } from "react"
 import { useChat } from "ai/react"
+import { logEvent } from "@/lib/analytics"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,8 +10,15 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { SendHorizonal } from "lucide-react"
 
 export function VirtualBaristaChat() {
+  const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false)
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: "/api/chat", // We'll create this API route next
+    onFinish: () => {
+      if (!hasSentFirstMessage) {
+        logEvent({ event_name: "chat_started", step_name: "barista_chat" })
+        setHasSentFirstMessage(true)
+      }
+    },
   })
 
   return (

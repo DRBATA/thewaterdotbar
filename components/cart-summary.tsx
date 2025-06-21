@@ -1,13 +1,12 @@
 "use client"
 import { formatCurrency } from "@/lib/utils";
-import { useCart } from "@/hooks/use-cart";
-import { useStore } from "@/hooks/use-store";
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { ShoppingCart, XCircle } from "lucide-react"
+import { logEvent } from "@/lib/analytics"
 
 interface CartItem {
   id: string
@@ -26,6 +25,14 @@ export function CartSummary({ cartItems, total, onRemoveItemAction }: CartSummar
   const [loading, setLoading] = useState(false)
 
   const handleCheckout = async () => {
+    logEvent({
+      event_name: "checkout_initiated",
+      step_name: "checkout",
+      metadata: {
+        cartTotal: total,
+        itemCount: cartItems.reduce((acc, item) => acc + item.quantity, 0),
+      },
+    })
     if (loading) return
     setLoading(true)
     try {
