@@ -1,6 +1,6 @@
 // app/dashboard/page.tsx
 import { createClient } from "@supabase/supabase-js"
-import { DashboardClient } from "./dashboard-client"
+import { DashboardClient } from "@/app/dashboard/dashboard-client"
 import { AnalyticsData } from "./types"
 
 export const dynamic = 'force-dynamic' // ensure the page is always dynamic
