@@ -10,8 +10,8 @@ export default function SuccessPage({ searchParams }: Props) {
       <h1 className="text-3xl font-semibold mb-4">Thank you for your purchase! 🎉</h1>
       <p className="max-w-lg text-stone-700 mb-6">
         We've received your order and a confirmation email is on its way. 
-        When you view your receipt, please save it as a PDF or take a screenshot for your records and to present at the event.
-        We recommend arriving a little early to choose your preferred times for any experiences you've booked. See you soon at The Water Bar!
+        <strong>IMPORTANT:</strong> Please click the button below to view your open ticket, then <strong>save it as a PDF</strong> (by printing to PDF) or <strong>take a screenshot</strong> of it.
+        You'll need to show this ticket at the event for entry. We recommend arriving a little early to choose your preferred times for any experiences you've booked. See you soon at The Water Bar!
       </p>
       <div className="flex flex-col space-y-3">
         {searchParams.session && (
@@ -21,7 +21,7 @@ export default function SuccessPage({ searchParams }: Props) {
             target="_blank"
             rel="noopener noreferrer"
           >
-            View Your Receipt
+            View Your Open Ticket
           </a>
         )}
         <a

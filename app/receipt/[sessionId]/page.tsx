@@ -5,15 +5,15 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import PrintButton from './PrintButton.tsx';
 
-type ReceiptPageProps = {
+type TicketPageProps = {
   params: {
     sessionId: string;
   };
 };
 
-export default async function ReceiptPage({ params }: ReceiptPageProps) {
+export default async function TicketPage({ params }: TicketPageProps) {
   const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
   const { sessionId } = params;
 
   const { data: orderData, error: orderError } = await supabase
@@ -82,7 +82,7 @@ export default async function ReceiptPage({ params }: ReceiptPageProps) {
         <div className="flex justify-between items-start mb-8 border-b border-gray-200 pb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">The Water Bar</h1>
-            <p className="text-gray-500 mt-1">Order Receipt</p>
+            <p className="text-gray-500 mt-1">Open Ticket - Show at Event</p>
           </div>
           <div className="text-right">
             <h2 className="text-xl font-semibold text-gray-700">Order #{order.id.toString().substring(0, 8)}</h2>
