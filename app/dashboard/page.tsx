@@ -1,6 +1,5 @@
 // app/dashboard/page.tsx
-import { createClient } from "@/lib/supabase/server"
-import { cookies } from "next/headers"
+import { createClient } from "@supabase/supabase-js"
 import { DashboardClient } from "./dashboard-client"
 import { AnalyticsData } from "./types"
 
@@ -8,8 +7,11 @@ export const dynamic = 'force-dynamic' // ensure the page is always dynamic
 
 // This is a Server Component that fetches data
 export default async function DashboardPage() {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  // Create an admin client that can bypass RLS
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
 
   // Fetch all unique session_id's for each source to count visitors
   const { data: pageViews, error: pageViewError } = await supabase
