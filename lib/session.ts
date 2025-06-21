@@ -4,7 +4,7 @@ import { cookies } from "next/headers"
  * Returns a stable anonymous session ID stored in the `sb_session_id` cookie.
  * Falls back to `crypto.randomUUID()` so we need no extra dependency.
  */
-export function getSessionId(): string {
+export async function getSessionId(): Promise<string> {
   const cookieStore = cookies()
   const existing = cookieStore.get("sb_session_id")?.value
   if (existing) return existing

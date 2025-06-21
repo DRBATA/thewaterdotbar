@@ -6,21 +6,43 @@ import { getSessionId } from "@/lib/session"
 
 export async function POST() {
   const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  const sessionId = getSessionId()
+  const sessionId = await getSessionId()
 
-  // fetch cart rows
-  const { data: cartRows, error } = await supabase
-    .from("cart")
-    .select("item_id, qty")
-    .eq(user ? "user_id" : "session_id", user ? user.id : sessionId)
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
-  if (!cartRows || cartRows.length === 0)
+  // Fetch cart items from the normalized cart structure
+  // 1. Find cart header for this session
+  const { data: cartHeader, error: headerError } = await supabase
+    .from("cart_headers")
+    .select("id")
+    .eq("session_id", sessionId)
+    .maybeSingle()
+  
+  if (headerError) {
+    return NextResponse.json({ error: `Error finding cart: ${headerError.message}` }, { status: 400 })
+  }
+    
+  // Check if we have a cart
+  if (!cartHeader) {
     return NextResponse.json({ error: "Cart is empty" }, { status: 400 })
+  }
+  
+  // 2. Fetch items from the cart
+  const { data: cartRows, error: itemsError } = await supabase
+    .from("cart_items")
+    .select("item_id, qty")
+    .eq("cart_id", cartHeader.id)
+    
+  if (itemsError) {
+    return NextResponse.json({ error: `Error fetching cart items: ${itemsError.message}` }, { status: 400 })
+  }
+  
+  // Check if we have any items in the cart
+  if (!cartRows || cartRows.length === 0) {
+    return NextResponse.json({ error: "Cart is empty" }, { status: 400 })
+  }
 
     // Initialise Stripe lazily so that missing env vars at build time don't crash.
   const stripeSecret = process.env.STRIPE_SECRET_KEY
