@@ -2,9 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.dev',
+  title: 'The Water Bar x Johnny Dar | AI Morning Party',
+  description: 'Book your morning party with our AI Barista, a unique experience by The Water Bar and Johnny Dar.',
 }
 
 export default function RootLayout({
