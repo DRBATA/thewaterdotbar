@@ -25,14 +25,56 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
   const drinks = initialDrinks
   const wellnessExperiences = initialWellnessExperiences
 
+  // Calculate cart total whenever items change
   useEffect(() => {
     const newTotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
     setTotal(newTotal)
   }, [cartItems])
 
+  // Log page view on initial load
   useEffect(() => {
     logEvent({ event_name: "page_view", step_name: "landing" })
   }, [])
+  
+  // Load cart items from Supabase database on page load
+  useEffect(() => {
+    const fetchCartItems = async () => {
+      try {
+        const response = await fetch("/api/cart/get", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          
+          // Process cart items from database
+          if (data.items && data.items.length > 0) {
+            // Create cart items by looking up product details
+            const dbCartItems: CartItem[] = data.items
+              .map((item: any) => {
+                // Find matching drink or experience
+                const product = [...drinks, ...wellnessExperiences].find(p => p.id === item.item_id)
+                if (!product) return null
+                
+                return {
+                  ...product,
+                  quantity: item.qty
+                }
+              })
+              .filter(Boolean) // Remove any nulls
+            
+            setCartItems(dbCartItems)
+            console.log("Loaded " + dbCartItems.length + " items from saved cart")
+          }
+        }
+      } catch (error) {
+        console.error("Error loading cart items:", error)
+      }
+    }
+    
+    fetchCartItems()
+  }, [drinks, wellnessExperiences]) // Re-run if product data changes
 
   const handleAddToCart = async (item: MenuItem) => {
     logEvent({ event_name: "add_to_cart", step_name: "cart", metadata: { itemId: item.id, itemName: item.name } })
@@ -63,6 +105,10 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
       }
       return prev.filter((i) => i.id !== itemId)
     })
+  }
+  
+  const handleClearCart = () => {
+    setCartItems([])
   }
 
   const getItemQuantity = (itemId: string) => {
@@ -116,7 +162,7 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
           </div>
         </section>
       </main>
-      <CartSummary cartItems={cartItems} total={total} onRemoveItemAction={handleRemoveFromCart} />
+      <CartSummary cartItems={cartItems} total={total} onRemoveItemAction={handleRemoveFromCart} onClearCart={handleClearCart} />
     </>
   )
 }

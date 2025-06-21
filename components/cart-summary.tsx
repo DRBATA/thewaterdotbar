@@ -19,10 +19,37 @@ interface CartSummaryProps {
   cartItems: CartItem[]
   total: number
   onRemoveItemAction: (itemId: string) => void
+  onClearCart?: () => void
 }
 
-export function CartSummary({ cartItems, total, onRemoveItemAction }: CartSummaryProps) {
+export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart }: CartSummaryProps) {
   const [loading, setLoading] = useState(false)
+  const [clearingCart, setClearingCart] = useState(false)
+
+  const handleClearCart = async () => {
+    if (clearingCart || cartItems.length === 0) return
+    
+    setClearingCart(true)
+    try {
+      const response = await fetch("/api/cart/clear", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      })
+      
+      if (response.ok) {
+        // If API call successful and onClearCart is provided, call it
+        if (onClearCart) {
+          onClearCart()
+        }
+      } else {
+        console.error("Failed to clear cart")
+      }
+    } catch (error) {
+      console.error("Error clearing cart:", error)
+    } finally {
+      setClearingCart(false)
+    }
+  }
 
   const handleCheckout = async () => {
     logEvent({
@@ -98,6 +125,16 @@ export function CartSummary({ cartItems, total, onRemoveItemAction }: CartSummar
           <span>Total:</span>
           <span>{formatCurrency(total)}</span>
         </div>
+        {cartItems.length > 0 && (
+          <Button
+            variant="outline"
+            className="w-full mt-3 border-amber-600 text-amber-700 hover:bg-amber-100"
+            onClick={handleClearCart}
+            disabled={clearingCart}
+          >
+            {clearingCart ? "Clearing..." : "Clear Cart"}
+          </Button>
+        )}
         <Button
           size="lg"
           className="w-full mt-6 bg-amber-700 text-white hover:bg-amber-800 h-12 text-lg"
