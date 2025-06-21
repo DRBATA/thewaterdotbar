@@ -135,7 +135,7 @@ export default async function TicketPage({ params }: TicketPageProps) {
         <div className="mt-8 pt-6 border-t border-gray-200">
           <h3 className="text-lg font-semibold text-gray-800 mb-2">Important Event Information:</h3>
           <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-            <li>Please present this receipt (digital or printed) and be prepared to confirm your email address ({order.email}) upon arrival.</li>
+            <li>Please present this ticket (digital or printed) and be prepared to confirm your email address ({order.email}) upon arrival.</li>
             <li>To ensure you can schedule all your booked experiences, we advise arriving 15-20 minutes before your first desired session.</li>
             <li>We look forward to welcoming you to The Water Bar!</li>
           </ul>
