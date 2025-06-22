@@ -9,13 +9,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing itemId" }, { status: 400 })
   }
 
-  const cookieStore = cookies()
-  const supabase = createClient()
-
-  // Logged-in user (optional)
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const cookieStore = await cookies()
+  const supabase = await createClient()
 
   const sessionId = await getSessionId()
   
@@ -38,7 +33,7 @@ export async function POST(req: Request) {
         .from("cart_headers")
         .insert({
           session_id: sessionId,
-          user_id: user?.id ?? null
+
         })
         .select("id")
         .single();

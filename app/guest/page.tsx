@@ -23,7 +23,7 @@ export default async function GuestList({ searchParams }: { searchParams: Search
     );
   }
 
-  const supabase = createClient(cookies());
+  const supabase = await createClient();
   const { data: orders, error } = await supabase
     .from("orders")
     .select("id, email, total, created_at, order_items:order_items(name, qty)")

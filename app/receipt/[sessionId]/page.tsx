@@ -12,8 +12,8 @@ type TicketPageProps = {
 };
 
 export default async function TicketPage({ params }: TicketPageProps) {
-  const cookieStore = cookies();
-  const supabase = createClient();
+  const cookieStore = await cookies();
+  const supabase = await createClient();
   const { sessionId } = params;
 
   const { data: orderData, error: orderError } = await supabase

@@ -36,7 +36,7 @@ export interface MenuItem {
 }
 
 export default async function HomePage() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: drinksData, error: drinksError } = await supabase.from("products").select<"*", Product>("*")
   const { data: wellnessData, error: wellnessError } = await supabase.from("experiences").select<"*", Experience>("*")

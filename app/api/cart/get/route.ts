@@ -3,8 +3,8 @@ import { createClient } from "@/lib/supabase/server"
 import { getSessionId } from "@/lib/session"
 
 export async function GET() {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const supabase = await createClient()
+  
   const sessionId = await getSessionId()
 
   try {

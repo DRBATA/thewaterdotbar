@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   const { messages }: { messages: Message[] } = await req.json()
 
   // Initialize Supabase client
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Fetch products and experiences from Supabase
   const { data: products, error: productsError } = await supabase

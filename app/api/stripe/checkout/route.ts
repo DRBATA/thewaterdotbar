@@ -5,11 +5,9 @@ import { cookies, headers } from "next/headers"
 import { getSessionId } from "@/lib/session"
 
 export async function POST() {
-  const cookieStore = cookies()
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const cookieStore = await cookies()
+  const supabase = await createClient()
+
   const sessionId = await getSessionId()
 
   // Fetch cart items from the normalized cart structure
@@ -109,7 +107,7 @@ export async function POST() {
     cancel_url: `${baseUrl}/cart`,
     metadata: {
       session_id: sessionId,
-      ...(user?.id && { user_id: user.id }),
+
     },
   })
 

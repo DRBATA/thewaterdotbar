@@ -3,14 +3,16 @@ import { createClient } from "@/lib/supabase/server"
 import { getSessionId } from "@/lib/session"
 import { cookies } from "next/headers"
 
+const supabase = await createClient()
+
 export async function POST(req: Request) {
   const { itemId } = await req.json()
   if (!itemId) {
     return NextResponse.json({ error: "Missing itemId" }, { status: 400 })
   }
 
-  const cookieStore = cookies()
-  const supabase = createClient()
+  const cookieStore = await cookies()
+  const supabase = await createClient()
   const sessionId = await getSessionId()
 
   try {

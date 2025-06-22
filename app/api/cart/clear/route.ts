@@ -4,8 +4,8 @@ import { getSessionId } from "@/lib/session"
 import { logEvent } from "@/lib/analytics"
 
 export async function POST() {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const supabase = await createClient()
+  
   const sessionId = await getSessionId()
 
   try {
@@ -37,7 +37,7 @@ export async function POST() {
       event_name: "cart_cleared",
       step_name: "cart",
       metadata: {
-        user_id: user?.id || null,
+
         session_id: sessionId
       },
     })

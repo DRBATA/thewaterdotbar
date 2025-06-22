@@ -131,8 +131,8 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
               <MenuItemCard
                 key={experience.id}
                 item={experience}
-                onAddToCart={handleAddToCart}
-                onRemoveFromCart={handleRemoveFromCart}
+                onAddToCartAction={handleAddToCart}
+                onRemoveFromCartAction={handleRemoveFromCart}
                 quantity={getItemQuantity(experience.id)}
               />
             ))}
@@ -153,8 +153,8 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
               <MenuItemCard
                 key={drink.id}
                 item={drink}
-                onAddToCart={handleAddToCart}
-                onRemoveFromCart={handleRemoveFromCart}
+                onAddToCartAction={handleAddToCart}
+                onRemoveFromCartAction={handleRemoveFromCart}
                 quantity={getItemQuantity(drink.id)}
               />
             ))}

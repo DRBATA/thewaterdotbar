@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     const session = event.data.object as Stripe.Checkout.Session;
     const { session_id, user_id } = session.metadata as Record<string, string>;
 
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // move cart rows into orders table then clear cart (simple SQL in-call)
     const { error } = await supabase.rpc("migrate_cart_to_order", {

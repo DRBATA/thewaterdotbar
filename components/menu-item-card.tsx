@@ -15,12 +15,12 @@ interface MenuItem {
 
 interface MenuItemCardProps {
   item: MenuItem
-  onAddToCart: (item: MenuItem) => void
-  onRemoveFromCart: (itemId: string) => void
+  onAddToCartAction: (item: MenuItem) => void
+  onRemoveFromCartAction: (itemId: string) => void
   quantity: number
 }
 
-export function MenuItemCard({ item, onAddToCart, onRemoveFromCart, quantity }: MenuItemCardProps) {
+export function MenuItemCard({ item, onAddToCartAction, onRemoveFromCartAction, quantity }: MenuItemCardProps) {
   // Check if this is the Morning Party ticket
   const isMorningParty = item.name.toLowerCase().includes("morning party");
   const isFree = item.price === 0;
@@ -57,7 +57,7 @@ export function MenuItemCard({ item, onAddToCart, onRemoveFromCart, quantity }: 
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => onRemoveFromCart(item.id)}
+            onClick={() => onRemoveFromCartAction(item.id)}
             disabled={quantity === 0}
             className="size-8 rounded-full text-amber-700 hover:bg-amber-50 hover:text-amber-800 disabled:text-stone-400"
           >
@@ -68,7 +68,7 @@ export function MenuItemCard({ item, onAddToCart, onRemoveFromCart, quantity }: 
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => onAddToCart(item)}
+            onClick={() => onAddToCartAction(item)}
             className="size-8 rounded-full text-amber-700 hover:bg-amber-50 hover:text-amber-800"
           >
             <Plus className="size-4" />
