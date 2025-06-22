@@ -118,7 +118,6 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
 
   return (
     <>
-      <VirtualBaristaChat />
       <main className="container mx-auto px-4 py-8">
         <section className="mb-12">
           <h2
@@ -162,6 +161,7 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
           </div>
         </section>
       </main>
+      <VirtualBaristaChat />
       <CartSummary cartItems={cartItems} total={total} onRemoveItemAction={handleRemoveFromCart} onClearCart={handleClearCart} />
     </>
   )
