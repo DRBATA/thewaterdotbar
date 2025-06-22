@@ -28,7 +28,9 @@ export default async function TicketPage({ params }: TicketPageProps) {
         item_id,
         name, 
         qty,
-        price
+        price,
+        pin_code,
+        claimed_at
       )
     `
     )
@@ -116,7 +118,7 @@ export default async function TicketPage({ params }: TicketPageProps) {
                       <p className="ml-4 font-semibold">{formatCurrency(item.price * item.qty)}</p>
                     </div>
                     <p className="mt-1 text-sm text-gray-500">
-                      Quantity: {item.qty} {formatCurrency(item.price)}
+                      Quantity: {item.qty} {formatCurrency(item.price)}\n                      <br />\n                      <span className="text-xs text-gray-400">PIN: {item.pin_code}</span>
                     </p>
                   </div>
                 </div>
