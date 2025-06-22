@@ -124,16 +124,16 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
             className="text-4xl font-bold text-stone-700 mb-8 text-center tracking-tight"
             style={{ fontFamily: "Playfair Display, serif" }}
           >
-            Our Drinks
+            Wellness Experiences
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-            {drinks.map((drink) => (
+            {wellnessExperiences.map((experience) => (
               <MenuItemCard
-                key={drink.id}
-                item={drink}
+                key={experience.id}
+                item={experience}
                 onAddToCart={handleAddToCart}
                 onRemoveFromCart={handleRemoveFromCart}
-                quantity={getItemQuantity(drink.id)}
+                quantity={getItemQuantity(experience.id)}
               />
             ))}
           </div>
@@ -146,16 +146,16 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
             className="text-4xl font-bold text-stone-700 mb-8 text-center tracking-tight"
             style={{ fontFamily: "Playfair Display, serif" }}
           >
-            Wellness Experiences
+            Our Drinks
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-            {wellnessExperiences.map((experience) => (
+            {drinks.map((drink) => (
               <MenuItemCard
-                key={experience.id}
-                item={experience}
+                key={drink.id}
+                item={drink}
                 onAddToCart={handleAddToCart}
                 onRemoveFromCart={handleRemoveFromCart}
-                quantity={getItemQuantity(experience.id)}
+                quantity={getItemQuantity(drink.id)}
               />
             ))}
           </div>
