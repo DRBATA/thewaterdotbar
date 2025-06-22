@@ -3,8 +3,6 @@ import { createClient } from "@/lib/supabase/server"
 import { getSessionId } from "@/lib/session"
 import { cookies } from "next/headers"
 
-const supabase = await createClient()
-
 export async function POST(req: Request) {
   const { itemId } = await req.json()
   if (!itemId) {
