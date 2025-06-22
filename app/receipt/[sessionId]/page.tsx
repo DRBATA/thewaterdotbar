@@ -81,6 +81,13 @@ export default async function TicketPage({ params }: TicketPageProps) {
   return (
     <div className="bg-gray-50 min-h-screen font-sans flex items-center justify-center p-4 sm:p-6 lg:p-8 print:bg-white print:p-0">
       <div className="max-w-4xl w-full bg-white shadow-lg rounded-lg p-8 print:shadow-none print:rounded-none">
+  {/* Event Info Block */}
+  <div className="mb-8 p-6 rounded-lg bg-yellow-50 border-l-4 border-yellow-400">
+    <h2 className="text-2xl font-bold text-yellow-900 mb-2">The Morning Party: Frequency Calibration Pass</h2>
+    <div className="text-lg font-semibold text-yellow-800 mb-1">Sunday, June 29, 10 AM – 1 PM</div>
+    <div className="text-md text-yellow-700 mb-2">AOI x Johny Dar Experience<br />Al Khayat Avenue, Al Quoz Industrial Area 1, Plot 364-191<br />Old Community, Warehouse 4, Dubai</div>
+    <div className="mt-2 text-yellow-800 font-medium">This free ticket <span className='font-bold'>includes access to the rave only</span>. It <span className='font-bold'>does not include any drinks or premium experiences</span>.</div>
+  </div>
         <div className="flex justify-between items-start mb-8 border-b border-gray-200 pb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">The Water Bar</h1>
@@ -118,7 +125,17 @@ export default async function TicketPage({ params }: TicketPageProps) {
                       <p className="ml-4 font-semibold">{formatCurrency(item.price * item.qty)}</p>
                     </div>
                     <p className="mt-1 text-sm text-gray-500">
-                      Quantity: {item.qty} {formatCurrency(item.price)}\n                      <br />\n                      <span className="text-xs text-gray-400">PIN: {item.pin_code}</span>
+                      Quantity: {item.qty} {formatCurrency(item.price)}\n                      <br />\n                      {item.pin_code && (
+  <div className="mt-4">
+    <div className="text-center">
+      <div className="inline-block px-6 py-3 rounded-lg bg-blue-100 border-2 border-blue-400">
+        <div className="text-lg font-bold text-blue-800 tracking-widest">Your PIN</div>
+        <div className="text-3xl font-extrabold text-blue-900 mt-1 mb-1" style={{ letterSpacing: '0.15em' }}>{item.pin_code}</div>
+      </div>
+      <div className="mt-2 text-blue-700 font-medium text-sm">You’ll need this PIN to claim your purchase at The Water Bar. Please have it ready.</div>
+    </div>
+  </div>
+)}
                     </p>
                   </div>
                 </div>

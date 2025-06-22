@@ -127,7 +127,9 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
             Wellness Experiences
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-            {wellnessExperiences.map((experience) => (
+            {[...wellnessExperiences]
+  .sort((a, b) => (a.price === 0 ? -1 : b.price === 0 ? 1 : 0))
+  .map((experience) => (
               <MenuItemCard
                 key={experience.id}
                 item={experience}
@@ -149,7 +151,9 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
             Our Drinks
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-            {drinks.map((drink) => (
+            {[...drinks]
+  .sort((a, b) => (a.price === 0 ? -1 : b.price === 0 ? 1 : 0))
+  .map((drink) => (
               <MenuItemCard
                 key={drink.id}
                 item={drink}

@@ -26,7 +26,7 @@ export function MenuItemCard({ item, onAddToCartAction, onRemoveFromCartAction, 
   const isFree = item.price === 0;
   
   return (
-    <Card className={`w-full max-w-sm overflow-hidden rounded-xl ${isMorningParty ? "bg-amber-50 border-amber-300 shadow-lg" : "bg-white border-stone-200/70 shadow-md"} transition-all hover:shadow-lg border`}>
+    <Card className={`relative w-full max-w-sm overflow-hidden rounded-xl ${isMorningParty ? "bg-amber-50 border-amber-300 shadow-lg" : "bg-white border-stone-200/70 shadow-md"} transition-all hover:shadow-lg border`}>
       {(isMorningParty && isFree) && (
         <div className="absolute top-0 right-0 z-10 bg-green-500 text-white py-1 px-3 rounded-bl-lg font-bold tracking-wide">
           FREE
