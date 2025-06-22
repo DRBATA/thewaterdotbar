@@ -14,9 +14,7 @@ export async function GET(_req: NextRequest, { params }: { params: { pin: string
 
   const { data, error } = await supabaseAdmin
     .from("order_items")
-    .select(
-      `id,pin_code,claimed_at,qty,name,item_id,orders:id(order_id,email,created_at,total)`
-    )
+    .select('id,pin_code,claimed_at,qty,name,item_id,order_id')
     .eq("pin_code", pin)
     .maybeSingle();
 
@@ -26,10 +24,18 @@ export async function GET(_req: NextRequest, { params }: { params: { pin: string
   if (!data) {
     return NextResponse.json({ error: "PIN not found" }, { status: 404 });
   }
+  if (!data) {
+    return NextResponse.json({ error: "PIN not found" }, { status: 404 });
+  }
+
+  // fetch order for email
+  const { data: order } = await supabaseAdmin.from('orders').select('email,created_at,total').eq('id', data.order_id).maybeSingle();
+  const result = { ...data, order };
+
   if (data.claimed_at) {
     return NextResponse.json({ error: "Already claimed", claimed_at: data.claimed_at }, { status: 410 });
   }
-  return NextResponse.json(data);
+  return NextResponse.json(result);
 }
 
 export async function POST(_req: NextRequest, { params }: { params: { pin: string } }) {
