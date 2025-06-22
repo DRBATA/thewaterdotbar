@@ -5,6 +5,8 @@ export default function ClaimPage() {
   const [pin, setPin] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [details, setDetails] = useState<any>(null);
+  const [emailOk, setEmailOk] = useState(false);
+  const [tokenOk, setTokenOk] = useState(false);
 
   const fetchDetails = async () => {
     setStatus("loading");
@@ -13,12 +15,15 @@ export default function ClaimPage() {
     if (res.ok) {
       setDetails(json);
       setStatus("confirm");
+      setEmailOk(false);
+      setTokenOk(false);
     } else {
       setStatus(json.error || "error");
     }
   };
 
   const completeClaim = async () => {
+    if (!emailOk || !tokenOk) return;
     setStatus("saving");
     const res = await fetch(`/api/claim/${pin}`, { method: "POST" });
     const json = await res.json();
@@ -60,23 +65,34 @@ export default function ClaimPage() {
       {status === "loading" && <p>Loading…</p>}
 
       {status === "confirm" && details && (
-        <div className="space-y-4 max-w-sm">
-          <p className="text-green-700 text-xl font-semibold">PIN {details.pin_code} accepted</p>
-          <p><strong>Guest:</strong> {details.orders?.email}</p>
+        <div className="space-y-4 max-w-sm text-left">
+          <p className="text-green-700 text-xl font-semibold text-center">PIN {details.pin_code} accepted</p>
+          <p><strong>Guest email:</strong> {details.orders?.email}</p>
           <p><strong>Item:</strong> {details.name} (qty {details.qty})</p>
+          <div className="space-y-2 py-2">
+            <label className="flex items-center space-x-2">
+              <input type="checkbox" checked={emailOk} onChange={() => setEmailOk(!emailOk)} />
+              <span>Email confirmed</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input type="checkbox" checked={tokenOk} onChange={() => setTokenOk(!tokenOk)} />
+              <span>Token / drink handed over</span>
+            </label>
+          </div>
           <button
             onClick={completeClaim}
-            className="bg-green-600 text-white px-4 py-2 rounded"
+            disabled={!emailOk || !tokenOk}
+            className="bg-green-600 text-white px-4 py-2 rounded disabled:opacity-40 w-full"
           >
-            Mark as claimed
+            Complete & mark claimed
           </button>
-          <button onClick={reset} className="text-sm text-gray-500 underline">Cancel</button>
+          <button onClick={reset} className="text-sm text-gray-500 underline w-full text-center">Cancel</button>
         </div>
       )}
 
       {status === "done" && (
         <div className="space-y-4">
-          <p className="text-2xl text-green-700">✅ Claimed</p>
+          <p className="text-2xl text-green-700 text-center">✅ {details?.name || "Item"} claimed</p>
           <button onClick={reset} className="underline text-blue-600">Scan next PIN</button>
         </div>
       )}
