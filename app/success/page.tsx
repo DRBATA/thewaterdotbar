@@ -9,9 +9,10 @@ export default function SuccessPage({ searchParams }: Props) {
     <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
       <h1 className="text-3xl font-semibold mb-4">Thank you for your purchase! 🎉</h1>
       <p className="max-w-lg text-stone-700 mb-6">
-        We've received your order and a confirmation email is on its way. 
-        <strong>IMPORTANT:</strong> Please click the button below to view your open ticket, then <strong>save it as a PDF</strong> (by printing to PDF) or <strong>take a screenshot</strong> of it.
-        You'll need to show this ticket at the event for entry. We recommend arriving a little early to choose your preferred times for any experiences you've booked. See you soon at The Water Bar!
+        Your order is confirmed.
+        Tap <strong>“Show Entry Pass”</strong> below to open your ticket, then <strong>save it as a PDF</strong> or <strong>take a screenshot</strong>.
+        Bring the pass to the door. You’ll receive a physical token there to book your experiences, so please arrive 15–20&nbsp;minutes early.
+        See you soon at <strong>The Water Bar</strong>!
       </p>
       <div className="flex flex-col space-y-3">
         {searchParams.session && (
@@ -21,7 +22,7 @@ export default function SuccessPage({ searchParams }: Props) {
             target="_blank"
             rel="noopener noreferrer"
           >
-            View Your Open Ticket
+            Show Entry Pass
           </a>
         )}
         <a
