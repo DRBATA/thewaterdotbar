@@ -11,7 +11,7 @@ import { SendHorizonal, MessageSquare, X } from "lucide-react"
 
 export function VirtualBaristaChat() {
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false)
-  const [isExpanded, setIsExpanded] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(false)
   
   const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
     api: "/api/chat",
@@ -53,12 +53,14 @@ export function VirtualBaristaChat() {
   // Collapsed chat bubble view
   if (!isExpanded) {
     return (
-      <div className="fixed bottom-24 right-6 z-30">
-        <Button 
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+        <Button
           onClick={toggleChat}
-          className="size-14 rounded-full shadow-lg bg-amber-700 text-white hover:bg-amber-600 transition-all duration-300"
+          aria-label="Open chat"
+          className="rounded-full px-6 py-3 bg-pink-400/90 hover:bg-pink-500 text-white shadow-lg flex items-center gap-2 font-bold text-base"
         >
-          <MessageSquare className="size-6" />
+          <MessageSquare className="size-5" />
+          Upgrade your rave
         </Button>
       </div>
     )

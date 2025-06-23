@@ -1,7 +1,7 @@
 "use client"
 import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button"
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
@@ -25,19 +25,28 @@ interface CartSummaryProps {
 export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart }: CartSummaryProps) {
   const [loading, setLoading] = useState(false)
   const [clearingCart, setClearingCart] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
+  // Cart button always opens the drawer and shows expanded info when items exist.
+  const handleCartButtonClick = () => {
+    const trigger = buttonRef.current
+    if (trigger) trigger.click()
+  }
+
+  // --- existing code continues below ---
+  // All logic is now correctly inside handler functions.
 
   const handleClearCart = async () => {
     if (clearingCart || cartItems.length === 0) return
-    
+
     setClearingCart(true)
     try {
       const response = await fetch("/api/cart/clear", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       })
-      
+
       if (response.ok) {
-        // If API call successful and onClearCart is provided, call it
         if (onClearCart) {
           onClearCart()
         }
@@ -57,7 +66,7 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
       step_name: "checkout",
       metadata: {
         cartTotal: total,
-        itemCount: cartItems.reduce((acc, item) => acc + item.quantity, 0),
+        itemCount: cartItems.reduce((acc: number, item: CartItem) => acc + item.quantity, 0),
       },
     })
     if (loading) return
@@ -78,16 +87,30 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
   }
   return (
     <Sheet>
+      {/* Visually hidden SheetTrigger for programmatic opening */}
       <SheetTrigger asChild>
-        <Button
-          variant="default"
-          size="lg"
-          className="fixed bottom-6 right-6 rounded-full shadow-xl bg-amber-700 text-white hover:bg-amber-800 transition-all duration-300 h-14 px-6 text-base"
-        >
-          <ShoppingCart className="mr-2 size-5" />
-          View Cart ({cartItems.reduce((acc, item) => acc + item.quantity, 0)}) - {formatCurrency(total)}
-        </Button>
+        <button
+          ref={buttonRef}
+          style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: 0, overflow: 'hidden', border: 0, clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' }}
+          aria-hidden="true"
+          tabIndex={-1}
+        />
       </SheetTrigger>
+      {/* Visible cart button */}
+      <Button
+        variant="default"
+        size="lg"
+        className={`fixed top-4 right-4 rounded-full shadow-xl bg-amber-700 text-white hover:bg-amber-800 transition-all duration-300 h-14 ${cartItems.length === 0 ? 'px-4 w-14 justify-center' : 'px-6 w-auto'} text-base`}
+        onClick={handleCartButtonClick}
+        aria-label={cartItems.length === 0 ? 'Open cart' : 'View cart with items'}
+      >
+        <ShoppingCart className="size-5" />
+        {cartItems.length > 0 && (
+          <span className="ml-2">
+            View Cart ({cartItems.reduce((acc: number, item: CartItem) => acc + item.quantity, 0)}) - {formatCurrency(total)}
+          </span>
+        )}
+      </Button>
       <SheetContent className="flex flex-col w-full sm:max-w-md bg-cream-50 text-stone-800 border-l-stone-200">
         <SheetHeader>
           <SheetTitle className="text-2xl font-bold text-amber-900">Your Order</SheetTitle>
