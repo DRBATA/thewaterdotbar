@@ -6,8 +6,8 @@ import { FilterProvider } from "../context/filter-context";
 import FilterBar from "../components/FilterBar";
 
 export const metadata: Metadata = {
-  title: 'The Water Bar x Johny Dar | AI Morning Party',
-  description: 'Book your morning party with our AI Barista, a unique experience by The Water Bar and Johny Dar.',
+  title: 'The Water Bar x Johny Dar | Morning Party',
+  description: 'Free Art Gallery Rave with Luxe Drinks and Wellness',
   manifest: '/site.webmanifest',
   icons: {
     icon: '/favicon.ico',

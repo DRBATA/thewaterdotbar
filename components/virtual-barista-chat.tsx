@@ -118,8 +118,8 @@ export function VirtualBaristaChat() {
               <AvatarFallback>VB</AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="text-lg font-semibold text-amber-800">Virtual Barista</h3>
-              <p className="text-sm text-stone-500">+ adds to cart (top-right) • Tags filter menu</p>
+              <h3 className="text-lg font-semibold text-amber-800">Chat for Combo tips and discounts </h3>
+              <p className="text-sm text-stone-500">Tap + on item card to add to Cart • Cart top-right • Filter with tags</p>
             </div>
           </div>
           <Button variant="ghost" size="icon" onClick={toggleChat} className="text-stone-500 hover:text-stone-700">
@@ -143,7 +143,7 @@ export function VirtualBaristaChat() {
           {isLoading && messages.length > 0 && messages[messages.length - 1].role === "user" && (
             <div className="flex mb-3">
               <div className="max-w-[70%] p-3 rounded-lg bg-stone-100 text-stone-800">
-                <p className="text-sm">Thinking...</p>
+                <p className="text-sm">Mixing...</p>
               </div>
             </div>
           )}
@@ -154,7 +154,7 @@ export function VirtualBaristaChat() {
           <Input
             value={input}
             onChange={handleInputChange}
-            placeholder="Ask about the Morning Party or our premium experiences..."
+            placeholder="What's on your mind?"
             className="flex-grow focus-visible:ring-amber-500"
           />
           <Button 
