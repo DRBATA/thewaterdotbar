@@ -65,7 +65,7 @@ export default async function HomePage() {
   }))
 
   return (
-    <div className="min-h-screen bg-cream-50 text-stone-800">
+    <div className="min-h-screen text-stone-800">
       <WaterBarHeader />
       <MenuDisplay initialDrinks={drinks} initialWellnessExperiences={wellnessExperiences} />
     </div>
