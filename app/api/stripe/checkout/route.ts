@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { cookies, headers } from "next/headers"
 import { getSessionId } from "@/lib/session"
 
-export async function POST() {
+export async function POST(req: Request) {
   const cookieStore = await cookies()
   const supabase = await createClient()
 
@@ -99,6 +99,15 @@ export async function POST() {
     return NextResponse.json({ error: "No items in cart have valid pricing information for checkout." }, { status: 400 });
   }
 
+  // Parse POST body for utm_campaign
+  let utm_campaign = "organic";
+  try {
+    const reqBody = req ? await req.json() : {};
+    utm_campaign = reqBody.utm_campaign || "organic";
+  } catch (e) {
+    // If parsing fails or body is empty, default to 'organic'
+  }
+
   const checkout = await stripe.checkout.sessions.create({
     allow_promotion_codes: true,
     mode: "payment",
@@ -107,7 +116,7 @@ export async function POST() {
     cancel_url: `${baseUrl}/cart`,
     metadata: {
       session_id: sessionId,
-
+      utm_campaign,
     },
   })
 

@@ -24,16 +24,17 @@ export async function POST(req: Request) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
-    const { session_id, user_id } = session.metadata as Record<string, string>;
+    const { session_id, user_id, utm_campaign } = session.metadata as Record<string, string>;
 
     const supabase = await createClient();
 
     // move cart rows into orders table then clear cart (simple SQL in-call)
-    const { error } = await supabase.rpc("migrate_cart_to_order", {
+    const { data: order_id, error } = await supabase.rpc("migrate_cart_to_order", {
       p_session_id: session_id,
       p_user_id: user_id ?? null,
       p_stripe_session_id: session.id,
       p_email: session.customer_details?.email,
+      p_utm_campaign: utm_campaign ?? null,
     });
 
     if (error) {
@@ -42,6 +43,18 @@ export async function POST(req: Request) {
         { error: "Error processing order.", details: error },
         { status: 500 }
       );
+    }
+
+    // Log the analytics event ONLY if order_id is present and no error
+    if (order_id) {
+      await supabase.from("analytics_events").insert([
+        {
+          event_type: "order_completed",
+          session_id,
+          utm_campaign: utm_campaign ?? "organic",
+          order_id,
+        },
+      ]);
     }
   }
 

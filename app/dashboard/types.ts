@@ -9,4 +9,17 @@ export interface AnalyticsData {
     count: number;
     rate: string;
   }[];
+  completedOrders: number;
+  cartItems: Array<{
+    session_id: string;
+    item_id: string;
+    qty: number;
+    created_at: string;
+  }>;
+  chatMessages: Array<{
+    session_id: string;
+    role: string;
+    content: string;
+    created_at: string;
+  }>;
 }
