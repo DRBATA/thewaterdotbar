@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import HalftoneBackground from "../components/HalftoneBackground";
+import SparkleOverlay from "../components/SparkleOverlay";
 
 export const metadata: Metadata = {
   title: 'The Water Bar x Johny Dar | AI Morning Party',
@@ -36,7 +37,9 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen">
         {/* Optional: pastel gradient background */}
-        <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-blue-100 via-pink-100 to-cyan-100 z-[-2]" />
+        <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-blue-100 via-pink-100 to-cyan-100 z-[-3]" />
+        {/* Sparkle overlay */}
+        <SparkleOverlay />
         {/* Animated halftone overlay */}
         <HalftoneBackground />
         {/* Main content */}

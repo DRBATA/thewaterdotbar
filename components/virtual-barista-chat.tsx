@@ -53,14 +53,12 @@ export function VirtualBaristaChat() {
   // Collapsed chat bubble view
   if (!isExpanded) {
     return (
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+      <div className="fixed bottom-6 right-4 z-50">
         <Button
           onClick={toggleChat}
-          aria-label="Open chat"
-          className="rounded-full px-6 py-3 bg-pink-400/90 hover:bg-pink-500 text-white shadow-lg flex items-center gap-2 font-bold text-base"
+          className="h-16 w-16 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 p-0 text-white shadow-lg transition-transform hover:scale-110 active:scale-100"
         >
-          <MessageSquare className="size-5" />
-          Upgrade your rave
+          <MessageSquare className="h-8 w-8" />
         </Button>
       </div>
     )
@@ -68,22 +66,22 @@ export function VirtualBaristaChat() {
 
   // Expanded chat view
   return (
-    <div className="fixed bottom-0 left-0 right-0 max-h-[80vh] z-30 bg-white border-t border-stone-200 shadow-lg">
-      <div className="container mx-auto max-w-3xl p-4">
+    <div className="fixed bottom-4 right-4 z-40 flex flex-col items-end space-y-2">
+      <div className="relative flex h-[70vh] w-full max-w-md flex-col rounded-2xl bg-white/80 shadow-2xl backdrop-blur-lg">
         {/* Chat header with close button */}
-        <div className="flex items-center justify-between mb-3 pb-2 border-b border-stone-200">
+        <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center">
             <Avatar className="mr-3">
               <AvatarImage src="/friendly-barista-icon.png" alt="Virtual Barista" />
               <AvatarFallback>VB</AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="text-lg font-semibold text-amber-800">Virtual Barista</h3>
+              <div className="font-bold text-lg text-slate-800">Virtual Barista</div>
               <p className="text-sm text-stone-500">Here to help with your Morning Party experience!</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={toggleChat} className="text-stone-500 hover:text-stone-700">
-            <X className="size-5" />
+          <Button variant="ghost" size="icon" onClick={toggleChat} className="rounded-full">
+            <X className="h-5 w-5" />
           </Button>
         </div>
         

@@ -44,7 +44,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const Comp = asChild ? Slot : "button"
     return (
       <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
+        className={cn(buttonVariants({ variant, size, className }),
+  "bg-gradient-to-r from-pink-200 via-cyan-100 to-blue-200 text-stone-900 font-bold shadow-lg rounded-full transition-transform duration-200 hover:scale-105 focus-visible:scale-105 ring-2 ring-pink-100/50 hover:ring-cyan-200/70")}
         ref={ref}
         {...props}
       />
@@ -52,5 +53,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   }
 )
 Button.displayName = "Button"
+
+// Magical rave style applied globally!
 
 export { Button, buttonVariants }
