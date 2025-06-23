@@ -76,14 +76,8 @@ export default async function TicketPage({ params }: TicketPageProps) {
 
   const order = { ...orderData, order_items: orderItemsWithImages } as any;
 
-  // DEBUG: Output order items for inspection
-  // Remove this after debugging
-  console.log("Order Items:", order.order_items);
-
   return (
     <>
-      <pre style={{background:'#f1f1f1',color:'#333',padding:'1em',marginBottom:'2em',borderRadius:'8px',fontSize:'0.9em',overflowX:'auto'}}>{JSON.stringify(order.order_items, null, 2)}</pre>
-
     <div className="bg-gray-50 min-h-screen font-sans flex items-center justify-center p-4 sm:p-6 lg:p-8 print:bg-white print:p-0">
       <div className="max-w-4xl w-full bg-white shadow-lg rounded-lg p-8 print:shadow-none print:rounded-none">
   {/* Event Info Block */}
