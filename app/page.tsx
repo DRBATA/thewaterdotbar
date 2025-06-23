@@ -1,6 +1,6 @@
 import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
-import { WaterBarHeader } from "@/components/water-bar-header"
+
 import { MenuDisplay } from "@/components/menu-display" // We will create this next
 
 // Define types for fetched data
@@ -66,7 +66,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen text-stone-800">
-      <WaterBarHeader />
+
       <MenuDisplay initialDrinks={drinks} initialWellnessExperiences={wellnessExperiences} />
     </div>
   )

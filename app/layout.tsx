@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import Logo from "../components/Logo"
 import HalftoneBackground from "../components/HalftoneBackground";
 
 export const metadata: Metadata = {
@@ -35,6 +36,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen">
+        <Logo />
         {/* Optional: pastel gradient background */}
         <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-blue-100 via-pink-100 to-cyan-100 z-[-2]" />
         {/* Animated halftone overlay */}

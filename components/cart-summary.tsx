@@ -100,7 +100,7 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
       <Button
         variant="default"
         size="lg"
-        className={`fixed top-4 right-4 rounded-full shadow-xl bg-amber-700 text-white hover:bg-amber-800 transition-all duration-300 h-14 ${cartItems.length === 0 ? 'px-4 w-14 justify-center' : 'px-6 w-auto'} text-base`}
+        className={`fixed top-4 right-4 rounded-full shadow-lg bg-pink-400/90 text-white hover:bg-pink-500 transition-all duration-300 py-3 ${cartItems.length === 0 ? 'px-4 w-14 justify-center' : 'px-6 w-auto'} text-base font-semibold`}
         onClick={handleCartButtonClick}
         aria-label={cartItems.length === 0 ? 'Open cart' : 'View cart with items'}
       >
