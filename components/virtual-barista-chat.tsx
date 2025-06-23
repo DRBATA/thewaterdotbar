@@ -85,16 +85,24 @@ export function VirtualBaristaChat() {
   // Collapsed chat bubble view
   if (!isExpanded) {
     return (
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-        <Button
-          onClick={toggleChat}
-          aria-label="Open chat"
-          className="rounded-full px-6 py-3 bg-pink-400/90 hover:bg-pink-500 text-white shadow-lg flex items-center gap-2 font-bold text-base"
-        >
-          <MessageSquare className="size-5" />
-          Upgrade your rave
-        </Button>
-      </div>
+      <>
+        {/* Large barista visual positioned behind the call-to-action */}
+        <img
+          src="/barista.png"
+          alt="Virtual Barista"
+          className="fixed bottom-0 left-1/2 -translate-x-1/2 w-48 md:w-64 z-40 pointer-events-none select-none"
+        />
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+          <Button
+            onClick={toggleChat}
+            aria-label="Open chat"
+            className="rounded-full px-6 py-3 bg-pink-400/90 hover:bg-pink-500 text-white shadow-lg flex items-center gap-2 font-bold text-base"
+          >
+            <MessageSquare className="size-5" />
+            Upgrade your rave
+          </Button>
+        </div>
+      </>
     )
   }
 
@@ -111,7 +119,7 @@ export function VirtualBaristaChat() {
             </Avatar>
             <div>
               <h3 className="text-lg font-semibold text-amber-800">Virtual Barista</h3>
-              <p className="text-sm text-stone-500">Here to help with your Morning Party experience!</p>
+              <p className="text-sm text-stone-500">+ adds to cart (top-right) • Tags filter menu</p>
             </div>
           </div>
           <Button variant="ghost" size="icon" onClick={toggleChat} className="text-stone-500 hover:text-stone-700">
