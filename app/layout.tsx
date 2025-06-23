@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 import Logo from "../components/Logo"
 import HalftoneBackground from "../components/HalftoneBackground";
+import { FilterProvider } from "../context/filter-context";
+import FilterBar from "../components/FilterBar";
 
 export const metadata: Metadata = {
   title: 'The Water Bar x Johny Dar | AI Morning Party',
@@ -36,15 +38,19 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen">
-        <Logo />
+        
         {/* Optional: pastel gradient background */}
         <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-blue-100 via-pink-100 to-cyan-100 z-[-2]" />
         {/* Animated halftone overlay */}
         <HalftoneBackground />
         {/* Main content */}
-        <div className="relative z-10">
-          {children}
-        </div>
+        <FilterProvider>
+          <Logo />
+          <FilterBar />
+          <div className="relative z-10">
+            {children}
+          </div>
+        </FilterProvider>
       </body>
     </html>
   )

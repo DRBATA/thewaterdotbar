@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useChat } from "ai/react"
 import { logEvent } from "@/lib/analytics"
+import { useFilters } from "@/context/filter-context"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,9 +14,40 @@ export function VirtualBaristaChat() {
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   
+  const { setActiveTags, setSuggestedTags } = useFilters()
+
+  // On first render, populate pill bar with a comprehensive starter set
+  useEffect(() => {
+    const initial = [
+      "aoi",
+      "morning",
+      "sparkling",
+      "aura",
+      "coffee",
+      "ginger",
+      "copper",
+      "perrier",
+      "water",
+      "chaga",
+    ] as string[]
+    setSuggestedTags(initial)
+  }, [])
+
   const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
     api: "/api/chat",
-    onFinish: () => {
+    onFinish: (aiMessage) => {
+        // Simple heuristic: if AI wants to suggest tags, it can include a pattern [[tags:tag1,tag2]]
+        const tagPattern = /\[\[tags:([\w, ]+)]]/i
+        const match = aiMessage.content.match(tagPattern)
+        if (match) {
+          const tags = match[1].split(/[, ]+/).filter(Boolean)
+          setSuggestedTags(tags)
+          setActiveTags(tags)
+          // remove directive from displayed message
+          const cleaned = aiMessage.content.replace(tagPattern, '').trim()
+          setMessages(prev => prev.map(m => m.id === aiMessage.id ? { ...m, content: cleaned } : m))
+        }
+
       if (!hasSentFirstMessage) {
         logEvent({ event_name: "chat_started", step_name: "barista_chat" })
         setHasSentFirstMessage(true)
@@ -41,7 +73,7 @@ export function VirtualBaristaChat() {
       }
     }
   }, [messages, isExpanded]);
-  
+
   const toggleChat = () => {
     setIsExpanded(!isExpanded)
     logEvent({

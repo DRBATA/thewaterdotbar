@@ -5,6 +5,7 @@ import { MenuItemCard } from "@/components/menu-item-card"
 import { CartSummary } from "@/components/cart-summary"
 import { Separator } from "@/components/ui/separator"
 import { VirtualBaristaChat } from "@/components/virtual-barista-chat"
+import { useFilters } from "@/context/filter-context"
 import { logEvent } from "@/lib/analytics"
 import type { MenuItem } from "@/app/page" // Import the MenuItem type
 
@@ -22,8 +23,16 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
   const [total, setTotal] = useState<number>(0)
 
   // Use the initial data passed as props
-  const drinks = initialDrinks
-  const wellnessExperiences = initialWellnessExperiences
+  const { activeTags } = useFilters()
+
+  const tagMatch = (item: MenuItem) => {
+    if (activeTags.length === 0) return true
+    const text = `${item.name ?? ''} ${item.description ?? ''}`.toLowerCase()
+    return activeTags.every(tag => text.includes(tag.toLowerCase()))
+  }
+
+  const drinks = initialDrinks.filter(tagMatch)
+  const wellnessExperiences = initialWellnessExperiences.filter(tagMatch)
 
   // Calculate cart total whenever items change
   useEffect(() => {
@@ -120,12 +129,7 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
     <>
       <main className="container mx-auto px-4 py-8">
         <section className="mb-12">
-          <h2
-            className="text-4xl font-bold text-stone-700 mb-8 text-center tracking-tight"
-            style={{ fontFamily: "Playfair Display, serif" }}
-          >
-            Wellness Experiences
-          </h2>
+          
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
             {[...wellnessExperiences]
   .sort((a, b) => (a.price === 0 ? -1 : b.price === 0 ? 1 : 0))
@@ -141,15 +145,10 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
           </div>
         </section>
 
-        <Separator className="my-12 bg-stone-200" />
+        
 
         <section className="mb-24">
-          <h2
-            className="text-4xl font-bold text-stone-700 mb-8 text-center tracking-tight"
-            style={{ fontFamily: "Playfair Display, serif" }}
-          >
-            Our Drinks
-          </h2>
+          
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
             {[...drinks]
   .sort((a, b) => (a.price === 0 ? -1 : b.price === 0 ? 1 : 0))
