@@ -100,13 +100,13 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
       <Button
         variant="default"
         size="lg"
-        className="fixed top-6 right-6 z-50 flex flex-col items-end space-y-2 rounded-full bg-amber-700 text-white hover:bg-amber-800 transition-all duration-300 h-14 shadow-lg shadow-amber-500/50"
+        className={`fixed top-4 right-4 rounded-full shadow-xl bg-amber-700 text-white hover:bg-amber-800 transition-all duration-300 h-14 ${cartItems.length === 0 ? 'px-4 w-14 justify-center' : 'px-6 w-auto'} text-base`}
         onClick={handleCartButtonClick}
         aria-label={cartItems.length === 0 ? 'Open cart' : 'View cart with items'}
       >
         <ShoppingCart className="size-5" />
         {cartItems.length > 0 && (
-          <span className="ml-2 text-lg font-bold">
+          <span className="ml-2">
             View Cart ({cartItems.reduce((acc: number, item: CartItem) => acc + item.quantity, 0)}) - {formatCurrency(total)}
           </span>
         )}
