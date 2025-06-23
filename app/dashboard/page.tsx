@@ -13,27 +13,36 @@ export default async function DashboardPage() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  // Fetch completed order counts per campaign
+  // Fetch completed order counts per campaign (legacy: by source, and enhanced: by utm_campaign if present)
   const { data: campaignCountsRaw, error: campaignCountsError } = await supabase
     .from("analytics_events")
-    .select("utm_campaign")
-    .eq("event_type", "order_completed");
+    .select("source, utm_campaign")
+    .eq("event_name", "order_completed");
 
   if (campaignCountsError) {
     console.error("Error fetching completed order counts:", campaignCountsError);
     return <div>Error loading campaign order summary.</div>;
   }
 
-  // Group and count orders per campaign in JS
-  const campaignCounts: { utm_campaign: string | null; count: number }[] = [];
-  const campaignMap: Record<string, number> = {};
-  (campaignCountsRaw || []).forEach((row: { utm_campaign: string | null }) => {
-    const key = row.utm_campaign || "organic";
-    campaignMap[key] = (campaignMap[key] || 0) + 1;
+  // Group and count orders per source (legacy) and show utm_campaign if present
+  type CampaignCountRow = { source: string | null; utm_campaign: string | null };
+  const campaignMap: Record<string, { count: number, utm_campaigns: Set<string> }> = {};
+  (campaignCountsRaw || []).forEach((row: CampaignCountRow) => {
+    const key = row.source || "unknown";
+    if (!campaignMap[key]) {
+      campaignMap[key] = { count: 0, utm_campaigns: new Set() };
+    }
+    campaignMap[key].count += 1;
+    if (row.utm_campaign) {
+      campaignMap[key].utm_campaigns.add(row.utm_campaign);
+    }
   });
-  for (const [utm_campaign, count] of Object.entries(campaignMap)) {
-    campaignCounts.push({ utm_campaign, count });
-  }
+  const campaignCounts = Object.entries(campaignMap).map(([source, val]) => ({
+    source,
+    count: val.count,
+    utm_campaigns: Array.from(val.utm_campaigns),
+  }));
+  
 
   // Fetch all unique session_id's for each source to count visitors
   const { data: pageViews, error: pageViewError } = await supabase
@@ -62,7 +71,7 @@ export default async function DashboardPage() {
 
   const orderCountMap: Record<string, number> = {};
 (campaignCounts || []).forEach(row => {
-  orderCountMap[row.utm_campaign || "organic"] = row.count;
+  orderCountMap[row.source || "organic"] = row.count;
 });
 
 // Fetch all cart_items and join with cart_headers to get session_id
@@ -159,19 +168,21 @@ const analyticsData: AnalyticsData[] = campaigns.map((campaign) => {
   return (
     <>
       <div style={{ marginBottom: 32 }}>
-        <h2>Completed Orders by Campaign</h2>
+        <h2>Completed Orders by Campaign (All Data)</h2>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              <th style={{ textAlign: 'left', padding: '8px' }}>Campaign</th>
+              <th style={{ textAlign: 'left', padding: '8px' }}>Campaign Source</th>
               <th style={{ textAlign: 'left', padding: '8px' }}># Orders</th>
+              <th style={{ textAlign: 'left', padding: '8px' }}>UTM Campaign(s)</th>
             </tr>
           </thead>
           <tbody>
             {(campaignCounts || []).map(row => (
-              <tr key={row.utm_campaign || 'organic'}>
-                <td style={{ padding: '8px' }}>{row.utm_campaign || 'organic'}</td>
+              <tr key={row.source || 'unknown'}>
+                <td style={{ padding: '8px' }}>{row.source || 'unknown'}</td>
                 <td style={{ padding: '8px' }}>{row.count}</td>
+                <td style={{ padding: '8px' }}>{row.utm_campaigns && row.utm_campaigns.length > 0 ? row.utm_campaigns.join(', ') : '-'}</td>
               </tr>
             ))}
           </tbody>

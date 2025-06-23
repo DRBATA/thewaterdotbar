@@ -8,7 +8,7 @@ import { AnalyticsData } from "./types"
 
 interface DashboardClientProps {
   data: AnalyticsData[];
-  campaignCounts?: { utm_campaign: string | null, count: number }[];
+  campaignCounts?: { source: string; count: number; utm_campaigns: string[] }[];
 }
 
 export function DashboardClient({ data, campaignCounts }: DashboardClientProps) {
@@ -23,19 +23,21 @@ export function DashboardClient({ data, campaignCounts }: DashboardClientProps) 
 
       {campaignCounts && campaignCounts.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold mb-2">Completed Orders by Campaign</h2>
+          <h2 className="text-2xl font-semibold mb-2">Completed Orders by Campaign (All Data)</h2>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Campaign</TableHead>
+                <TableHead>Campaign Source</TableHead>
                 <TableHead># Orders</TableHead>
+                <TableHead>UTM Campaign(s)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {campaignCounts.map((row: { utm_campaign: string | null; count: number }) => (
-                <TableRow key={row.utm_campaign || 'organic'}>
-                  <TableCell>{row.utm_campaign || 'organic'}</TableCell>
+              {campaignCounts.map((row: { source: string; count: number; utm_campaigns: string[] }) => (
+                <TableRow key={row.source || 'unknown'}>
+                  <TableCell>{row.source || 'unknown'}</TableCell>
                   <TableCell>{row.count}</TableCell>
+                  <TableCell>{row.utm_campaigns && row.utm_campaigns.length > 0 ? row.utm_campaigns.join(', ') : '-'}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
