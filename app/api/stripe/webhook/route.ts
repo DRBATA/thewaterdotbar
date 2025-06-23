@@ -26,12 +26,18 @@ export async function POST(req: Request) {
     const session = event.data.object as Stripe.Checkout.Session;
     const { session_id, user_id, utm_campaign } = session.metadata as Record<string, string>;
 
+    // Validate user_id is a UUID or set to null
+    function isUUID(str: string | undefined): str is string {
+      return !!str && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
+    }
+    const safe_user_id = isUUID(user_id) ? user_id : null;
+
     const supabase = await createClient();
 
     // move cart rows into orders table then clear cart (simple SQL in-call)
     const { data: order_id, error } = await supabase.rpc("migrate_cart_to_order", {
       p_session_id: session_id,
-      p_user_id: user_id ?? null,
+      p_user_id: safe_user_id,
       p_stripe_session_id: session.id,
       p_email: session.customer_details?.email,
       p_utm_campaign: utm_campaign ?? null,
