@@ -82,12 +82,12 @@ const { data: cartItemsRaw } = await supabase
 // Fetch all analytics_events to map session_id to utm_campaign
 const { data: analyticsEventsRaw } = await supabase
   .from("analytics_events")
-  .select("session_id, utm_campaign");
+  .select("session_id, source");
 
 // Build a map of session_id => utm_campaign
 const sessionToCampaign: Record<string, string> = {};
 (analyticsEventsRaw || []).forEach(ev => {
-  sessionToCampaign[ev.session_id] = ev.utm_campaign || "organic";
+  sessionToCampaign[ev.session_id] = ev.source || "organic";
 });
 
 // Group cart items by campaign
