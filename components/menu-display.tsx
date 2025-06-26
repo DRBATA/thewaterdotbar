@@ -127,6 +127,41 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
 
   return (
     <>
+      <section className="container mx-auto px-4 py-12 text-center">
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-stone-900">The Morning Party x Johny Dar Experience</h1>
+        <p className="text-lg md:text-xl text-stone-700 mb-6">Dubai’s latest party trend — and your new favorite ritual.</p>
+        <div className="bg-stone-100 rounded-lg p-4 inline-block mb-6 shadow-md">
+            <p className="text-xl font-semibold text-stone-800">
+                Sunday, 29th June | ⏰ 10 AM | 📍Johny Dar Experience, Al Quoz, Dubai
+            </p>
+        </div>
+        
+        <div className="flex flex-col items-center space-y-4 mb-8">
+            <a href="https://www.instagram.com/aoi.rejuvenation/" target="_blank" rel="noopener noreferrer" className="inline-block bg-blue-600 text-white font-bold py-3 px-6 rounded-lg text-lg hover:bg-blue-700 transition-colors shadow-md">
+                In Partnership with AOI Rejuvenation
+            </a>
+            <div className="flex justify-center items-center space-x-6 pt-2">
+                <a href="https://www.instagram.com/thewaterbarglobal/" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">The Water Bar</a>
+                <a href="https://www.instagram.com/johnydarexperience/" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">Johny Dar Experience</a>
+                <a href="https://medium.com/@Asb_14920/a-new-era-of-wellness-and-creativity-inside-the-johny-dar-experience-in-dubai-256e321c9e0d" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">Read the Article</a>
+            </div>
+        </div>
+
+        <div className="w-full max-w-4xl mx-auto rounded-lg overflow-hidden shadow-lg border border-stone-200">
+            <iframe 
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3611.8849265822923!2d55.227652199999994!3d25.139581000000003!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f69006a1bfe73%3A0x61c97157c58f5347!2sJohny%20Dar%20Experience!5e0!3m2!1sen!2suk!4v1750945639448!5m2!1sen!2suk" 
+                width="100%" 
+                height="450" 
+                style={{ border:0 }} 
+                allowFullScreen={true} 
+                loading="lazy" 
+                referrerPolicy="no-referrer-when-downgrade">
+            </iframe>
+        </div>
+      </section>
+
+      <Separator className="my-12" />
+
       <main className="container mx-auto px-4 py-8">
         <section className="mb-12">
           
