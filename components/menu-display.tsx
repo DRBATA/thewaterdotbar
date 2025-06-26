@@ -127,7 +127,7 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
 
   return (
     <>
-      <section className="container mx-auto px-4 py-12 text-center">
+      <section className="container mx-auto px-4 pt-24 pb-12 text-center">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-stone-900">The Morning Party x Johny Dar Experience</h1>
         <p className="text-lg md:text-xl text-stone-700 mb-6">Dubai’s latest party trend — and your new favorite ritual.</p>
         <div className="bg-stone-100 rounded-lg p-4 inline-block mb-6 shadow-md">
