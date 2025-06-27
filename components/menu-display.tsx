@@ -127,16 +127,16 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
 
   return (
     <>
-      <section className="container mx-auto px-4 pt-24 pb-12 text-center">
+      <section className="container mx-auto px-4 pt-24 pb-2 text-center">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-stone-900">The Morning Party x Johny Dar Experience</h1>
         <p className="text-lg md:text-xl text-stone-700 mb-6">Dubai’s first SOBER party trend. Chat with our virtual barista to discover the perfect drinks & wellness experiences for you.</p>
-        <div className="bg-stone-100 rounded-lg p-4 inline-block mb-6 shadow-md">
+        <div className="bg-stone-100 rounded-lg p-4 inline-block mb-2 shadow-md">
             <p className="text-xl font-semibold text-stone-800">
                 Sunday, 29th June | ⏰ 10 AM | 📍Johny Dar Experience, Al Quoz, Dubai
             </p>
         </div>
       </section>
-      <Separator className="my-12" />
+      <Separator className="my-4" />
 
       <main className="container mx-auto px-4 py-8">
         <section className="mb-12">
