@@ -135,13 +135,7 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
                 Sunday, 29th June | ⏰ 10 AM | 📍Johny Dar Experience, Al Quoz, Dubai
             </p>
         </div>
-        
-
-
-
-
       </section>
-
       <Separator className="my-12" />
 
       <main className="container mx-auto px-4 py-8">
