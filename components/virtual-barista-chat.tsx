@@ -57,7 +57,7 @@ export function VirtualBaristaChat() {
       {
         id: "welcome-message",
         role: "assistant",
-        content: "👋 Here for the Morning Party rave? It's FREE! Just add the ticket to cart—no credit card needed to claim your spot!"
+        content: "👋 <strong>Welcome! Your complimentary Frequency Calibration Pass is waiting.</strong> Just tap ➕ on the Free Pass card to claim it—no credit card needed!"
       }
     ]
   })
@@ -99,7 +99,7 @@ export function VirtualBaristaChat() {
             className="rounded-full px-6 py-3 bg-pink-400/90 hover:bg-pink-500 text-white shadow-lg flex items-center gap-2 font-bold text-base"
           >
             <MessageSquare className="size-5" />
-            Click to chat for discounts and more
+            Upgrade your sober party—chat here for perfect hydration pairings!
           </Button>
         </div>
       </>
@@ -118,8 +118,8 @@ export function VirtualBaristaChat() {
               <AvatarFallback>VB</AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="text-lg font-semibold text-amber-800">Chat for Combo tips and discounts </h3>
-              <p className="text-sm text-stone-500">Tap + on item card to add to Cart • Cart top-right • Filter with tags</p>
+              <h3 className="text-lg font-semibold text-amber-800">🎧 Sober Party? Perfect your hydration and wellness experience pairings.</h3>
+              <p className="text-sm text-stone-500">✨ Ask me for science-backed advice or a custom combo.</p>
             </div>
           </div>
           <Button variant="ghost" size="icon" onClick={toggleChat} className="text-stone-500 hover:text-stone-700">
@@ -136,7 +136,11 @@ export function VirtualBaristaChat() {
                   m.role === "user" ? "bg-amber-600 text-white" : "bg-stone-100 text-stone-800"
                 }`}
               >
-                <p className="text-sm whitespace-pre-wrap">{m.content}</p>
+                {m.id === 'welcome-message' ? (
+                  <p className="text-sm whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: m.content }} />
+                ) : (
+                  <p className="text-sm whitespace-pre-wrap">{m.content}</p>
+                )}
               </div>
             </div>
           ))}
@@ -154,7 +158,7 @@ export function VirtualBaristaChat() {
           <Input
             value={input}
             onChange={handleInputChange}
-            placeholder="What's on your mind?"
+            placeholder="clarity, calm, energy, or gut-reset?"
             className="flex-grow focus-visible:ring-amber-500"
           />
           <Button 
