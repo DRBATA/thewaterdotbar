@@ -136,12 +136,11 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
             </p>
         </div>
         
-        <div className="flex flex-col items-center space-y-4 mb-8">
-            <a href="https://www.instagram.com/aoi.rejuvenation/" target="_blank" rel="noopener noreferrer" className="inline-block bg-blue-600 text-white font-bold py-3 px-6 rounded-lg text-lg hover:bg-blue-700 transition-colors shadow-md">
-                In Partnership with AOI Rejuvenation
-            </a>
-          </div>
-       </section>
+
+
+
+
+      </section>
 
       <Separator className="my-12" />
 
@@ -188,6 +187,9 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
         <details className="bg-stone-100 rounded-lg shadow-md p-4">
           <summary className="cursor-pointer font-semibold text-stone-800">About, Partners & Location</summary>
           <div className="mt-4 space-y-6">
+            <a href="https://www.instagram.com/aoi.rejuvenation/" target="_blank" rel="noopener noreferrer" className="inline-block bg-blue-600 text-white font-bold py-3 px-6 rounded-lg text-lg hover:bg-blue-700 transition-colors shadow-md">
+              In Partnership with AOI Rejuvenation
+            </a>
             {/* Social links */}
             <div className="flex flex-wrap justify-center items-center gap-4">
               <a href="https://www.instagram.com/thewaterbarglobal/" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">The Water Bar</a>
