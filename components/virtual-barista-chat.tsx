@@ -99,7 +99,7 @@ export function VirtualBaristaChat() {
             className="rounded-full px-6 py-3 bg-pink-400/90 hover:bg-pink-500 text-white shadow-lg flex items-center gap-2 font-bold text-base"
           >
             <MessageSquare className="size-5" />
-            Tap & Ask for wellness tips
+            Tap to Chat
           </Button>
         </div>
       </>

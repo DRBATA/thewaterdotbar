@@ -140,26 +140,8 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
             <a href="https://www.instagram.com/aoi.rejuvenation/" target="_blank" rel="noopener noreferrer" className="inline-block bg-blue-600 text-white font-bold py-3 px-6 rounded-lg text-lg hover:bg-blue-700 transition-colors shadow-md">
                 In Partnership with AOI Rejuvenation
             </a>
-            <div className="flex flex-wrap justify-center items-center gap-4 pt-2">
-                <a href="https://www.instagram.com/thewaterbarglobal/" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">The Water Bar</a>
-                <a href="https://www.instagram.com/johnydarexperience/" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">Johny Dar Experience</a>
-                <a href="https://medium.com/@Asb_14920/a-new-era-of-wellness-and-creativity-inside-the-johny-dar-experience-in-dubai-256e321c9e0d" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">Medium Article</a>
-                <a href="https://www.magzter.com/stories/newspaper/Khaleej-Times/THE-MORNING-PARTY-OFFERS-A-NEW-WAY-TO-SOCIALISE-IN-DUBAI?srsltid=AfmBOoo_pSMqPBXuVSYRd0Le_6UtzzgsKSlfMwACQzZdLf9m6xW2Dnp8" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">Khaleej Times Feature</a>
-            </div>
-        </div>
-
-        <div className="w-full max-w-4xl mx-auto rounded-lg overflow-hidden shadow-lg border border-stone-200">
-            <iframe 
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3611.8849265822923!2d55.227652199999994!3d25.139581000000003!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f69006a1bfe73%3A0x61c97157c58f5347!2sJohny%20Dar%20Experience!5e0!3m2!1sen!2suk!4v1750945639448!5m2!1sen!2suk" 
-                width="100%" 
-                height="450" 
-                style={{ border:0 }} 
-                allowFullScreen={true} 
-                loading="lazy" 
-                referrerPolicy="no-referrer-when-downgrade">
-            </iframe>
-        </div>
-      </section>
+          </div>
+       </section>
 
       <Separator className="my-12" />
 
@@ -200,6 +182,35 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
           </div>
         </section>
       </main>
+
+      {/* About & Location accordion */}
+      <section className="container mx-auto px-4 mb-24">
+        <details className="bg-stone-100 rounded-lg shadow-md p-4">
+          <summary className="cursor-pointer font-semibold text-stone-800">About, Partners & Location</summary>
+          <div className="mt-4 space-y-6">
+            {/* Social links */}
+            <div className="flex flex-wrap justify-center items-center gap-4">
+              <a href="https://www.instagram.com/thewaterbarglobal/" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">The Water Bar</a>
+              <a href="https://www.instagram.com/johnydarexperience/" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">Johny Dar Experience</a>
+              <a href="https://medium.com/@Asb_14920/a-new-era-of-wellness-and-creativity-inside-the-johny-dar-experience-in-dubai-256e321c9e0d" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">Medium Article</a>
+              <a href="https://www.magzter.com/stories/newspaper/Khaleej-Times/THE-MORNING-PARTY-OFFERS-A-NEW-WAY-TO-SOCIALISE-IN-DUBAI?srsltid=AfmBOoo_pSMqPBXuVSYRd0Le_6UtzzgsKSlfMwACQzZdLf9m6xW2Dnp8" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">Khaleej Times Feature</a>
+            </div>
+
+            {/* Location map */}
+            <div className="w-full max-w-4xl mx-auto rounded-lg overflow-hidden shadow-lg border border-stone-200">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3611.8849265822923!2d55.227652199999994!3d25.139581000000003!2m3!1f1!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f69006a1bfe73%3A0x61c97157c58f5347!2sJohny%20Dar%20Experience!5e0!3m2!1sen!2suk!4v1750945639448!5m2!1sen!2suk"
+                width="100%"
+                height="400"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+          </div>
+        </details>
+      </section>
       <VirtualBaristaChat />
       <CartSummary cartItems={cartItems} total={total} onRemoveItemAction={handleRemoveFromCart} onClearCart={handleClearCart} />
     </>
