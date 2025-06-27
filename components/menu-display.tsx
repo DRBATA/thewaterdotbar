@@ -140,10 +140,11 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
             <a href="https://www.instagram.com/aoi.rejuvenation/" target="_blank" rel="noopener noreferrer" className="inline-block bg-blue-600 text-white font-bold py-3 px-6 rounded-lg text-lg hover:bg-blue-700 transition-colors shadow-md">
                 In Partnership with AOI Rejuvenation
             </a>
-            <div className="flex justify-center items-center space-x-6 pt-2">
+            <div className="flex flex-wrap justify-center items-center gap-4 pt-2">
                 <a href="https://www.instagram.com/thewaterbarglobal/" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">The Water Bar</a>
                 <a href="https://www.instagram.com/johnydarexperience/" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">Johny Dar Experience</a>
-                <a href="https://medium.com/@Asb_14920/a-new-era-of-wellness-and-creativity-inside-the-johny-dar-experience-in-dubai-256e321c9e0d" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">Read the Article</a>
+                <a href="https://medium.com/@Asb_14920/a-new-era-of-wellness-and-creativity-inside-the-johny-dar-experience-in-dubai-256e321c9e0d" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">Medium Article</a>
+                <a href="https://www.magzter.com/stories/newspaper/Khaleej-Times/THE-MORNING-PARTY-OFFERS-A-NEW-WAY-TO-SOCIALISE-IN-DUBAI?srsltid=AfmBOoo_pSMqPBXuVSYRd0Le_6UtzzgsKSlfMwACQzZdLf9m6xW2Dnp8" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">Khaleej Times Feature</a>
             </div>
         </div>
 
