@@ -29,6 +29,9 @@ export function VirtualBaristaChat() {
       "perrier",
       "water",
       "chaga",
+      "sauna",
+      "ice bath",
+      "electrolytes",
     ] as string[]
     setSuggestedTags(initial)
   }, [])
