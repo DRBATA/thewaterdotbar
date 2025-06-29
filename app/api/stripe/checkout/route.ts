@@ -5,6 +5,11 @@ import { cookies, headers } from "next/headers"
 import { getSessionId } from "@/lib/session"
 
 export async function POST(req: Request) {
+  // Block checkout if the event is not live
+  if (process.env.NEXT_PUBLIC_EVENT_LIVE === 'false') {
+    return NextResponse.json({ error: 'The event is over, and we are no longer accepting new orders.' }, { status: 403 });
+  }
+
   const cookieStore = await cookies()
   const supabase = await createClient()
 

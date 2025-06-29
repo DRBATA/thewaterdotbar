@@ -19,6 +19,30 @@ interface MenuDisplayProps {
 }
 
 export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuDisplayProps) {
+  const isEventLive = process.env.NEXT_PUBLIC_EVENT_LIVE !== 'false';
+
+  if (!isEventLive) {
+    return (
+      <>
+        <section className="container mx-auto px-4 pt-24 pb-2 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-stone-900">The Morning Party x Johny Dar Experience</h1>
+          <p className="text-lg md:text-xl text-stone-700 mb-6">Dubai’s first SOBER party trend. Our virtual barista helps you shape your own wellness journey—share your mood, your goals, or just what brings you here.</p>
+          <div className="bg-stone-100 rounded-lg p-4 inline-block mb-2 shadow-md">
+              <p className="text-xl font-semibold text-stone-800">
+                  Sunday, 29th June | ⏰ 10 AM | 📍Johny Dar Experience, Al Quoz, Dubai
+              </p>
+          </div>
+        </section>
+        <Separator className="my-4" />
+        <main className="container mx-auto px-4 py-8 text-center">
+          <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md shadow-lg" role="alert">
+            <h2 className="font-bold text-2xl mb-2">The Event is Now Over</h2>
+            <p className="text-lg">Thank you for joining us! We hope you had a wonderful time. Ordering is now closed.</p>
+          </div>
+        </main>
+      </>
+    );
+  }
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [total, setTotal] = useState<number>(0)
 

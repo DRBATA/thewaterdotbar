@@ -2,6 +2,18 @@
 import { useState } from "react";
 
 export default function ClaimPage() {
+  const isEventLive = process.env.NEXT_PUBLIC_EVENT_LIVE !== 'false';
+
+  if (!isEventLive) {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-6 rounded-md shadow-lg max-w-md mx-auto" role="alert">
+          <h1 className="font-bold text-2xl mb-2">The Event is Now Over</h1>
+          <p className="text-lg">PIN claims are no longer being accepted. Thank you for attending!</p>
+        </div>
+      </main>
+    );
+  }
   const [pin, setPin] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [details, setDetails] = useState<any>(null);

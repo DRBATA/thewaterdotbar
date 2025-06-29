@@ -1,5 +1,6 @@
 import { formatCurrency } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
+import ResendButton from "./resend-button";
 
 export const runtime = "edge";
 
@@ -61,7 +62,7 @@ export default async function GuestList({ searchParams }: { searchParams: Search
       {orders?.length === 0 && <p>No matching orders found.</p>}
       <ul className="space-y-6">
         {orders?.map((order: any) => (
-          <li key={order.id} className="border rounded p-4 bg-white shadow-sm">
+          <li key={order.id} className="border rounded p-4 bg-white shadow-sm relative">
             <div className="flex justify-between mb-2">
               <span className="font-medium">{order.email ?? "No email"}</span>
               <span>{formatCurrency(Number(order.total))}</span>
@@ -80,9 +81,14 @@ export default async function GuestList({ searchParams }: { searchParams: Search
                 </li>
               ))}
             </ul>
-            <p className="text-xs text-stone-500 mt-2">
-              {new Date(order.created_at).toLocaleString()}
-            </p>
+            <div className="flex justify-between items-center mt-3 pt-2 border-t">
+              <p className="text-xs text-stone-500">
+                {new Date(order.created_at).toLocaleString()}
+              </p>
+              {order.email && (
+                <ResendButton orderId={order.id} email={order.email} />
+              )}
+            </div>
           </li>
         ))}
       </ul>
