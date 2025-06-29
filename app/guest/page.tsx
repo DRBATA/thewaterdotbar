@@ -25,7 +25,7 @@ export default async function GuestList({ searchParams }: { searchParams: Search
   const supabase = await createClient();
   let query = supabase
     .from("orders")
-    .select("id, email, total, created_at, order_items:order_items(name, qty)")
+    .select("id, email, total, created_at, order_items:order_items(name, qty, pin_code)")
     .order("created_at", { ascending: false });
 
   // Add search filter if 'q' param exists
@@ -66,10 +66,17 @@ export default async function GuestList({ searchParams }: { searchParams: Search
               <span className="font-medium">{order.email ?? "No email"}</span>
               <span>{formatCurrency(Number(order.total))}</span>
             </div>
-            <ul className="list-disc list-inside text-sm text-stone-700">
+            <ul className="list-disc list-inside text-sm text-stone-700 space-y-2 mt-3">
               {order.order_items.map((item: any, idx: number) => (
                 <li key={idx}>
                   {item.qty}× {item.name}
+                  {item.pin_code && (
+                    <div className="mt-1">
+                      <span className="font-mono text-xs bg-stone-100 p-1 rounded">
+                        PIN: {item.pin_code}
+                      </span>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
