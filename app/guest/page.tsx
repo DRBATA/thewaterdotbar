@@ -1,12 +1,11 @@
 import { formatCurrency } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 
 export const runtime = "edge";
 
 interface SearchParams {
   key?: string;
+  q?: string; // Search query
 }
 
 export default async function GuestList({ searchParams }: { searchParams: SearchParams }) {
@@ -24,19 +23,44 @@ export default async function GuestList({ searchParams }: { searchParams: Search
   }
 
   const supabase = await createClient();
-  const { data: orders, error } = await supabase
+  let query = supabase
     .from("orders")
     .select("id, email, total, created_at, order_items:order_items(name, qty)")
     .order("created_at", { ascending: false });
+
+  // Add search filter if 'q' param exists
+  if (searchParams.q) {
+    query = query.ilike("email", `%${searchParams.q}%`);
+  }
+
+  const { data: orders, error } = await query;
 
   if (error) throw new Error(error.message);
 
   return (
     <main className="p-6 max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Guest Orders</h1>
-      {orders?.length === 0 && <p>No orders yet.</p>}
+
+      {/* Search Form */}
+      <form method="get" className="mb-6">
+        <input type="hidden" name="key" value={searchParams.key} />
+        <div className="flex">
+          <input
+            type="text"
+            name="q"
+            defaultValue={searchParams.q || ""}
+            placeholder="Search by email..."
+            className="w-full p-2 border rounded-l-md shadow-sm"
+          />
+          <button type="submit" className="bg-stone-700 text-white p-2 rounded-r-md">
+            Search
+          </button>
+        </div>
+      </form>
+
+      {orders?.length === 0 && <p>No matching orders found.</p>}
       <ul className="space-y-6">
-        {orders?.map((order) => (
+        {orders?.map((order: any) => (
           <li key={order.id} className="border rounded p-4 bg-white shadow-sm">
             <div className="flex justify-between mb-2">
               <span className="font-medium">{order.email ?? "No email"}</span>
