@@ -56,19 +56,12 @@ export default function BroadcastPage() {
         <p style={styles.text}>
           Send marketing emails to your event guests. Unsubscribed users are automatically excluded.
         </p>
-        <form action={async () => {
-          const result = await sendBroadcast('attendees');
-          // You can optionally display the result message to the user
-          console.log(result.message);
-        }} style={styles.form}>
+        <form action={sendBroadcast.bind(null, 'attendees')} style={styles.form}>
           <h2 style={styles.subtitle}>Attendee Follow-up</h2>
           <p style={styles.description}>Send the "Thanks for coming" email to everyone who claimed a ticket.</p>
           <button type="submit" style={styles.button}>Send to Attendees</button>
         </form>
-        <form action={async () => {
-          const result = await sendBroadcast('non-attendees');
-          console.log(result.message);
-        }} style={styles.form}>
+        <form action={sendBroadcast.bind(null, 'non-attendees')} style={styles.form}>
           <h2 style={styles.subtitle}>Non-Attendee Follow-up</h2>
           <p style={styles.description}>Send the "We missed you" email to everyone who did NOT claim a ticket.</p>
           <button type="submit" style={{...styles.button, ...styles.buttonSecondary}}>Send to Non-Attendees</button>
