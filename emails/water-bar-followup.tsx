@@ -7,6 +7,7 @@ import {
   Heading,
   Html,
   Img,
+  Link,
   Preview,
   Row,
   Section,
@@ -14,6 +15,7 @@ import {
 } from '@react-email/components';
 
 interface WaterBarFollowupEmailProps {
+  userEmail?: string;
   userFirstName?: string;
   whatsAppLink?: string;
 }
@@ -23,9 +25,11 @@ const baseUrl = process.env.VERCEL_URL
   : 'http://localhost:3000';
 
 export const WaterBarFollowupEmail = ({
+  userEmail = 'guest@example.com',
   userFirstName = 'Guest',
   whatsAppLink = 'https://api.whatsapp.com/send?phone=442081336235&text=Hi%20Water%20Bar!%20I%27d%20love%20to%20share%20some%20feedback%20about%20the%20event.',
 }: WaterBarFollowupEmailProps) => {
+  const unsubscribeLink = `${baseUrl}/unsubscribe?email=${encodeURIComponent(userEmail)}`;
   return (
     <Html>
       <Head />
@@ -119,6 +123,10 @@ export const WaterBarFollowupEmail = ({
             }}
           >
             © 2024 | The Water Bar | Dubai, UAE
+            <br />
+            <Link href={unsubscribeLink} style={unsubscribeLinkStyle}>
+              Unsubscribe
+            </Link>
           </Text>
         </Container>
       </Body>
@@ -174,4 +182,9 @@ const imageColumn = {
 const imageStyle = {
   width: '100%',
   borderRadius: '8px',
+};
+
+const unsubscribeLinkStyle = {
+  color: '#999',
+  textDecoration: 'underline',
 };
