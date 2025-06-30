@@ -6,7 +6,8 @@ import { revalidatePath } from 'next/cache';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-async function sendBroadcast(audience: 'attendees' | 'non-attendees') {
+// This function does the actual work but returns an object
+async function sendBroadcastImpl(audience: 'attendees' | 'non-attendees') {
   'use server';
 
   const supabase = await createClient();
@@ -41,11 +42,23 @@ async function sendBroadcast(audience: 'attendees' | 'non-attendees') {
   try {
     await Promise.all(emailPromises);
     revalidatePath('/admin/broadcast');
-    return { success: true, message: `Successfully sent emails to ${emails.length} ${audience}.` };
+    return { success: true, message: `Successfully sent emails to ${emails?.length || 0} ${audience}.` };
   } catch (e) {
     console.error('Failed to send emails:', e);
     return { success: false, message: 'An error occurred while sending emails.' };
   }
+}
+
+// This wrapper function is compatible with Next.js form actions
+async function sendBroadcast(audience: 'attendees' | 'non-attendees', formData: FormData) {
+  'use server';
+  
+  const result = await sendBroadcastImpl(audience);
+  
+  // You can do something with the result if needed
+  console.log(result.message);
+  
+  // No return value makes TypeScript happy
 }
 
 export default function BroadcastPage() {
