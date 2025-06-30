@@ -1,20 +1,22 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 
-export default function UnsubscribePage() {
+// This component contains the actual logic and uses the client-side hooks.
+const UnsubscribeForm = () => {
   const searchParams = useSearchParams();
   const email = searchParams.get('email');
-  const [status, setStatus] = useState('loading'); // 'loading', 'success', 'error'
+  const [status, setStatus] = useState('unsubscribing'); // 'unsubscribing', 'success', 'error', 'invalid'
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!email) {
-      setStatus('error');
+      setStatus('invalid');
       return;
     }
 
-    const unsubscribe = async () => {
+    const handleUnsubscribe = async () => {
       try {
         const response = await fetch('/api/unsubscribe', {
           method: 'POST',
@@ -24,43 +26,56 @@ export default function UnsubscribePage() {
           body: JSON.stringify({ email }),
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to unsubscribe');
-        }
+        const result = await response.json();
 
-        setStatus('success');
-      } catch (error) {
-        console.error(error);
+        if (response.ok) {
+          setStatus('success');
+        } else {
+          setStatus('error');
+          setError(result.error || 'An unexpected error occurred.');
+        }
+      } catch (err) {
         setStatus('error');
+        setError('Failed to connect to the server.');
       }
     };
 
-    unsubscribe();
+    handleUnsubscribe();
   }, [email]);
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h1 style={styles.title}>The Water Bar</h1>
-        {
-          status === 'loading' && (
-            <p style={styles.text}>Unsubscribing you now...</p>
-          )
-        }
-        {
-          status === 'success' && (
-            <p style={styles.text}>You have been successfully unsubscribed from our marketing emails.</p>
-          )
-        }
-        {
-          status === 'error' && (
-            <p style={styles.text}>Something went wrong. Please try again or contact support.</p>
-          )
-        }
-      </div>
+    <div style={styles.card}>
+      <h1 style={styles.title}>Unsubscribe</h1>
+      {status === 'unsubscribing' && <p style={styles.text}>Processing your request...</p>}
+      {status === 'success' && (
+        <p style={styles.text}>
+          You have been successfully unsubscribed. You will no longer receive marketing emails from us.
+        </p>
+      )}
+      {status === 'error' && (
+        <p style={{ ...styles.text, ...styles.errorText }}>
+          <strong>Error:</strong> {error}
+        </p>
+      )}
+      {status === 'invalid' && (
+        <p style={{ ...styles.text, ...styles.errorText }}>
+          Invalid unsubscribe link. Please check the URL and try again.
+        </p>
+      )}
     </div>
   );
-}
+};
+
+// The main page component now wraps the client component in Suspense.
+const UnsubscribePage = () => {
+  return (
+    <div style={styles.container}>
+      <Suspense fallback={<div style={styles.card}><p style={styles.text}>Loading...</p></div>}>
+        <UnsubscribeForm />
+      </Suspense>
+    </div>
+  );
+};
 
 const styles = {
   container: {
@@ -87,5 +102,8 @@ const styles = {
   text: {
     fontSize: '16px',
     color: '#374151',
+  },
+  errorText: {
+    color: '#d9534f', // A standard error red color
   },
 };
