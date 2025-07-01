@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -18,6 +19,7 @@ interface CampaignResult {
 export default function EmailCampaignsPage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [result, setResult] = useState<CampaignResult | null>(null);
+  const [testEmail, setTestEmail] = useState<string>('');
 
   const sendCampaign = async (audience: 'attendees' | 'no-shows', testMode: boolean = false) => {
     setIsLoading(true);
@@ -29,7 +31,11 @@ export default function EmailCampaignsPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ audience, testMode }),
+        body: JSON.stringify({ 
+          audience, 
+          testMode,
+          testEmail: testMode ? testEmail : undefined // Only send test email when in test mode
+        }),
       });
       
       const data = await response.json();
@@ -58,6 +64,24 @@ export default function EmailCampaignsPage() {
   return (
     <div className="container mx-auto py-10">
       <h1 className="text-3xl font-bold mb-6">Email Campaigns</h1>
+      
+      <div className="mb-6 p-4 border rounded-md bg-gray-50">
+        <h2 className="text-lg font-medium mb-2">Test Configuration</h2>
+        <div className="flex items-center gap-4">
+          <div className="flex-grow">
+            <Input
+              type="email"
+              placeholder="Your test email address"
+              value={testEmail}
+              onChange={(e) => setTestEmail(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <div className="text-sm text-gray-500">
+            Using a test email will override database recipients
+          </div>
+        </div>
+      </div>
       
       {result && (
         <Alert className={`mb-6 ${result.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>

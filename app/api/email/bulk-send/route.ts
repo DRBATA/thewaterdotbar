@@ -20,15 +20,14 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 // Define recipient type
 type Recipient = { email: string; first_name?: string };
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    const { audience, testMode } = await req.json();
+    const { audience, testMode, testEmail } = await request.json();
     
     if (!audience || !['attendees', 'no-shows'].includes(audience)) {
       return NextResponse.json({ error: 'Invalid audience type' }, { status: 400 });
     }
     
-    // Initialize Resend
     const resend = new Resend(process.env.RESEND_API_KEY);
     if (!process.env.RESEND_API_KEY) {
       return NextResponse.json({ error: 'Missing Resend API key' }, { status: 500 });
@@ -40,11 +39,20 @@ export async function POST(req: Request) {
     // Fetch recipients based on audience type
     let recipients: Recipient[] = [];
     
-    if (audience === 'attendees') {
+    // Override with test email if provided (much easier way to test)
+    if (testEmail) {
+      // Use the provided test email instead of querying the database
+      recipients = [{
+        email: testEmail,
+        first_name: 'Test User'
+      }];
+    }
+    // Only query the database if we're not using a test email
+    else if (audience === 'attendees') {
       // Fetch users who attended (have orders with at least one claimed_at item)
       const { data: attendeesData, error: attendeesError } = await supabase
         .from('order_items')
-        .select('orders(email, first_name)') // Note: Supabase returns an array for nested selects
+        .select('orders(email)') // Only select email since first_name doesn't exist
         .not('claimed_at', 'is', null)
         .limit(testMode ? 3 : 1000);
       
@@ -56,11 +64,11 @@ export async function POST(req: Request) {
       recipients = attendeesData
         .filter(item => Array.isArray(item.orders) ? item.orders.length > 0 : !!item.orders)
         .map(item => {
-          // When using the syntax orders(email,first_name) Supabase returns an array of matching parent rows
+          // When using the syntax orders(email) Supabase returns an array of matching parent rows
           const orderInfo = Array.isArray(item.orders) ? item.orders[0] : item.orders;
           return {
             email: (orderInfo as any).email,
-            first_name: ((orderInfo as any).first_name ?? 'Valued Guest') as string,
+            first_name: 'Valued Guest' // Hard-code since first_name column doesn't exist
           };
         });
 
@@ -81,7 +89,7 @@ export async function POST(req: Request) {
       // 2. Get all orders whose ID is NOT in the claimed list.
       const { data: noShows, error: noShowsError } = await supabase
           .from('orders')
-          .select('email, first_name')
+          .select('email')
           .not('id', 'in', `(${claimedOrderIds.join(',')})`)
           .limit(testMode ? 3 : 1000);
       
@@ -91,7 +99,7 @@ export async function POST(req: Request) {
       
       recipients = noShows.map(order => ({ 
         email: order.email,
-        first_name: order.first_name || 'Valued Guest'
+        first_name: 'Valued Guest' // Hard-code since first_name column doesn't exist
       }));
     }
     
