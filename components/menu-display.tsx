@@ -111,10 +111,20 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
 
   const handleAddToCart = async (item: MenuItem) => {
     logEvent({ event_name: "add_to_cart", step_name: "cart", metadata: { itemId: item.id, itemName: item.name } })
+
+    // Check if the item is the "Triple Threat Pass" bundle
+    const isBundle = item.name === 'Triple Threat Pass';
+    const bundle_components = isBundle
+      ? ['ticket.entry', 'ticket.drink', 'ticket.wellness.flex']
+      : undefined;
+
     await fetch("/api/cart/add", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ itemId: item.id }),
+      body: JSON.stringify({
+        itemId: item.id,
+        bundle_components // This will be included if it's a bundle, otherwise undefined
+      }),
     })
     // optimistic UI update
     setCartItems((prev) => {

@@ -42,10 +42,11 @@ export const WaterBarMissedYouEmail = ({
           <Section style={content}>
             <Row>
               <Img
-                src={`${baseUrl}/drinks/instareelCOVER.png`}
-                width="560"
-                alt="The Water Bar Event"
-                style={{ maxWidth: '100%', margin: '20px 0' }}
+                src={`${baseUrl}/drinks/insta3.png`}
+                width="600"
+                height="400"
+                alt="Choose Your Champion - Kyoto Kooler vs The Alchemist"
+                className="mx-auto rounded-t-lg"
               />
             </Row>
             <Row style={{ paddingBottom: '0' }}>
@@ -71,11 +72,29 @@ export const WaterBarMissedYouEmail = ({
                 </Heading>
 
                 <Text style={paragraph}>
-                  We hope everything is okay. Here's a little glimpse of what you missed.
+                  We hope everything is okay. Here's a little glimpse of what you missed. We'd love to see you at our next event!
                 </Text>
                 <Text style={{ ...paragraph, marginTop: -5 }}>
-                  We'd love to see you at our next event!
+                  P.S. We've just launched two new champion mocktails: the serene <strong>Kyoto Kooler</strong> (a sparkling matcha fusion) and the energizing <strong>The Alchemist</strong> (a zesty cold-brew creation). Come find your new favorite!
                 </Text>
+                <Section style={{ textAlign: 'center', marginTop: '32px', marginBottom: '32px' }}>
+                  <Button
+                    pX={20}
+                    pY={12}
+                    style={{ backgroundColor: '#5E6AD2', color: 'white', borderRadius: '4px', marginRight: '10px', textDecoration: 'none', display: 'inline-block' }}
+                    href={`https://thewater.bar/concierge?utm_campaign=sorrywemissedyou`}
+                  >
+                    Chat with our Wellness Concierge
+                  </Button>
+                  <Button
+                    pX={20}
+                    pY={12}
+                    style={{ backgroundColor: '#0095ff', color: 'white', borderRadius: '4px', textDecoration: 'none', display: 'inline-block' }}
+                    href={`https://thewater.bar/menu?utm_campaign=sorrywemissedyou`}
+                  >
+                    Get the Triple Threat Pass (Entry+Mocktail+Experience)(135 DHS)
+                  </Button>
+                </Section>
               </Column>
             </Row>
             <Row style={{ paddingTop: '20px' }}>
