@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
-import { WaterBarMissedYouEmail } from '@/emails/water-bar-missed-you';
+
 
 interface SendResult {
   success?: boolean;
@@ -94,8 +94,12 @@ export default function ManualSendPage() {
 
         <div>
           <h2 className="text-xl font-bold mb-4">Live Email Preview</h2>
-          <div className="border rounded-lg p-4 bg-gray-50 overflow-auto">
-            <WaterBarMissedYouEmail userFirstName="Valued Guest" />
+          <div className="border rounded-lg bg-white overflow-hidden shadow-sm">
+            <iframe
+              src="/api/email/preview?template=missed-you"
+              className="w-full h-[700px] border-0"
+              title="Email Preview"
+            />
           </div>
         </div>
       </div>
