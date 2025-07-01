@@ -73,23 +73,20 @@ export const WaterBarMissedYouEmail = ({
                 </Heading>
 
                 <Text style={paragraph}>
-                  We hope everything is okay. Here's a little glimpse of what you missed. We'd love to see you at our next event!
+                  We hope everything is okay. You were missed at our last event, but the good news is the next one is just around the corner!
                 </Text>
                 <Text style={{ ...paragraph, marginTop: -5 }}>
-                  P.S. We've just launched two new champion mocktails: the serene <strong>Kyoto Kooler</strong> (a sparkling matcha fusion) and the energizing <strong>The Alchemist</strong> (a zesty cold-brew creation). Come find your new favorite!
+ the next <strong>Morning Party x Johny Dar Experience</strong> on <strong>Sunday, July 6th at 11 AM</strong>. The <strong>Triple Threat Pass</strong> is back for 135 DHS, including gallery access with a live DJ, a signature mocktail, and your choice of a Fire, Ice, or Massage experience.                  Join us for
+                </Text>
+                <Text style={{ ...paragraph, marginTop: '16px' }}>
+                  P.S. Don't forget to try our two new champion mocktails: the serene <strong>Kyoto Kooler</strong> (a sparkling matcha fusion) and the energizing <strong>The Alchemist</strong> (a zesty cold-brew creation).
                 </Text>
                 <Section style={{ textAlign: 'center', marginTop: '32px', marginBottom: '32px' }}>
                   <Button
-                    style={{ backgroundColor: '#5E6AD2', color: 'white', borderRadius: '4px', marginRight: '10px', textDecoration: 'none', display: 'inline-block', padding: '12px 20px' }}
-                    href={`${baseUrl}/?utm_campaign=sorrywemissedyou`}
+                    style={{ backgroundColor: '#5E6AD2', color: 'white', borderRadius: '4px', textDecoration: 'none', display: 'inline-block', padding: '12px 20px' }}
+                    href={`${baseUrl}/?utm_campaign=sorrywemissedyou-july6`}
                   >
                     Chat with our Wellness Concierge
-                  </Button>
-                  <Button
-                    style={{ backgroundColor: '#0095ff', color: 'white', borderRadius: '4px', textDecoration: 'none', display: 'inline-block', padding: '12px 20px' }}
-                    href={`${baseUrl}/?add-to-cart=d6fd6dcb-e4f2-4f12-b7d4-17fdbb7d8dc8&utm_campaign=sorrywemissedyou`}
-                  >
-                    Get the Triple Threat Pass (Entry+Mocktail+Experience)(135 DHS)
                   </Button>
                 </Section>
               </Column>
