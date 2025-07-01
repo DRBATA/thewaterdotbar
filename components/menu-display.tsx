@@ -19,7 +19,7 @@ interface MenuDisplayProps {
 }
 
 export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuDisplayProps) {
-  const isEventLive = process.env.NEXT_PUBLIC_EVENT_LIVE !== 'false';
+  const isEventLive = process.env.NEXT_PUBLIC_EVENT_LIVE === 'true';
 
   if (!isEventLive) {
     return (

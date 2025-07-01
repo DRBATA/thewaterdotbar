@@ -15,6 +15,7 @@ import {
 } from '@react-email/components';
 
 interface WaterBarMissedYouEmailProps {
+  userFirstName?: string;
   userEmail?: string;
   whatsAppLink?: string;
 }
@@ -24,6 +25,7 @@ const baseUrl = process.env.NODE_ENV === 'production'
   : 'http://localhost:3000';
 
 export const WaterBarMissedYouEmail = ({
+  userFirstName = 'Valued Guest',
   userEmail = 'guest@example.com',
   whatsAppLink = 'https://api.whatsapp.com/send?phone=442081336235&text=Hi%20Water%20Bar!',
 }: WaterBarMissedYouEmailProps) => {
@@ -42,7 +44,7 @@ export const WaterBarMissedYouEmail = ({
           <Section style={content}>
             <Row>
               <Img
-                src={`${baseUrl}/drinks/insta3.png`}
+                src={`${baseUrl}/drinks/insta3.png?v=2`}
                 width="600"
                 height="400"
                 alt="Choose Your Champion - Kyoto Kooler vs The Alchemist"
@@ -58,7 +60,7 @@ export const WaterBarMissedYouEmail = ({
                     textAlign: 'center',
                   }}
                 >
-                  We missed you!
+                  We missed you, {userFirstName}!
                 </Heading>
                 <Heading
                   as="h2"
@@ -79,17 +81,13 @@ export const WaterBarMissedYouEmail = ({
                 </Text>
                 <Section style={{ textAlign: 'center', marginTop: '32px', marginBottom: '32px' }}>
                   <Button
-                    pX={20}
-                    pY={12}
-                    style={{ backgroundColor: '#5E6AD2', color: 'white', borderRadius: '4px', marginRight: '10px', textDecoration: 'none', display: 'inline-block' }}
+                    style={{ backgroundColor: '#5E6AD2', color: 'white', borderRadius: '4px', marginRight: '10px', textDecoration: 'none', display: 'inline-block', padding: '12px 20px' }}
                     href={`https://thewater.bar/concierge?utm_campaign=sorrywemissedyou`}
                   >
                     Chat with our Wellness Concierge
                   </Button>
                   <Button
-                    pX={20}
-                    pY={12}
-                    style={{ backgroundColor: '#0095ff', color: 'white', borderRadius: '4px', textDecoration: 'none', display: 'inline-block' }}
+                    style={{ backgroundColor: '#0095ff', color: 'white', borderRadius: '4px', textDecoration: 'none', display: 'inline-block', padding: '12px 20px' }}
                     href={`https://thewater.bar/menu?utm_campaign=sorrywemissedyou`}
                   >
                     Get the Triple Threat Pass (Entry+Mocktail+Experience)(135 DHS)

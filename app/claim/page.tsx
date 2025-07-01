@@ -2,7 +2,7 @@
 import { useState } from "react";
 
 export default function ClaimPage() {
-  const isEventLive = process.env.NEXT_PUBLIC_EVENT_LIVE !== 'false';
+  const isEventLive = process.env.NEXT_PUBLIC_EVENT_LIVE === 'true';
 
   if (!isEventLive) {
     return (
@@ -19,6 +19,7 @@ export default function ClaimPage() {
   const [details, setDetails] = useState<any>(null);
   const [emailOk, setEmailOk] = useState(false);
   const [tokenOk, setTokenOk] = useState(false);
+  const [redemptionChoice, setRedemptionChoice] = useState<string>("");
 
   const fetchDetails = async () => {
     setStatus("loading");
@@ -37,7 +38,11 @@ export default function ClaimPage() {
   const completeClaim = async () => {
     if (!emailOk || !tokenOk) return;
     setStatus("saving");
-    const res = await fetch(`/api/claim/${pin}`, { method: "POST" });
+    const res = await fetch(`/api/claim/${pin}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ redemption_choice: redemptionChoice }),
+    });
     const json = await res.json();
     if (res.ok) {
       setStatus("done");
@@ -81,6 +86,41 @@ export default function ClaimPage() {
           <p className="text-green-700 text-xl font-semibold text-center">PIN {details.pin_code} accepted</p>
           <p><strong>Guest email:</strong> {details.orders?.email}</p>
           <p><strong>Item:</strong> {details.name} (qty {details.qty})</p>
+
+          {details.name === 'ticket.drink' && (
+            <div className="py-2">
+              <label htmlFor="drink-choice" className="block text-sm font-medium text-gray-700">Select Drink</label>
+              <select
+                id="drink-choice"
+                value={redemptionChoice}
+                onChange={(e) => setRedemptionChoice(e.target.value)}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              >
+                <option value="" disabled>-- Choose a drink --</option>
+                <option value="Kyoto Kooler">Kyoto Kooler</option>
+                <option value="The Alchemist">The Alchemist</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          )}
+
+          {details.name === 'ticket.wellness.flex' && (
+            <div className="py-2">
+              <label htmlFor="wellness-choice" className="block text-sm font-medium text-gray-700">Select Wellness Experience</label>
+              <select
+                id="wellness-choice"
+                value={redemptionChoice}
+                onChange={(e) => setRedemptionChoice(e.target.value)}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              >
+                <option value="" disabled>-- Choose an experience --</option>
+                <option value="Breathwork">Breathwork</option>
+                <option value="Meditation">Meditation</option>
+                <option value="Yoga">Yoga</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          )}
           <div className="space-y-2 py-2">
             <label className="flex items-center space-x-2">
               <input type="checkbox" checked={emailOk} onChange={() => setEmailOk(!emailOk)} />

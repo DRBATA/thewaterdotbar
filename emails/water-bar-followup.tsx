@@ -43,7 +43,7 @@ export const WaterBarFollowupEmail = ({
           <Section style={content}>
             <Row>
               <Img
-                src={`${baseUrl}/drinks/insta3.png`}
+                src={`${baseUrl}/drinks/insta3.png?v=2`}
                 width="600"
                 height="400"
                 alt="Choose Your Champion - Kyoto Kooler vs The Alchemist"
@@ -80,17 +80,13 @@ export const WaterBarFollowupEmail = ({
                 </Text>
                 <Section style={{ textAlign: 'center', marginTop: '32px', marginBottom: '32px' }}>
                   <Button
-                    pX={20}
-                    pY={12}
-                    style={{ backgroundColor: '#5E6AD2', color: 'white', borderRadius: '4px', marginRight: '10px', textDecoration: 'none', display: 'inline-block' }}
+                    style={{ backgroundColor: '#5E6AD2', color: 'white', borderRadius: '4px', marginRight: '10px', textDecoration: 'none', display: 'inline-block', padding: '12px 20px' }}
                     href={`https://thewater.bar/concierge?utm_campaign=thankyou-attendee`}
                   >
                     Chat with our Wellness Concierge
                   </Button>
                   <Button
-                    pX={20}
-                    pY={12}
-                    style={{ backgroundColor: '#0095ff', color: 'white', borderRadius: '4px', textDecoration: 'none', display: 'inline-block' }}
+                    style={{ backgroundColor: '#0095ff', color: 'white', borderRadius: '4px', textDecoration: 'none', display: 'inline-block', padding: '12px 20px' }}
                     href={`https://thewater.bar/menu?utm_campaign=thankyou-attendee`}
                   >
                     Get the Triple Threat Pass (Entry+Mocktail+Experience) (135 DHS)
