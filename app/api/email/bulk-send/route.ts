@@ -73,12 +73,12 @@ export async function POST(request: Request) {
         });
 
     } else { // audience === 'no-shows'
-      // 1. Get all order_ids that have at least one claimed item.
+      // 1. Get all order_ids that have at least one claimed item, ensuring order_id is not null.
       const { data: claimedOrderItems, error: claimedError } = await supabase
           .from('order_items')
           .select('order_id')
           .not('claimed_at', 'is', null)
-          .neq('order_id', null);
+          .not('order_id', 'is', null); // Explicitly filter out null order_ids
 
       if (claimedError) {
           return NextResponse.json({ error: `Error fetching claimed orders: ${claimedError.message}` }, { status: 500 });
@@ -87,11 +87,18 @@ export async function POST(request: Request) {
       const claimedOrderIds = [...new Set(claimedOrderItems.map(item => item.order_id))];
 
       // 2. Get all orders whose ID is NOT in the claimed list.
-      const { data: noShows, error: noShowsError } = await supabase
-          .from('orders')
-          .select('email')
-          .not('id', 'in', `(${claimedOrderIds.join(',')})`)
-          .limit(testMode ? 3 : 1000);
+      let noShowsQuery = supabase
+        .from('orders')
+        .select('email')
+        .limit(testMode ? 3 : 1000);
+
+      // If there are claimed orders, exclude them from the no-show list.
+      // If no orders were claimed, all orders are considered no-shows.
+      if (claimedOrderIds.length > 0) {
+        noShowsQuery = noShowsQuery.not('id', 'in', `(${claimedOrderIds.join(',')})`);
+      }
+      
+      const { data: noShows, error: noShowsError } = await noShowsQuery;
       
       if (noShowsError) {
         return NextResponse.json({ error: `Error fetching no-shows: ${noShowsError.message}` }, { status: 500 });
