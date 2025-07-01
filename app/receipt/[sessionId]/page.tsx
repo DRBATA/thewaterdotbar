@@ -125,16 +125,30 @@ export default async function TicketPage({ params }: TicketPageProps) {
                     </div>
                     <p className="mt-1 text-sm text-gray-500">
                       Quantity: {item.qty} {formatCurrency(item.price)}\n                      <br />\n                      {item.pin_code && (
-  <div className="mt-4">
-    <div className="text-center">
-      <div className="inline-block px-6 py-3 rounded-lg bg-blue-100 border-2 border-blue-400">
-        <div className="text-lg font-bold text-blue-800 tracking-widest">Your PIN</div>
-        <div className="text-3xl font-extrabold text-blue-900 mt-1 mb-1" style={{ letterSpacing: '0.15em' }}>{item.pin_code}</div>
-      </div>
-      <div className="mt-2 text-blue-700 font-medium text-sm">You’ll need this PIN to claim your purchase at The Water Bar. Please have it ready.</div>
-    </div>
-  </div>
-)}
+                        <div className="mt-4">
+                          <div className="text-center">
+                            {Array.isArray(item.pin_code) ? (
+                              <div className="space-y-3">
+                                {item.pin_code.map((pin: string, index: number) => {
+                                  const pinLabels = ['Entry', 'Drink', 'Wellness']; // Assuming fixed order
+                                  return (
+                                    <div key={pin} className="inline-block px-6 py-3 rounded-lg bg-blue-100 border-2 border-blue-400 mr-2">
+                                      <div className="text-lg font-bold text-blue-800 tracking-widest">{pinLabels[index] || 'Your'} PIN</div>
+                                      <div className="text-3xl font-extrabold text-blue-900 mt-1 mb-1" style={{ letterSpacing: '0.15em' }}>{pin}</div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="inline-block px-6 py-3 rounded-lg bg-blue-100 border-2 border-blue-400">
+                                <div className="text-lg font-bold text-blue-800 tracking-widest">Your PIN</div>
+                                <div className="text-3xl font-extrabold text-blue-900 mt-1 mb-1" style={{ letterSpacing: '0.15em' }}>{item.pin_code}</div>
+                              </div>
+                            )}
+                            <div className="mt-2 text-blue-700 font-medium text-sm">You’ll need these PINs to claim your purchases at The Water Bar. Please have them ready.</div>
+                          </div>
+                        </div>
+                      )}
                     </p>
                   </div>
                 </div>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { Resend } from 'resend';
+import { WaterBarOrderConfirmationEmail } from '@/emails/water-bar-order-confirmation';
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 
@@ -26,7 +27,6 @@ export async function POST(req: Request) {
     const session = event.data.object as Stripe.Checkout.Session;
     const { session_id, user_id, utm_campaign } = session.metadata as Record<string, string>;
 
-    // Validate user_id is a UUID or set to null
     function isUUID(str: string | undefined): str is string {
       return !!str && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
     }
@@ -34,8 +34,7 @@ export async function POST(req: Request) {
 
     const supabase = await createClient();
 
-    // move cart rows into orders table then clear cart (simple SQL in-call)
-    const { data: order_id, error } = await supabase.rpc("migrate_cart_to_order", {
+    const { data: order_id, error: rpcError } = await supabase.rpc("migrate_cart_to_order", {
       p_session_id: session_id,
       p_user_id: safe_user_id,
       p_stripe_session_id: session.id,
@@ -43,16 +42,41 @@ export async function POST(req: Request) {
       p_utm_campaign: utm_campaign ?? null,
     });
 
-    if (error) {
-      console.error("Supabase RPC Error:", JSON.stringify(error, null, 2));
-      return NextResponse.json(
-        { error: "Error processing order.", details: error },
-        { status: 500 }
-      );
+    if (rpcError) {
+      console.error("Supabase RPC Error:", JSON.stringify(rpcError, null, 2));
+      return NextResponse.json({ error: "Error processing order.", details: rpcError }, { status: 500 });
     }
 
-    // Log the analytics event ONLY if order_id is present and no error
     if (order_id) {
+      // Fetch the full order details for the email
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .select('*, order_items(*)')
+        .eq('id', order_id)
+        .single();
+
+      if (orderError || !orderData) {
+        console.error('Error fetching order for email:', orderError);
+        // Don't block the response for this, just log it
+      } else {
+        const itemsWithImages = await Promise.all(
+          orderData.order_items.map(async (item: any) => {
+            const { data: product } = await supabase.from('products').select('image_url').eq('id', item.item_id).single();
+            return { ...item, image_url: product?.image_url || '/placeholder.png' };
+          })
+        );
+        const fullOrderDetails = { ...orderData, order_items: itemsWithImages };
+
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        await resend.emails.send({
+          from: 'The Water Bar <hello@thewater.bar>',
+          to: [session.customer_details?.email!],
+          subject: `Your Water Bar Order Confirmation #${order_id.substring(0, 8)}`,
+          react: WaterBarOrderConfirmationEmail({ order: fullOrderDetails, userEmail: session.customer_details?.email! }),
+        });
+      }
+
+      // Log analytics event
       await supabase.from("analytics_events").insert([
         {
           event_type: "order_completed",
