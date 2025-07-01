@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { MenuItemCard } from "@/components/menu-item-card"
 import { CartSummary } from "@/components/cart-summary"
 import { Separator } from "@/components/ui/separator"
@@ -45,6 +45,7 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
   }
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [total, setTotal] = useState<number>(0)
+  const hasProcessedUrlCartAddition = useRef(false);
 
   // Use the initial data passed as props
   const { activeTags } = useFilters()
@@ -107,9 +108,9 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
     }
     
     fetchCartItems()
-  }, [drinks, wellnessExperiences]) // Re-run if product data changes
+  }, [drinks, wellnessExperiences]); // Re-run if product data changes
 
-  const handleAddToCart = async (item: MenuItem) => {
+  const handleAddToCart = useCallback(async (item: MenuItem) => {
     logEvent({ event_name: "add_to_cart", step_name: "cart", metadata: { itemId: item.id, itemName: item.name } })
 
     // Check if the item is the "Triple Threat Pass" bundle
@@ -133,7 +134,31 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
         ? prev.map((i) => (i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i))
         : [...prev, { ...item, quantity: 1 }]
     })
-  }
+  }, []);
+
+  // Handle adding item to cart from URL parameter
+  useEffect(() => {
+    if (hasProcessedUrlCartAddition.current || (initialDrinks.length === 0 && initialWellnessExperiences.length === 0)) {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const productIdToAdd = params.get('add-to-cart');
+
+    if (productIdToAdd) {
+      const allProducts = [...initialDrinks, ...initialWellnessExperiences];
+      const productToAdd = allProducts.find(p => p.id === productIdToAdd);
+
+      if (productToAdd) {
+        handleAddToCart(productToAdd);
+        hasProcessedUrlCartAddition.current = true; // Mark as processed
+
+        // Clean the URL to prevent re-adding on refresh
+        const newUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, document.title, newUrl);
+      }
+    }
+  }, [initialDrinks, initialWellnessExperiences, handleAddToCart]);
 
   const handleRemoveFromCart = async (itemId: string) => {
     await fetch("/api/cart/remove", {

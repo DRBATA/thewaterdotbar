@@ -113,17 +113,21 @@ export async function POST(req: Request) {
     // If parsing fails or body is empty, default to 'organic'
   }
 
-  const checkout = await stripe.checkout.sessions.create({
-    allow_promotion_codes: true,
-    mode: "payment",
-    line_items: lineItems,
-    success_url: `${baseUrl}/success?session={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${baseUrl}/cart`,
-    metadata: {
-      session_id: sessionId,
-      utm_campaign,
-    },
-  })
-
-  return NextResponse.json({ url: checkout.url })
+  try {
+    const checkout = await stripe.checkout.sessions.create({
+      allow_promotion_codes: true,
+      mode: "payment",
+      line_items: lineItems,
+      success_url: `${baseUrl}/success?session={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/cart`,
+      metadata: {
+        session_id: sessionId,
+        utm_campaign,
+      },
+    });
+    return NextResponse.json({ url: checkout.url });
+  } catch (error: any) {
+    console.error("Stripe checkout session creation failed:", error);
+    return NextResponse.json({ error: `Stripe Error: ${error.message}` }, { status: 500 });
+  }
 }
