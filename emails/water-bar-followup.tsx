@@ -80,13 +80,13 @@ export const WaterBarFollowupEmail = ({
                 <Section style={{ textAlign: 'center', marginTop: '32px', marginBottom: '32px' }}>
                   <Button
                     style={{ backgroundColor: '#5E6AD2', color: 'white', borderRadius: '4px', marginRight: '10px', textDecoration: 'none', display: 'inline-block', padding: '12px 20px' }}
-                    href={`https://thewater.bar/?utm_campaign=thankyou-attendee`}
+                    href={`${baseUrl}/?utm_campaign=thankyou-attendee`}
                   >
                     Chat with our Wellness Concierge
                   </Button>
                   <Button
                     style={{ backgroundColor: '#0095ff', color: 'white', borderRadius: '4px', textDecoration: 'none', display: 'inline-block', padding: '12px 20px' }}
-                    href={`https://thewater.bar/?add-to-cart=prod_Sb4N6BMJx2S9US&utm_campaign=thankyou-attendee`}
+                    href={`${baseUrl}/?add-to-cart=d6fd6dcb-e4f2-4f12-b7d4-17fdbb7d8dc8&utm_campaign=thankyou-attendee`}
                   >
                     Get the Triple Threat Pass (Entry+Mocktail+Experience) (135 DHS)
                   </Button>
