@@ -49,6 +49,13 @@ export const WaterBarOrderConfirmationEmail = ({
             <Text style={paragraph}>Hi {order.email},</Text>
             <Text style={paragraph}>We're getting your order ready. Here are the details:</Text>
 
+            <Section style={eventInfoSection}>
+              <Heading as="h2" style={eventHeading}>The Morning Party: Mocktail + Fire/Ice</Heading>
+              <Text style={eventDetails}>Sunday, 6th July | ⏰ 11 AM</Text>
+              <Text style={eventDetails}>Johny Dar Experience, Al Quoz, Dubai</Text>
+              <Text style={eventNote}>Includes Fire (sauna) or Ice Experience (Cold Plunge)</Text>
+            </Section>
+
             <Section style={{ marginBottom: '20px' }}>
               <Row>
                 <Column><strong>Order ID:</strong> #{order.id.toString().substring(0, 8)}</Column>
@@ -197,4 +204,33 @@ const footerText = {
 const unsubscribeLinkStyle = {
   color: '#4b5563',
   textDecoration: 'underline',
+};
+
+const eventInfoSection = {
+  backgroundColor: '#fffbeb',
+  padding: '16px',
+  borderRadius: '8px',
+  borderLeft: '4px solid #f59e0b',
+  marginBottom: '24px',
+};
+
+const eventHeading = {
+  fontSize: '20px',
+  fontWeight: 'bold',
+  color: '#78350f',
+  marginBottom: '8px',
+};
+
+const eventDetails = {
+  fontSize: '16px',
+  fontWeight: 'semibold',
+  color: '#92400e',
+  marginBottom: '4px',
+};
+
+const eventNote = {
+  fontSize: '16px',
+  fontWeight: 'medium',
+  color: '#92400e',
+  marginTop: '8px',
 };

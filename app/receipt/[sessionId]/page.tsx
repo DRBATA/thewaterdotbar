@@ -82,10 +82,10 @@ export default async function TicketPage({ params }: TicketPageProps) {
       <div className="max-w-4xl w-full bg-white shadow-lg rounded-lg p-8 print:shadow-none print:rounded-none">
   {/* Event Info Block */}
   <div className="mb-8 p-6 rounded-lg bg-yellow-50 border-l-4 border-yellow-400">
-    <h2 className="text-2xl font-bold text-yellow-900 mb-2">The Morning Party: Frequency Calibration Pass</h2>
-    <div className="text-lg font-semibold text-yellow-800 mb-1">Sunday, June 29, 10 AM – 1 PM</div>
-    <div className="text-md text-yellow-700 mb-2">AOI x Johny Dar Experience<br />Al Khayat Avenue, Al Quoz Industrial Area 1, Plot 364-191<br />Old Community, Warehouse 4, Dubai</div>
-    <div className="mt-2 text-yellow-800 font-medium">This free ticket <span className='font-bold'>includes access to the rave only</span>. It <span className='font-bold'>does not include any drinks or premium experiences</span>.</div>
+    <h2 className="text-2xl font-bold text-yellow-900 mb-2">The Morning Party: Mocktail + Fire/Ice</h2>
+    <div className="text-lg font-semibold text-yellow-800 mb-1">Sunday, 6th July | ⏰ 11 AM</div>
+    <div className="text-md text-yellow-700 mb-2">Johny Dar Experience, Al Quoz, Dubai</div>
+    <div className="mt-2 text-yellow-800 font-medium">Includes Fire (sauna) or Ice Experience (Cold Plunge)</div>
   </div>
         <div className="flex justify-between items-start mb-8 border-b border-gray-200 pb-6">
           <div>
