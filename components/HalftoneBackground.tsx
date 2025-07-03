@@ -36,10 +36,14 @@ const HalftoneBackground = () => {
       const rows = Math.ceil(canvas.height / gridSize);
       const cols = Math.ceil(canvas.width / gridSize);
 
+      // Calculate offsets to center the grid itself
+      const offsetX = (canvas.width - cols * gridSize) / 2;
+      const offsetY = (canvas.height - rows * gridSize) / 2;
+
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
-          const centerX = x * gridSize;
-          const centerY = y * gridSize;
+          const centerX = x * gridSize + offsetX;
+          const centerY = y * gridSize + offsetY;
           const distanceFromCenter = Math.sqrt(
             Math.pow(centerX - canvas.width / 2, 2) +
               Math.pow(centerY - canvas.height / 2, 2)
