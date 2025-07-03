@@ -220,15 +220,15 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
         <section className="mb-24">
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-            {[...drinks]
+            {drinks
   .sort((a, b) => (a.price === 0 ? -1 : b.price === 0 ? 1 : 0))
-  .map((drink) => (
+  .map((item) => (
               <MenuItemCard
-                key={drink.id}
-                item={drink}
+                key={item.id}
+                item={item}
                 onAddToCartAction={handleAddToCart}
                 onRemoveFromCartAction={handleRemoveFromCart}
-                quantity={getItemQuantity(drink.id)}
+                quantity={getItemQuantity(item.id)}
               />
             ))}
           </div>

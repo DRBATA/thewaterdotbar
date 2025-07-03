@@ -4,6 +4,7 @@ import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Minus } from "lucide-react"
+import GlowEffect from "./GlowEffect"
 
 interface MenuItem {
   id: string
@@ -26,20 +27,21 @@ export function MenuItemCard({ item, onAddToCartAction, onRemoveFromCartAction, 
   const isFree = item.price === 0;
   
   return (
-    <Card className={`relative w-full max-w-sm overflow-hidden rounded-xl ${isMorningParty ? "bg-amber-50 border-amber-300 shadow-lg" : "bg-white border-stone-200/70 shadow-md"} transition-all hover:shadow-lg border`}>
+    <Card className={`relative w-full max-w-sm rounded-xl ${isMorningParty ? "bg-amber-50 border-amber-300 shadow-lg" : "bg-white border-stone-200/70 shadow-md"} transition-all hover:shadow-lg border`}>
       {(isMorningParty && isFree) && (
         <div className="absolute top-0 right-0 z-10 bg-green-500 text-white py-1 px-3 rounded-bl-lg font-bold tracking-wide">
           FREE
         </div>
       )}
       <div className="relative h-48 w-full">
+        <GlowEffect intensity={1.5} />
         <Image
           src={item.image || "/placeholder.svg"}
           alt={item.name}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           style={{ objectFit: "cover" }}
-          className="transition-transform duration-300 hover:scale-105"
+          className="relative z-0 transition-transform duration-300 hover:scale-105"
         />
       </div>
       <CardHeader className="p-5 pb-3">

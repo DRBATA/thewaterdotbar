@@ -1,85 +1,101 @@
-"use client"
+'use client';
 
-import { useEffect, useRef } from 'react'
+import React, { useRef, useEffect } from 'react';
 
-export default function HalftoneBackground() {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+// --- Configuration Dials for Animation ---
+const WAVE_SPEED = 0.02; // Speed of the wave animation
+const WAVE_FREQ_1 = 15.0; // Spatial frequency of the first sine wave
+const WAVE_FREQ_2 = 25.0; // Spatial frequency of the second sine wave
+const SATURATION = 90; // Color saturation (0-100%)
+const BASE_LIGHTNESS = 65; // Base color lightness (0-100%)
+const PULSE_AMOUNT = 20; // How much the lightness pulses (0-50)
+const OPACITY = 0.8; // Max opacity of the dots (0-1)
+
+const HalftoneBackground = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationFrameId = useRef<number | undefined>(undefined);
+  let time = 0;
 
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    let animationFrameId: number
-    let time = 0
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-    }
+    const setupCanvas = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+    };
 
     const drawHalftoneWave = () => {
-      const gridSize = 20
-      const rows = Math.ceil(canvas.height / gridSize)
-      const cols = Math.ceil(canvas.width / gridSize)
+      const gridSize = 50;
+      const rows = Math.ceil(canvas.height / gridSize);
+      const cols = Math.ceil(canvas.width / gridSize);
 
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
-          const centerX = x * gridSize
-          const centerY = y * gridSize
+          const centerX = x * gridSize;
+          const centerY = y * gridSize;
           const distanceFromCenter = Math.sqrt(
-            Math.pow(centerX - canvas.width / 2, 2) + 
-            Math.pow(centerY - canvas.height / 2, 2)
-          )
+            Math.pow(centerX - canvas.width / 2, 2) +
+              Math.pow(centerY - canvas.height / 2, 2)
+          );
           const maxDistance = Math.sqrt(
-            Math.pow(canvas.width / 2, 2) + 
-            Math.pow(canvas.height / 2, 2)
-          )
-          const normalizedDistance = distanceFromCenter / maxDistance
-          
-          const waveOffset = Math.sin(normalizedDistance * 10 - time) * 0.5 + 0.5
-          const size = gridSize * waveOffset * 0.8
+            Math.pow(canvas.width / 2, 2) +
+              Math.pow(canvas.height / 2, 2)
+          );
+          const normalizedDistance = distanceFromCenter / maxDistance;
 
-          ctx.beginPath()
-          ctx.arc(centerX, centerY, size / 2, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(255, 255, 255, ${waveOffset * 0.5})`
-          ctx.fill()
+          // Blend two sine waves for a more organic, complex ripple
+          const wave1 = Math.sin(normalizedDistance * WAVE_FREQ_1 - time);
+          const wave2 = Math.sin(normalizedDistance * WAVE_FREQ_2 + time * 0.5);
+          const waveOffset = (wave1 + wave2) / 2 * 0.5 + 0.5; // Combine and normalize to 0-1 range
+
+          // Calculate HSL color values
+          const hue = (normalizedDistance * 200 - time * 30);
+          const lightness = BASE_LIGHTNESS + waveOffset * PULSE_AMOUNT;
+
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, waveOffset * (gridSize / 1.8), 0, 2 * Math.PI);
+          ctx.fillStyle = `hsla(${hue}, ${SATURATION}%, ${lightness}%, ${waveOffset * OPACITY})`;
+          ctx.fill();
         }
       }
-    }
+    };
 
     const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      drawHalftoneWave()
-      time += 0.05
-      animationFrameId = requestAnimationFrame(animate)
-    }
+      const rect = canvas.getBoundingClientRect();
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      time += WAVE_SPEED;
+      drawHalftoneWave();
+      animationFrameId.current = requestAnimationFrame(animate);
+    };
 
-    resizeCanvas()
-    window.addEventListener('resize', resizeCanvas)
-    animate()
+    setupCanvas();
+    animate();
+
+    window.addEventListener('resize', setupCanvas);
 
     return () => {
-      cancelAnimationFrame(animationFrameId)
-      window.removeEventListener('resize', resizeCanvas)
-    }
-  }, [])
+      window.removeEventListener('resize', setupCanvas);
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+    };
+  }, []);
 
   return (
     <canvas
-    ref={canvasRef}
-    className="fixed inset-0 w-full h-full pointer-events-none z-0"
-    style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100vw',
-      height: '100vh',
-      zIndex: 0,
-      background: 'rgba(255,0,0,0.2)' // <-- TEMP: make canvas visible for debug
-    }}
-    aria-hidden="true"
-  />
-  )
-}
+      ref={canvasRef}
+      id="halftone-canvas"
+      className="fixed inset-0 w-full h-full z-[-1]"
+      style={{ backgroundColor: 'transparent' }}
+    />
+  );
+};
+
+export default HalftoneBackground;
