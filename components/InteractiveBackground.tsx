@@ -22,7 +22,7 @@ const requestDeviceOrientationPermission = async (): Promise<boolean> => {
 export function InteractiveBackground() {
   // State for the gradient's inline style
   const [gradientStyle, setGradientStyle] = useState({
-    background: 'linear-gradient(135deg, #14b8a6, #22d3ee)', // Default gradient (teal-500 to cyan-400)
+    background: 'linear-gradient(135deg, #ef4444, #3b82f6)', // Default HIGH-CONTRAST gradient (red-500 to blue-500)
   });
 
   // State to track permission and visibility of the button
@@ -50,10 +50,11 @@ export function InteractiveBackground() {
 
       // A simple but effective mapping of tilt to a gradient angle.
       // We combine the two axes to create a more fluid, 2D feel.
-      const angle = 180 + (gamma || 0) + (beta || 0) / 2;
+      // Amplify the effect for testing
+      const angle = 180 + (gamma || 0) * 2.5 + (beta || 0) * 2.5;
 
       setGradientStyle({
-        background: `linear-gradient(${angle.toFixed(0)}deg, #14b8a6, #22d3ee)`,
+        background: `linear-gradient(${angle.toFixed(0)}deg, #ef4444, #3b82f6)`, // High-contrast red-to-blue
       });
     };
 
