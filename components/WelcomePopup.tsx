@@ -41,13 +41,13 @@ export function WelcomePopup() {
             />
           </div>
           <p className="text-base font-semibold text-stone-100">
-            Entry + Mocktail + Your Choice Of:
+            Entry + Mocktail + Your Choice Of (first come first serve on the morning while availability lasts)
           </p>
           <ul className="list-disc list-inside text-stone-200 mt-2 mb-4">
             <li>🔥 Fire (Infrared Sauna)</li>
             <li>🧊 Ice (Cold Plunge)</li>
-            <li>💆‍♀️ Massage (10 minutes)</li>
-            <li>💧 Float (15 minutes)</li>
+            <li>💆‍♀️ Massage (20minutes)</li>
+            <li>💧 Float (30 minutes)</li>
           </ul>
           <p className="text-sm text-stone-300">
             📍 Johny Dar Experience, Al Quoz, Dubai | 🗓️ Sunday, 6th July | ⏰ 11 AM - 2 PM
