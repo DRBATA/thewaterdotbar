@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import Logo from "../components/Logo"
 import HalftoneBackground from "../components/HalftoneBackground";
+import { InteractiveBackground } from "../components/InteractiveBackground";
 import { FilterProvider } from "../context/filter-context";
 import FilterBar from "../components/FilterBar";
 
@@ -39,8 +40,8 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen">
         
-        {/* Optional: pastel gradient background */}
-        <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-teal-500 to-cyan-400 z-[-2]" />
+        {/* Interactive, gyroscope-controlled gradient background */}
+        <InteractiveBackground />
         {/* Animated halftone overlay */}
         <HalftoneBackground />
         {/* Main content */}
