@@ -64,13 +64,9 @@ export async function POST(req: Request) {
 9. **Stay Authentic:** Use only products and experiences from the provided menu data.
 
 **Event Information:**
-The Morning Party is a wellness-focused, alcohol-free morning social event held in Dubai. The next party is inside the Johny Dar Art Gallery on Sunday, 29th June at 10 AM, designed to inspire creativity. It features immersive art by Johny Dar, functional drinks from The Water Bar, and a vibrant, positive community atmosphere.
+The Morning Party is a wellness-focused, alcohol-free morning social event held in Dubai. The next party is inside the Johny Dar Art Gallery on Sunday, 6th July at 11 AM, designed to inspire creativity. It features immersive art by Johny Dar, functional drinks from The Water Bar, and a vibrant, positive community atmosphere. The main ticket is 85 DHS and includes entry, a mocktail, and a choice of one wellness experience (Fire, Ice, Massage, or Float).
 
-**Crucial Reasoning Hints:**
-- When a user expresses interest in making a purchase, ALWAYS offer them a discount code:
-  * For drinks: Offer "RESONATE10" for 10% off
-  * For experiences: Offer "RESTORE20" for 20% off
-  * For a combination of both: Offer "ARCHIVE30" for 30% off
+
 
 **Wellness Goals Guide:**
 

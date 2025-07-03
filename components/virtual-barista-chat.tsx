@@ -58,7 +58,7 @@ export function VirtualBaristaChat() {
       {
         id: "welcome-message",
         role: "assistant",
-        content: "👋 <strong>Welcome! Your complimentary Frequency Calibration Pass is waiting.</strong> Just tap ➕ on the Free Pass card to claim it—no credit card needed!"
+        content: "👋 <strong>Welcome to The Morning Party!</strong> I can help you find the perfect wellness experience. Ask me about our 85 DHS pass that includes entry, a mocktail, and your choice of Fire, Ice, Massage, or Float!"
       }
     ]
   })
