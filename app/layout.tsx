@@ -2,8 +2,9 @@ import type { Metadata } from 'next'
 import './globals.css'
 import Logo from "../components/Logo"
 import HalftoneBackground from "../components/HalftoneBackground";
-import { InteractiveBackground } from "../components/InteractiveBackground";
+
 import { FilterProvider } from "../context/filter-context";
+import { InteractiveBackgroundProvider } from "../context/interactive-background-context";
 import FilterBar from "../components/FilterBar";
 
 export const metadata: Metadata = {
@@ -40,18 +41,18 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen">
         
-        {/* Interactive, gyroscope-controlled gradient background */}
-        <InteractiveBackground />
-        {/* Animated halftone overlay */}
-        <HalftoneBackground />
-        {/* Main content */}
-        <FilterProvider>
-          <Logo />
-          <FilterBar />
-          <div className="relative z-10">
-            {children}
-          </div>
-        </FilterProvider>
+        <InteractiveBackgroundProvider>
+          {/* Animated halftone overlay */}
+          <HalftoneBackground />
+          
+          <FilterProvider>
+            <Logo />
+            <FilterBar />
+            <div className="relative z-10">
+              {children}
+            </div>
+          </FilterProvider>
+        </InteractiveBackgroundProvider>
       </body>
     </html>
   )

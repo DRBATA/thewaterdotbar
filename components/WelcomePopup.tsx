@@ -1,5 +1,7 @@
 "use client"
 
+"use client"
+
 import { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -7,22 +9,49 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
+  DialogClose,
 } from '@/components/ui/dialog';
 import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import { useInteractiveBackground } from '@/context/interactive-background-context';
+import type { MenuItem } from '@/app/page';
 
-export function WelcomePopup() {
+interface WelcomePopupProps {
+  onAddToCartAction: (item: MenuItem) => void;
+}
+
+export function WelcomePopup({ onAddToCartAction }: WelcomePopupProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const { permission, toggleMagic } = useInteractiveBackground();
 
   useEffect(() => {
-    const hasSeenPopup = sessionStorage.getItem('hasSeenWelcomePopup');
-    if (!hasSeenPopup) {
-      setIsOpen(true);
-      sessionStorage.setItem('hasSeenWelcomePopup', 'true');
-    }
+    // For testing: The popup will now appear on every page load.
+    // The session storage check has been temporarily disabled.
+    setIsOpen(true);
   }, []);
 
+  const handleAddToCart = () => {
+    // IMPORTANT: Replace with the actual product ID from your database/Stripe
+    const dealItem: MenuItem = {
+      id: 'price_1Rgcm4DrbIjw1y3S1h9DKfDR', // Final Stripe Price ID
+      name: 'The Morning Party',
+      description: 'Entry + Mocktail + Your Choice Of: Fire, Ice, Massage, or Float',
+      price: 85,
+      image: '/ticket.png', // Corrected property name
+    };
+    onAddToCartAction(dealItem); // Use the passed-in function
+    setIsOpen(false); // Close the popup after adding to cart
+    sessionStorage.setItem('hasSeenWelcomePopup', 'true');
+  };
+
+  const handleClose = () => {
+    setIsOpen(false);
+    sessionStorage.setItem('hasSeenWelcomePopup', 'true');
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[480px] bg-stone-50 p-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-2xl font-bold text-stone-900">Don't Miss Our Best Deal!</DialogTitle>
@@ -53,6 +82,13 @@ export function WelcomePopup() {
             📍 Johny Dar Experience, Al Quoz, Dubai | 🗓️ Sunday, 6th July | ⏰ 11 AM - 2 PM
           </p>
         </div>
+        <DialogFooter className="p-6 pt-4 bg-stone-100 sm:justify-between">
+          <Button variant="ghost" onClick={toggleMagic}>
+            {permission === 'granted' ? 'Disable Magic 🪄' : 'Enable Magic ✨'}
+          </Button>
+          <Button onClick={handleAddToCart}>Add Deal to Cart - 85 DHS</Button>
+        </DialogFooter>
+        {/* The default 'X' is in the top-right corner. We ensure it's functional by using DialogClose if needed, but shadcn handles this well. */}
       </DialogContent>
     </Dialog>
   );
