@@ -2,9 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import Logo from "../components/Logo"
 import HalftoneBackground from "../components/HalftoneBackground";
-
 import { FilterProvider } from "../context/filter-context";
-import { InteractiveBackgroundProvider } from "../context/interactive-background-context";
 import FilterBar from "../components/FilterBar";
 
 export const metadata: Metadata = {
@@ -41,18 +39,18 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen">
         
-        <InteractiveBackgroundProvider>
-          {/* Animated halftone overlay */}
-          <HalftoneBackground />
-          
-          <FilterProvider>
-            <Logo />
-            <FilterBar />
-            <div className="relative z-10">
-              {children}
-            </div>
-          </FilterProvider>
-        </InteractiveBackgroundProvider>
+        {/* Optional: pastel gradient background */}
+        <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-teal-500 to-cyan-400 z-[-2]" />
+        {/* Animated halftone overlay */}
+        <HalftoneBackground />
+        {/* Main content */}
+        <FilterProvider>
+          <Logo />
+          <FilterBar />
+          <div className="relative z-10">
+            {children}
+          </div>
+        </FilterProvider>
       </body>
     </html>
   )

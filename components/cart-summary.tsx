@@ -100,7 +100,7 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
       <Button
         variant="default"
         size="lg"
-        className={`fixed top-4 right-4 rounded-full shadow-lg bg-pink-400/90 text-white hover:bg-pink-500 transition-all duration-300 py-3 ${cartItems.length === 0 ? 'px-4 w-14 justify-center' : 'px-6 w-auto'} text-base font-semibold`}
+        className={`fixed top-4 right-4 rounded-full shadow-lg bg-teal-400/90 text-white hover:bg-teal-500 transition-all duration-300 py-3 ${cartItems.length === 0 ? 'px-4 w-14 justify-center' : 'px-6 w-auto'} text-base font-semibold`}
         onClick={handleCartButtonClick}
         aria-label={cartItems.length === 0 ? 'Open cart' : 'View cart with items'}
       >
@@ -111,11 +111,11 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
           </span>
         )}
       </Button>
-      <SheetContent className="flex flex-col w-full sm:max-w-md bg-cream-50 text-stone-800 border-l-stone-200">
+      <SheetContent className="flex flex-col w-full sm:max-w-md bg-white/10 backdrop-blur-xl text-white border-l border-white/30">
         <SheetHeader>
-          <SheetTitle className="text-2xl font-bold text-amber-900">Your Order</SheetTitle>
+          <SheetTitle className="text-2xl font-bold text-white">Your Order</SheetTitle>
         </SheetHeader>
-        <Separator className="my-4 bg-stone-300/70" />
+        <Separator className="my-4 bg-white/30" />
         {cartItems.length === 0 ? (
           <div className="flex flex-1 items-center justify-center text-stone-500">Your cart is empty.</div>
         ) : (
@@ -124,16 +124,16 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
               {cartItems.map((item) => (
                 <div key={item.id} className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-stone-700">
-                      {item.name} <span className="text-stone-400">({item.quantity})</span>
+                    <p className="font-medium text-stone-100">
+                      {item.name} <span className="text-stone-300">({item.quantity})</span>
                     </p>
-                    <p className="text-sm text-stone-500">{formatCurrency(item.price * item.quantity)}</p>
+                    <p className="text-sm text-stone-300">{formatCurrency(item.price * item.quantity)}</p>
                   </div>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => onRemoveItemAction(item.id)}
-                    className="text-stone-500 hover:text-red-600"
+                    className="text-stone-300 hover:text-red-500"
                   >
                     <XCircle className="size-5" />
                     <span className="sr-only">Remove item</span>
@@ -143,15 +143,15 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
             </div>
           </ScrollArea>
         )}
-        <Separator className="my-4 bg-stone-300/70" />
-        <div className="flex items-center justify-between text-xl font-bold text-amber-800">
+        <Separator className="my-4 bg-white/30" />
+        <div className="flex items-center justify-between text-xl font-bold text-white">
           <span>Total:</span>
           <span>{formatCurrency(total)}</span>
         </div>
         {cartItems.length > 0 && (
           <Button
             variant="outline"
-            className="w-full mt-3 border-amber-600 text-amber-700 hover:bg-amber-100"
+            className="w-full mt-3 border-teal-500 text-teal-300 hover:bg-teal-500/20"
             onClick={handleClearCart}
             disabled={clearingCart}
           >
@@ -160,7 +160,7 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
         )}
         <Button
           size="lg"
-          className="w-full mt-6 bg-amber-700 text-white hover:bg-amber-800 h-12 text-lg"
+          className="w-full mt-6 bg-teal-500 text-white hover:bg-teal-600 h-12 text-lg"
           onClick={handleCheckout}
           disabled={loading || cartItems.length === 0}
         >

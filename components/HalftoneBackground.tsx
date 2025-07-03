@@ -25,47 +25,28 @@ const HalftoneBackground = () => {
 
     const setupCanvas = () => {
       const dpr = window.devicePixelRatio || 1;
-      if (!canvas.parentElement) return;
-      const parentRect = canvas.parentElement.getBoundingClientRect();
-      const gridSize = 50;
-
-      // Calculate columns and rows to fill parent, plus a buffer
-      const cols = Math.ceil(parentRect.width / gridSize) + 2;
-      const rows = Math.ceil(parentRect.height / gridSize) + 2;
-
-      const canvasWidth = cols * gridSize;
-      const canvasHeight = rows * gridSize;
-
-      canvas.width = canvasWidth * dpr;
-      canvas.height = canvasHeight * dpr;
-      canvas.style.width = `${canvasWidth}px`;
-      canvas.style.height = `${canvasHeight}px`;
-
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
       ctx.scale(dpr, dpr);
     };
 
     const drawHalftoneWave = () => {
-      const dpr = window.devicePixelRatio || 1;
-      const cssWidth = canvas.width / dpr;
-      const cssHeight = canvas.height / dpr;
       const gridSize = 50;
-
-      const rows = Math.ceil(cssHeight / gridSize);
-      const cols = Math.ceil(cssWidth / gridSize);
+      const rows = Math.ceil(canvas.height / gridSize);
+      const cols = Math.ceil(canvas.width / gridSize);
 
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
-          // Center the dot within its grid cell
-          const centerX = x * gridSize + gridSize / 2;
-          const centerY = y * gridSize + gridSize / 2;
-
+          const centerX = x * gridSize;
+          const centerY = y * gridSize;
           const distanceFromCenter = Math.sqrt(
-            Math.pow(centerX - cssWidth / 2, 2) +
-              Math.pow(centerY - cssHeight / 2, 2)
+            Math.pow(centerX - canvas.width / 2, 2) +
+              Math.pow(centerY - canvas.height / 2, 2)
           );
           const maxDistance = Math.sqrt(
-            Math.pow(cssWidth / 2, 2) +
-              Math.pow(cssHeight / 2, 2)
+            Math.pow(canvas.width / 2, 2) +
+              Math.pow(canvas.height / 2, 2)
           );
           const normalizedDistance = distanceFromCenter / maxDistance;
 
@@ -87,7 +68,8 @@ const HalftoneBackground = () => {
     };
 
     const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const rect = canvas.getBoundingClientRect();
+      ctx.clearRect(0, 0, rect.width, rect.height);
       time += WAVE_SPEED;
       drawHalftoneWave();
       animationFrameId.current = requestAnimationFrame(animate);
@@ -107,9 +89,12 @@ const HalftoneBackground = () => {
   }, []);
 
   return (
-    <div className="fixed inset-0 w-full h-full z-[-1] flex items-center justify-center">
-      <canvas ref={canvasRef} />
-    </div>
+    <canvas
+      ref={canvasRef}
+      id="halftone-canvas"
+      className="fixed inset-0 w-full h-full z-[-1]"
+      style={{ backgroundColor: 'transparent' }}
+    />
   );
 };
 

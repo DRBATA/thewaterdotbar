@@ -97,7 +97,7 @@ export function VirtualBaristaChat() {
           <Button
             onClick={toggleChat}
             aria-label="Open chat"
-            className="rounded-full px-6 py-3 bg-pink-400/90 hover:bg-pink-500 text-white shadow-lg flex items-center gap-2 font-bold text-base"
+            className="rounded-full px-6 py-3 bg-teal-400/90 hover:bg-teal-500 text-white shadow-lg flex items-center gap-2 font-bold text-base"
           >
             <MessageSquare className="size-5" />
             Perfect your morning
