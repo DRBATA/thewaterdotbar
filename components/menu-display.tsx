@@ -191,8 +191,8 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
       <section className="container mx-auto px-4 pt-24 pb-2 text-center">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-stone-900">The Morning Party x Johny Dar Experience</h1>
         <p className="text-lg md:text-xl text-stone-700 mb-6">Dubai’s first SOBER party trend. Our virtual barista helps you shape your own wellness journey—share your mood, your goals, or just what brings you here.</p>
-        <div className="bg-stone-100 rounded-lg p-4 inline-block mb-2 shadow-md">
-            <p className="text-xl font-semibold text-stone-800">
+        <div className="bg-white/20 backdrop-blur-lg border border-white/30 rounded-lg p-4 inline-block mb-2 shadow-lg">
+            <p className="text-xl font-semibold text-white">
                 Sunday, 6th July | ⏰ 11 AM | 📍Johny Dar Experience, Al Quoz, Dubai
             </p>
         </div>

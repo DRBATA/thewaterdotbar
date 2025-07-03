@@ -23,10 +23,10 @@ export function WelcomePopup() {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-[480px] bg-stone-50 p-0">
+      <DialogContent className="sm:max-w-[480px] bg-white/10 backdrop-blur-xl text-white border border-white/30 p-0">
         <DialogHeader className="p-6 pb-0">
-          <DialogTitle className="text-2xl font-bold text-stone-900">Don't Miss Our Best Deal!</DialogTitle>
-          <DialogDescription className="text-stone-600">
+          <DialogTitle className="text-2xl font-bold text-white">Don't Miss Our Best Deal!</DialogTitle>
+          <DialogDescription className="text-stone-200">
             Experience the full Morning Party for just 85 DHS.
           </DialogDescription>
         </DialogHeader>
@@ -40,16 +40,16 @@ export function WelcomePopup() {
               className="w-full h-auto"
             />
           </div>
-          <p className="text-base font-semibold text-stone-800">
+          <p className="text-base font-semibold text-stone-100">
             Entry + Mocktail + Your Choice Of:
           </p>
-          <ul className="list-disc list-inside text-stone-700 mt-2 mb-4">
+          <ul className="list-disc list-inside text-stone-200 mt-2 mb-4">
             <li>🔥 Fire (Infrared Sauna)</li>
             <li>🧊 Ice (Cold Plunge)</li>
             <li>💆‍♀️ Massage (10 minutes)</li>
             <li>💧 Float (15 minutes)</li>
           </ul>
-          <p className="text-sm text-stone-500">
+          <p className="text-sm text-stone-300">
             📍 Johny Dar Experience, Al Quoz, Dubai | 🗓️ Sunday, 6th July | ⏰ 11 AM - 2 PM
           </p>
         </div>
