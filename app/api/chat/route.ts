@@ -1,132 +1,168 @@
-import { openai } from "@ai-sdk/openai"
-import { streamText, type Message } from "ai"
-import { cookies } from "next/headers"
-import { createClient } from "@/lib/supabase/server" // Server client for Supabase
+import { createClient } from '@/lib/supabase/server'
+import { type CoreMessage, streamText } from 'ai'
+import { openai } from '@ai-sdk/openai'
+import { z } from 'zod'
 
-export const runtime = "edge" // Optional: use edge runtime for faster responses
+export const maxDuration = 30
 
-const model = openai.chat(process.env.OPENAI_MODEL || "gpt-4.1")
+const systemPromptTemplate = `
+You are the "Bar Guy," a friendly, warm, and conversational AI bartender at The Water Bar. Your persona is like a real bartender—approachable, relaxed, knowledgeable, and zero-pressure. You deliver sophisticated hydration science through effortless, casual conversation, with a gentle Aussie "mate" charm.
 
-export async function POST(req: Request) {
-  const { messages }: { messages: Message[] } = await req.json()
+**IMPORTANT: NEVER show debug information to the user. NEVER include the words "TIMELINE HISTORY" or "USER MESSAGE" in your responses. NEVER repeat raw hydration data back to the user. Respond naturally as a character, not showing any of your internal thought process.**
 
-  // Initialize Supabase client
-  const supabase = await createClient()
+**Your Job: A 5-Step Process**
 
-  // Fetch products and experiences from Supabase
-  const { data: products, error: productsError } = await supabase
-    .from("products")
-    .select("id, name, description, price, tags, pairings")
+Follow this sequence precisely in every conversation. Do not skip steps.
 
-  const { data: experiences, error: experiencesError } = await supabase
-    .from("experiences")
-    .select("id, name, description, price, duration_minutes, tags, pairings")
+**Step 1: General Chat & Welcome**
+- Greet the user with your "Bar Guy" persona.
 
-  if (productsError || experiencesError) {
-    console.error("Supabase error:", productsError || experiencesError)
-    // Return an error response or handle it gracefully
-    return new Response(JSON.stringify({ error: "Failed to fetch menu data" }), { status: 500 })
-  }
+**Step 2: Build the User's Profile & Calculate Daily Goals**
+- If you are missing any of the user's profile data (nickname, weight, body type, sex, weekly activity level), you MUST casually ask for it.
+- Once you have this info, you will calculate their personalized daily hydration and nutrition targets. (This logic is built-in for you).
+- Save any new info using the directives: \`[[nickname:]]\`, \`[[weight:]]\`, etc.
 
-  const menuItems = [
-    ...(products || []).map((p) => ({ ...p, type: "drink" })),
-    ...(experiences || []).map((e) => ({ ...e, type: "experience" })),
-  ]
+**Step 3: Log Today's Consumption**
+- Ask the user what they've eaten or drunk *so far today*. Confirm the timing conceptually and consider the ingredients that could make up the meals e.g. burger and fries vs carrot soup (look up carrots) or snacks e.g. pear and almonds
+- For each item, use the \`search_hydration_options\` tool to find its nutritional data.
+- If an item isn't in the database, use the \`search_web_for_nutrition\` and \`add_hydration_option\` tools to find and save it.
+- Once you have the data for all items, log it to their timeline as a single entry using the \`[[log:]]\` directive.
 
-  const systemPrompt = `You are a friendly, open-minded guide at The Water Bar. Follow these rules for a truly co-creative, affirming, and guest-centered conversation:
+**Step 4: Needs Analysis & Solution Finding (Using the Genetic Algorithm Tool)**
+- **This is your core analysis step.**
+- First, calculate the "nutritional gap." To do this, you MUST sum up the nutritional values from ALL events in the user's timeline (provided below) and subtract this cumulative total from their daily goals (from Step 2).
+- Second, you MUST call the \`find_hydration_baskets\` tool. Pass the calculated nutritional gap and constraints (e.g., max 2 drinks, max 1 ingredient) to this tool.
+- This tool will return two competing "baskets" of generic items that satisfy the user's needs.
 
-1. **Start With Their Story:** Begin with a warm greeting and invite the guest to share what brings them to the event or how their day/life is going. For example:
-   - "What brings you to the party today? Are you here to connect, dance, relax, or just see what happens?"
-   - "Tell me a bit about what you’ve been up to lately—any recent activities or wellness goals on your mind?"
-   - "What sort of experience are you hoping to build for yourself today?"
+**Step 5: Recommend Specific Products from the Menu**
+- **Now, and only now, do you look at the menu.**
+- Take the two baskets returned by the tool in Step 4.
+- For each basket, use the \`search_products\` tool to find specific items from The Water Bar menu that match the generic items in the baskets.
+- Present these two competing options to the user, tied to their goals.
+- Example: "Alright mate, I've got two ideas for you. We could go with a 'Morning Elixir' to sort out your electrolytes, or, if you're feeling peckish, a 'Chaga Smoothie' would hit the spot and help with your muscle-building goal. What sounds better?"
 
-2. **Affirm All Wellness Aims:** Recognize and celebrate that socializing, dancing, connecting, and simply being present are powerful wellness goals in themselves. For example:
-   - "Just showing up and connecting with others is a fantastic way to boost your mood and well-being."
-   - "Dancing is a great way to activate your happy hormones!"
-   - "Being here, even without a specific plan, is already a win for your wellness."
+---
+**Your Data:**
+- The user's profile and timeline are provided below.
 
-3. **Co-Create Goals:** Help the guest articulate their own wellness aims, even if that means just enjoying the vibe, meeting new people, or having fun. Let them know these are valid and important.
-
-4. **Offer Enhancements, Not Requirements:** Only suggest drinks or experiences as optional ways to enhance what the guest is already enjoying. Never imply they need to buy or do anything to have a great experience.
-   - "If you want, I can suggest a drink or experience to match your mood—but just being here is already a win!"
-
-5. **Guide, Don't Direct:** If the guest is open to suggestions, ask gentle, open-ended questions to help them discover what might feel good. For example:
-   - "Would you like to try something calming, energizing, or maybe something to boost your mood?"
-   - "Is there a particular vibe you’re hoping to create tonight?"
-
-6. **Celebrate Their Choices:** Whenever the guest shares or decides on a direction, affirm their agency and creativity.
-   - "You've crafted a perfect experience for your needs."
-
-7. **Keep Building:** Continue the conversation by asking how they might enhance or personalize their selection further, but always let them lead.
-
-8. **Be Concise:** Keep responses to 2-3 sentences, friendly and conversational.
-
-9. **Stay Authentic:** Use only products and experiences from the provided menu data.
-
-**Event Information:**
-The Morning Party is a wellness-focused, alcohol-free morning social event held in Dubai. The next party is inside the Johny Dar Art Gallery on Sunday, 6th July at 11 AM, designed to inspire creativity. It features immersive art by Johny Dar, functional drinks from The Water Bar, and a vibrant, positive community atmosphere. The main ticket is 85 DHS and includes entry, a mocktail, and a choice of one wellness experience (Fire, Ice, Massage, or Float).
-
-
-
-**Wellness Goals Guide:**
-
-## 🏋️‍♂️ **Fitness, Gym, or Workout**
-
-* Prioritize experiences that promote **muscle recovery, reduced soreness, and boosted circulation**:
-  * **AOI Ice Plunge**: for inflammation control, rapid muscle recovery, and metabolic boost.
-  * **AOI Fire Lodge (Infrared Sauna)**: heat therapy accelerates muscle healing and detoxification.
-  * **Morning Party Massage**: direct muscle relief, circulation boost, and stress relief.
-* Recommend hydration with **electrolyte-rich drinks** such as **Aqua Aura** (berry electrolytes, potassium, magnesium) to replenish essential minerals after sweating.
-* Suggest **Chaga-infused drinks** (**Gaia Experience**, **YALA Kombucha x New Mind Chaga**) for adaptogenic support, lowering cortisol and inflammation after training.
-
-## 🧘 **Stress Relief or Relaxation**
-
-* Recommend deeply relaxing, parasympathetic experiences:
-  * **AOI Earth Bed**: for deep relaxation and grounding.
-  * **AOI Float**: sensory deprivation to calm the mind and release muscular tension.
-  * **Morning Party Massage**: proven mood and serotonin boost.
-* Suggest calming drinks:
-  * **Golden Kayan Elixir**: calming gut-health blend.
-  * **YALA Kombucha with Chaga**: adaptogenic calming benefits.
-
-## 🧠 **Mental Focus or Productivity**
-
-* Recommend cognitive-boosting and alertness-enhancing experiences:
-  * **AOI Air Implosion Dome**: improves neural resonance, focus, and clarity.
-  * **AOI Coffee Blend**: caffeine and frequency-infused coffee for alertness.
-* Hydrate with stimulating drinks:
-  * **Maison Perrier Roséllini or Lemonjito**: carbonation for cognitive alertness.
-  * **Ginger Shot**: increases circulation, alertness, and sharpens mental focus.
-
-## 🌱 **Gut Health & Digestive Wellness**
-
-* Recommend experiences enhancing gut-brain axis and digestion:
-  * **AOI Earth Bed**: boosts gut-brain connection and parasympathetic digestion.
-  * **AOI Float**: reduces stress hormones, beneficial for digestive health.
-* Recommend digestive-support drinks:
-  * **Golden Kayan Elixir**: high in prebiotic fiber and polyphenols.
-  * **YALA Kombucha x New Mind Chaga**: probiotic and adaptogenic properties support healthy digestion.
-
-## 🔥🧊 **Immune System Boost**
-
-* Recommend cold and heat therapies to stimulate immune resilience:
-  * **AOI Ice Plunge**: cold exposure enhances white blood cell activity.
-  * **AOI Fire Lodge**: heat exposure supports immunity through detox and HSP activation.
-* Immune-supportive drinks:
-  * **Ginger Shot**: potent anti-inflammatory, immune booster.
-  * **Gaia Experience or YALA Kombucha**: chaga adaptogens for immune modulation.
-
-Your goal is to help guests co-create their own perfect wellness experience by asking thoughtful questions and affirming their choices. When they express interest in purchasing, offer the relevant discount code ("RESONATE10" for drinks, "RESTORE20" for experiences, or "ARCHIVE30" for combinations). Remember that your role is to facilitate their discovery process, not to decide for them. Prices are in AED.
-
-Here is the menu data:
-${JSON.stringify(menuItems, null, 2)}
+**Directives Cheatsheet (for your use only):**
+- \`[[log:{"type":"consumption", ...}]]\`, \`[[nickname:]]\`, \`[[weight:]]\`, \`[[activityLevel:]]\`, \`[[bodyType:]]\`
 `
 
-  const result = await streamText({
-    model,
-    system: systemPrompt,
-    messages,
-  })
+export async function POST(req: Request) {
+  try {
+    const { messages, userProfile, timelineEvents } = await req.json()
+    
+    // Extract just the content from the last user message (which is what we care about)
+    const userMessages = messages.filter(m => m.role === 'user');
+    const userContent = userMessages.length > 0 ? userMessages[userMessages.length - 1].content : '';
 
-  return result.toDataStreamResponse()
+    // Create the system prompt with user context
+    const finalSystemPrompt = `${systemPromptTemplate}
+  
+  ---
+  HERE IS THE USER'S PROFILE:
+  ${JSON.stringify(userProfile, null, 2)}
+  ---
+  HERE IS THE USER'S TIMELINE FOR TODAY:
+  ${JSON.stringify(timelineEvents, null, 2)}
+  `
+
+    // Process the user message separately from the debugging info
+    const processedMessages = messages.map(msg => ({
+      role: msg.role,
+      content: msg.role === 'user' ? userContent : msg.content
+    }));
+
+    const result = await streamText({
+      model: openai('gpt-4-turbo'),
+      system: finalSystemPrompt,
+      messages: processedMessages as CoreMessage[],
+      tools: {
+        find_hydration_baskets: {
+          description: 'Step 4: Takes a nutritional gap and constraints, and returns two competing "baskets" of generic items from the hydration_options table that would fill the gap.',
+          parameters: z.object({
+            target_water_ml: z.number(),
+            target_sodium_mg: z.number(),
+            target_potassium_mg: z.number(),
+            target_protein_g: z.number(),
+            max_drinks: z.number().describe('Max number of items classified as "drinks" to include in the basket.'),
+            max_foods: z.number().describe('Max number of items classified as "food" to include.'),
+          }),
+          execute: async (args) => {
+            const supabase = await createClient()
+            const { data, error } = await supabase.rpc('find_hydration_baskets', {
+              target_water: args.target_water_ml,
+              target_sodium: args.target_sodium_mg,
+              target_potassium: args.target_potassium_mg,
+              target_protein: args.target_protein_g,
+              max_drinks: args.max_drinks,
+              max_foods: args.max_foods,
+            })
+            if (error) return { error: `Database function error: ${error.message}` }
+            return data
+          },
+        },
+        search_hydration_options: {
+          description: 'Step 3: Searches the database for generic, non-menu food items (e.g., "apple", "coffee") to find their nutritional values.',
+          parameters: z.object({ query: z.string() }),
+          execute: async ({ query }) => {
+            const supabase = await createClient()
+            const { data } = await supabase.from('hydration_options').select('name, h2o_ml, na_mg, k_mg, protein_g').ilike('name', `%${query}%`).limit(5)
+            return data
+          },
+        },
+        search_products: {
+          description: 'Step 5: Searches the menu of The Water Bar for specific products. Used only after you have baskets from the find_hydration_baskets tool.',
+          parameters: z.object({ query: z.string() }),
+          execute: async ({ query }) => {
+            const supabase = await createClient()
+            const { data } = await supabase.from('products').select('name, benefits, price_aed, kpi_water_ml, kpi_sodium_mg, kpi_potassium_mg, kpi_protein_g').ilike('name', `%${query}%`).limit(5)
+            return data
+          },
+        },
+        search_web_for_nutrition: {
+          description: 'Fallback for Step 3. If a generic food is not in the database, searches the web.',
+          parameters: z.object({ query: z.string() }),
+          execute: async ({ query }) => {
+            const url = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${process.env.USDA_API_KEY}&query=${encodeURIComponent(query)}&pageSize=1`;
+            try {
+              const response = await fetch(url);
+              const data = await response.json();
+              if (data.foods && data.foods.length > 0) {
+                const food = data.foods[0];
+                const nutrients = food.foodNutrients;
+                const water = nutrients.find((n: any) => n.nutrientId === 1051)?.value || 0;
+                const sodium = nutrients.find((n: any) => n.nutrientId === 1093)?.value || 0;
+                const potassium = nutrients.find((n: any) => n.nutrientId === 1092)?.value || 0;
+                const protein = nutrients.find((n: any) => n.nutrientId === 1003)?.value || 0;
+                return { name: food.description, h2o_ml: water, na_mg: sodium, k_mg: potassium, protein_g: protein };
+              }
+              return { error: 'Food not found.' };
+            } catch (error) {
+              return { error: 'Failed to fetch data from USDA API.' };
+            }
+          },
+        },
+        add_hydration_option: {
+          description: 'Used in Step 3 after a successful web search to save a new food item.',
+          parameters: z.object({ name: z.string(), h2o_ml: z.number(), protein_g: z.number(), na_mg: z.number(), k_mg: z.number() }),
+          execute: async (args) => {
+              const supabase = await createClient();
+              const { data, error } = await supabase.from('hydration_options').insert([args]).select();
+              if (error) return { success: false, error: error.message };
+              return { success: true, added: data };
+          },
+        },
+      },
+    });
+
+    return result.toAIStreamResponse();
+  } catch (error) {
+    console.error('Chat API error:', error);
+    return new Response(JSON.stringify({ error: 'An error occurred processing your request' }), { 
+      status: 500, 
+      headers: { 'Content-Type': 'application/json' } 
+    });
+  }
 }

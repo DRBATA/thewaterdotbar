@@ -111,7 +111,7 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
           </span>
         )}
       </Button>
-      <SheetContent className="flex flex-col w-full sm:max-w-md bg-white/10 backdrop-blur-xl text-white border-l border-white/30">
+      <SheetContent className="flex flex-col w-full sm:max-w-md bg-water/15 backdrop-blur-2xl text-white border-l border-water/30 mix-blend-hard-light shadow-[0_0_40px_rgba(96,209,255,0.4)]">
         <SheetHeader>
           <SheetTitle className="text-2xl font-bold text-white">Your Order</SheetTitle>
         </SheetHeader>

@@ -23,7 +23,7 @@ export function WelcomePopup() {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-[480px] bg-white/10 backdrop-blur-xl text-white border border-white/30 p-0">
+      <DialogContent className="sm:max-w-[480px] bg-water/15 backdrop-blur-2xl text-white border border-water/30 p-0 mix-blend-hard-light shadow-inner shadow-[0_0_40px_rgba(96,209,255,0.4)]">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-2xl font-bold text-white">Don't Miss Our Best Deal!</DialogTitle>
           <DialogDescription className="text-stone-200">

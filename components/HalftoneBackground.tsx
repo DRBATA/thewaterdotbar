@@ -7,9 +7,9 @@ const WAVE_SPEED = 0.02; // Speed of the wave animation
 const WAVE_FREQ_1 = 15.0; // Spatial frequency of the first sine wave
 const WAVE_FREQ_2 = 25.0; // Spatial frequency of the second sine wave
 const SATURATION = 90; // Color saturation (0-100%)
-const BASE_LIGHTNESS = 65; // Base color lightness (0-100%)
-const PULSE_AMOUNT = 20; // How much the lightness pulses (0-50)
-const OPACITY = 0.8; // Max opacity of the dots (0-1)
+const BASE_LIGHTNESS = 85; // Base color lightness (0-100%)
+const PULSE_AMOUNT = 30; // How much the lightness pulses (0-50)
+const OPACITY = 0.6; // Max opacity of the dots (0-1)
 
 const HalftoneBackground = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -56,7 +56,7 @@ const HalftoneBackground = () => {
           const waveOffset = (wave1 + wave2) / 2 * 0.5 + 0.5; // Combine and normalize to 0-1 range
 
           // Calculate HSL color values
-          const hue = (normalizedDistance * 200 - time * 30);
+          const hue = 200 + (normalizedDistance * 30) - (time * 5);
           const lightness = BASE_LIGHTNESS + waveOffset * PULSE_AMOUNT;
 
           ctx.beginPath();
@@ -92,8 +92,8 @@ const HalftoneBackground = () => {
     <canvas
       ref={canvasRef}
       id="halftone-canvas"
-      className="fixed inset-0 w-full h-full z-[-1]"
-      style={{ backgroundColor: 'transparent' }}
+      className="fixed inset-0 w-full h-full z-[-1] mix-blend-hard-light"
+      style={{ backgroundColor: 'transparent', filter: 'drop-shadow(0 0 6px rgba(96,209,255,0.6))' }}
     />
   );
 };

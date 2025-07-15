@@ -73,6 +73,19 @@ module.exports = {
           800: "#92400e", // Darker accent for text/borders
           900: "#78350f", // Deepest accent
         },
+        island: {
+          lagoon: '#1FB5FF',
+          peach: '#FFC78A',
+          palm: '#3B9C6D',
+          sand: '#F4E4C9',
+          coral: '#FF8670',
+        },
+        water: {
+          200: "#b3e9ff", // Glass highlight
+          300: "#60d1ff", // Lighter tint
+          400: "#1fb6ff", // Primary electric sky blue
+          600: "#0b8ad1", // Deep accent / glow
+        },
         stone: {
           // Keeping stone for neutral text and elements
           50: "#fafaf9",

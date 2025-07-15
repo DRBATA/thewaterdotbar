@@ -8,7 +8,7 @@ import { VirtualBaristaChat } from "@/components/virtual-barista-chat"
 import { useFilters } from "@/context/filter-context"
 import { logEvent } from "@/lib/analytics"
 import { WelcomePopup } from "@/components/WelcomePopup"
-import type { MenuItem } from "@/app/page" // Import the MenuItem type
+import type { MenuItem } from "../app/page"; // Corrected import path
 
 interface CartItem extends MenuItem {
   quantity: number
@@ -188,19 +188,10 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
   return (
     <>
       <WelcomePopup />
-      <section className="container mx-auto px-4 pt-24 pb-2 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-stone-900">The Morning Party x Johny Dar Experience</h1>
-        <p className="text-lg md:text-xl text-stone-700 mb-6">Dubai’s first SOBER party trend. Our virtual barista helps you shape your own wellness journey—share your mood, your goals, or just what brings you here.</p>
-        <div className="bg-white/20 backdrop-blur-lg border border-white/30 rounded-lg p-4 inline-block mb-2 shadow-lg">
-            <p className="text-xl font-semibold text-white">
-                Sunday, 6th July | ⏰ 11 AM | 📍Johny Dar Experience, Al Quoz, Dubai
-            </p>
-        </div>
-      </section>
-      <Separator className="my-4" />
 
-      <main className="container mx-auto px-4 py-8">
-        <section className="mb-12">
+
+      <main className="container mx-auto px-4 pt-2 pb-8">
+        <section className="mb-8">
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
             {[...wellnessExperiences]
@@ -238,7 +229,7 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
       </main>
 
       {/* About & Location accordion */}
-      <section className="container mx-auto px-4 mb-24">
+      <section className="container mx-auto px-4">
         <details className="bg-stone-100 rounded-lg shadow-md p-4">
           <summary className="cursor-pointer font-semibold text-stone-800">About, Partners & Location</summary>
           <div className="mt-4 space-y-6">
@@ -267,6 +258,9 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
             </div>
           </div>
         </details>
+        
+        {/* Spacer div to create room for the floating chat button */}
+        <div className="h-24"></div>
       </section>
       <VirtualBaristaChat />
       <CartSummary cartItems={cartItems} total={total} onRemoveItemAction={handleRemoveFromCart} onClearCart={handleClearCart} />
