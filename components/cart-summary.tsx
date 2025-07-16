@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { ShoppingCart, XCircle } from "lucide-react"
 import { useVolumeDiscount } from "@/hooks/use-volume-discount"
+import { CopyDiscountCode } from "./copy-discount-code"
 import { logEvent } from "@/lib/analytics"
 
 interface CartItem {
@@ -170,6 +171,7 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
             <span>{formatCurrency(discountedTotal)}</span>
           </div>
         </div>
+        <CopyDiscountCode tier={tier} />
         {cartItems.length > 0 && (
           <Button
             variant="outline"
