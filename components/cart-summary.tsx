@@ -28,7 +28,6 @@ interface CartSummaryProps {
 export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart }: CartSummaryProps) {
   const [loading, setLoading] = useState(false)
   const [clearingCart, setClearingCart] = useState(false)
-  const buttonRef = useRef<HTMLButtonElement>(null)
   const { tier, subtotal, discount, total: discountedTotal } = useVolumeDiscount(cartItems)
   const [showConfetti, setShowConfetti] = useState(false)
   const prevTierRef = useRef(tier)
@@ -40,17 +39,12 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
     if (currentMinItems > prevMinItems) {
       setShowConfetti(true)
     }
-
+    
     prevTierRef.current = tier
   }, [tier])
 
   const handleConfettiComplete = () => {
     setShowConfetti(false)
-  }
-
-  const handleCartButtonClick = () => {
-    const trigger = buttonRef.current
-    if (trigger) trigger.click()
   }
 
   const handleClearCart = async () => {
@@ -92,23 +86,21 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
       <DiscountConfetti fire={showConfetti} onComplete={handleConfettiComplete} />
       <Sheet>
         <SheetTrigger asChild>
-          <button ref={buttonRef} className="sr-only" tabIndex={-1} />
+          <Button
+            variant="default"
+            size="lg"
+            className={`fixed top-4 right-4 rounded-full shadow-lg bg-teal-400/90 text-white hover:bg-teal-500 transition-all duration-300 py-3 ${cartItems.length === 0 ? 'px-4 w-14 justify-center' : 'px-6 w-auto'} text-base font-semibold`}
+            aria-label={cartItems.length === 0 ? 'Open cart' : 'View cart with items'}
+          >
+            <ShoppingCart className="size-5" />
+            {cartItems.length > 0 && (
+              <span className="ml-2 flex items-center">
+                <span>View Cart ({cartItems.reduce((acc, item) => acc + item.quantity, 0)}) - {formatCurrency(discountedTotal)}</span>
+                {tier && <span className="ml-2 rounded-full bg-lime-300 px-2 py-1 text-xs font-bold text-lime-900">{tier.rate * 100}% OFF</span>}
+              </span>
+            )}
+          </Button>
         </SheetTrigger>
-        <Button
-          variant="default"
-          size="lg"
-          className={`fixed top-4 right-4 rounded-full shadow-lg bg-teal-400/90 text-white hover:bg-teal-500 transition-all duration-300 py-3 ${cartItems.length === 0 ? 'px-4 w-14 justify-center' : 'px-6 w-auto'} text-base font-semibold`}
-          onClick={handleCartButtonClick}
-          aria-label={cartItems.length === 0 ? 'Open cart' : 'View cart with items'}
-        >
-          <ShoppingCart className="size-5" />
-          {cartItems.length > 0 && (
-            <span className="ml-2 flex items-center">
-              <span>View Cart ({cartItems.reduce((acc, item) => acc + item.quantity, 0)}) - {formatCurrency(discountedTotal)}</span>
-              {tier && <span className="ml-2 rounded-full bg-lime-300 px-2 py-1 text-xs font-bold text-lime-900">{tier.rate * 100}% OFF</span>}
-            </span>
-          )}
-        </Button>
         <SheetContent className="flex flex-col w-full sm:max-w-md bg-white/10 backdrop-blur-xl text-white border-l border-white/30">
           <SheetHeader>
             <SheetTitle className="text-2xl font-bold text-white">Your Order</SheetTitle>
