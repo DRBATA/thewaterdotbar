@@ -20,9 +20,11 @@ export async function POST(req: Request) {
   const { data: products, error: productsError } = await supabase
     .from("products")
     .select("id, name, description, price, tags, pairings")
+    .eq("is_active", true)
   const { data: experiences, error: experiencesError } = await supabase
     .from("experiences")
     .select("id, name, description, price, duration_minutes, tags, pairings")
+    .eq("is_active", true)
 
   if (productsError || experiencesError) {
     console.error("Supabase error:", productsError || experiencesError)
