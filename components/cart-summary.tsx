@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { ShoppingCart, XCircle } from "lucide-react"
+import { useVolumeDiscount } from "@/hooks/use-volume-discount"
 import { logEvent } from "@/lib/analytics"
 
 interface CartItem {
@@ -26,6 +27,7 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
   const [loading, setLoading] = useState(false)
   const [clearingCart, setClearingCart] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
+  const { tier, subtotal, discount, total: discountedTotal } = useVolumeDiscount(cartItems)
 
   // Cart button always opens the drawer and shows expanded info when items exist.
   const handleCartButtonClick = () => {
@@ -106,8 +108,15 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
       >
         <ShoppingCart className="size-5" />
         {cartItems.length > 0 && (
-          <span className="ml-2">
-            View Cart ({cartItems.reduce((acc: number, item: CartItem) => acc + item.quantity, 0)}) - {formatCurrency(total)}
+          <span className="ml-2 flex items-center">
+            <span>
+              View Cart ({cartItems.reduce((acc: number, item: CartItem) => acc + item.quantity, 0)}) - {formatCurrency(discountedTotal)}
+            </span>
+            {tier && (
+              <span className="ml-2 rounded-full bg-lime-300 px-2 py-1 text-xs font-bold text-lime-900">
+                {tier.rate * 100}% OFF
+              </span>
+            )}
           </span>
         )}
       </Button>
@@ -144,9 +153,22 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
           </ScrollArea>
         )}
         <Separator className="my-4 bg-white/30" />
-        <div className="flex items-center justify-between text-xl font-bold text-white">
-          <span>Total:</span>
-          <span>{formatCurrency(total)}</span>
+        <div className="space-y-2 text-white">
+          <div className="flex items-center justify-between text-md">
+            <span>Subtotal</span>
+            <span>{formatCurrency(subtotal)}</span>
+          </div>
+          {tier && (
+            <div className="flex items-center justify-between text-md text-lime-300">
+              <span>Discount ({tier.rate * 100}%)</span>
+              <span>-{formatCurrency(discount)}</span>
+            </div>
+          )}
+          <Separator className="my-2 bg-white/30" />
+          <div className="flex items-center justify-between text-xl font-bold">
+            <span>Total</span>
+            <span>{formatCurrency(discountedTotal)}</span>
+          </div>
         </div>
         {cartItems.length > 0 && (
           <Button
