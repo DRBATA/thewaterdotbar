@@ -1,5 +1,5 @@
 export const volumeDiscountTiers = [
-  { minItems: 2, rate: 0.1, code: 'RESONATE10' },
-  { minItems: 3, rate: 0.2, code: 'RESTORE20' },
-  { minItems: 4, rate: 0.3, code: 'ARCHIVE30' },
+  { minItems: 5, rate: 0.05, code: 'HIGH5' },
+  { minItems: 8, rate: 0.08, code: 'ELEV8' },
+  { minItems: 12, rate: 0.12, code: 'CLUBDOZEN' },
 ];

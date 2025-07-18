@@ -83,7 +83,7 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
 
   return (
     <>
-      <DiscountConfetti fire={showConfetti} onComplete={handleConfettiComplete} />
+      <DiscountConfetti fire={showConfetti} onComplete={handleConfettiComplete} tier={tier} />
       <Sheet>
         <SheetTrigger asChild>
           <Button
