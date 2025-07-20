@@ -6,16 +6,16 @@ import { FilterProvider } from "../context/filter-context";
 import FilterBar from "../components/FilterBar";
 
 export const metadata: Metadata = {
-  title: 'The Water Bar x Johny Dar | Morning Party',
-  description: 'Free Art Gallery Rave with Luxe Drinks and Wellness',
+  title: 'The Water Bar | Functional Hydration Coach',
+  description: 'Personalized hydration solutions with our AI-powered Water Barista. Get exact fluid volumes tailored to your goals and lifestyle.',
   manifest: '/site.webmanifest',
   icons: {
     icon: '/favicon.ico',
     apple: '/apple-touch-icon.png',
   },
   openGraph: {
-    title: 'The Water Bar x Johny Dar | AI Morning Party',
-    description: 'Book your morning party with our AI Barista.',
+    title: 'The Water Bar | Functional Hydration Coach',
+    description: 'Chat with our AI Water Barista for personalized hydration guidance and functional drinks tailored to your needs.',
     url: 'https://thewater.bar',
     siteName: 'The Water Bar',
     images: [

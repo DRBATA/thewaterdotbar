@@ -22,7 +22,7 @@ export default function FilterBar() {
           className="bg-white/20 backdrop-blur-lg border border-white/30 text-teal-600 hover:bg-white/30 rounded-lg px-4 py-2 font-semibold transition-all shadow-lg"
           onClick={() => setShowFilters(true)}
         >
-          filter by experiences & drinks
+          filter options
         </button>
       </div>
     )

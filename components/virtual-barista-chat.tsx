@@ -21,7 +21,6 @@ export function VirtualBaristaChat() {
   // On first render, populate pill bar with a comprehensive starter set
   useEffect(() => {
     const initial = [
-      "aoi",
       "morning",
       "sparkling",
       "aura",
@@ -32,6 +31,9 @@ export function VirtualBaristaChat() {
       "water",
       "chaga",
       "electrolytes",
+      "energy",
+      "focus",
+      "rest"
     ] as string[]
     setSuggestedTags(initial)
 
@@ -105,7 +107,7 @@ export function VirtualBaristaChat() {
       {
         id: "welcome-message",
         role: "assistant",
-        content: "Hey there, welcome in! How's your day treating you so far? Anything exciting or challenging going on?"
+        content: "Hello! I'm your personal hydration coach. I can calculate your exact fluid needs based on your lifestyle and goals. Tell me about your activity level and what you're looking to achieve today!"
       }
     ]
   });

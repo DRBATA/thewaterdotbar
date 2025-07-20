@@ -9,6 +9,7 @@ import { useFilters } from "@/context/filter-context"
 import { logEvent } from "@/lib/analytics"
 import { WelcomePopup } from "@/components/WelcomePopup"
 import type { MenuItem } from "@/app/page" // Import the MenuItem type
+import { LocationProvider, useLocation } from "@/components/location-provider"
 
 interface CartItem extends MenuItem {
   quantity: number
@@ -19,18 +20,29 @@ interface MenuDisplayProps {
   initialWellnessExperiences: MenuItem[]
 }
 
-export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuDisplayProps) {
+// Create a wrapper component that uses the location provider
+export function MenuDisplay(props: MenuDisplayProps) {
+  return (
+    <LocationProvider fallbackLocation={{ lat: 25.2048, lng: 55.2708 }}>  {/* Dubai fallback */}
+      <LocationAwareMenuDisplay {...props} />
+    </LocationProvider>
+  );
+}
+
+// Inner component with access to location data
+function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuDisplayProps) {
+  const { userLocation, isLoading: isLoadingLocation, error: locationError, calculateDistance } = useLocation();
   const isEventLive = process.env.NEXT_PUBLIC_EVENT_LIVE === 'true';
 
   if (!isEventLive) {
     return (
       <>
         <section className="container mx-auto px-4 pt-24 pb-2 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-stone-900">The Morning Party x Johny Dar Experience</h1>
-          <p className="text-lg md:text-xl text-stone-700 mb-6">Dubai’s first SOBER party trend. Our virtual barista helps you shape your own wellness journey—share your mood, your goals, or just what brings you here.</p>
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-stone-900">The Water Bar</h1>
+          <p className="text-lg md:text-xl text-stone-700 mb-6">Our virtual barista helps you shape your own wellness journey—share your mood, your goals, or just what brings you here.</p>
           <div className="bg-stone-100 rounded-lg p-4 inline-block mb-2 shadow-md">
               <p className="text-xl font-semibold text-stone-800">
-                  Sunday, 6th July | ⏰ 11 AM | 📍Johny Dar Experience, Al Quoz, Dubai
+                  📍 Available at multiple venues across Dubai
               </p>
           </div>
         </section>
@@ -47,9 +59,56 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [total, setTotal] = useState<number>(0)
   const hasProcessedUrlCartAddition = useRef(false);
+  
+  // Update drinks and experiences with real distance data
+  const [drinks, setDrinks] = useState<MenuItem[]>(initialDrinks);
+  const [wellnessExperiences, setWellnessExperiences] = useState<MenuItem[]>(initialWellnessExperiences);
+  
+  // Recalculate distances when location changes
+  useEffect(() => {
+    if (isLoadingLocation) return;
+    
+    // Update drinks with real distance calculations
+    const updatedDrinks = initialDrinks.map(drink => ({
+      ...drink,
+      venues: drink.venues?.map(venue => ({
+        ...venue,
+        distance: calculateDistance(venue.lat, venue.lng)
+      }))
+      .sort((a, b) => (a.distance || 999) - (b.distance || 999))
+      .slice(0, 3) // Keep top 3 closest venues
+    }));
+    
+    // Update experiences with real distance calculations
+    const updatedExperiences = initialWellnessExperiences.map(experience => ({
+      ...experience,
+      venues: experience.venues?.map(venue => ({
+        ...venue,
+        distance: calculateDistance(venue.lat, venue.lng)
+      }))
+      .sort((a, b) => (a.distance || 999) - (b.distance || 999))
+      .slice(0, 3) // Keep top 3 closest venues
+    }));
+    
+    setDrinks(updatedDrinks);
+    setWellnessExperiences(updatedExperiences);
+  }, [initialDrinks, initialWellnessExperiences, isLoadingLocation, calculateDistance]);
 
   // Use the initial data passed as props
   const { activeTags } = useFilters()
+  
+  // Location status indicator content
+  const getLocationStatus = () => {
+    if (isLoadingLocation) return { message: "Finding your location...", color: "text-blue-600" };
+    if (locationError) return { message: "Using default location (Dubai)", color: "text-amber-600" };
+    if (userLocation.lat && userLocation.lng) {
+      return { 
+        message: `Using your current location ${userLocation.lat.toFixed(3)}, ${userLocation.lng.toFixed(3)}`, 
+        color: "text-green-600" 
+      };
+    }
+    return { message: "Using default location", color: "text-amber-600" };
+  };
 
   const tagMatch = (item: MenuItem) => {
     if (activeTags.length === 0) return true
@@ -57,8 +116,11 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
     return activeTags.every(tag => text.includes(tag.toLowerCase()))
   }
 
-  const drinks = initialDrinks.filter(tagMatch)
-  const wellnessExperiences = initialWellnessExperiences.filter(tagMatch)
+  const filterMenuItems = useCallback(() => {
+    const filteredDrinks = drinks.filter(tagMatch)
+    const filteredExperiences = wellnessExperiences.filter(tagMatch)
+    return { filteredDrinks, filteredExperiences }
+  }, [drinks, wellnessExperiences, tagMatch])
 
   // Calculate cart total whenever items change
   useEffect(() => {
@@ -189,12 +251,33 @@ export function MenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuD
     <>
       <WelcomePopup />
       <section className="container mx-auto px-4 pt-24 pb-2 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-stone-900">The Morning Party x Johny Dar Experience</h1>
-        <p className="text-lg md:text-xl text-stone-700 mb-6">Dubai’s first SOBER party trend. Our virtual barista helps you shape your own wellness journey—share your mood, your goals, or just what brings you here.</p>
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-stone-900">The Water Bar</h1>
+        <p className="text-lg md:text-xl text-stone-700 mb-6">Our virtual barista helps you shape your own wellness journey—share your mood, your goals, or just what brings you here.</p>
+        <p className="text-md md:text-lg text-teal-600 font-medium">Add more items to your cart to unlock exclusive discounts!</p>
         <div className="bg-white/20 backdrop-blur-lg border border-white/30 rounded-lg p-4 inline-block mb-2 shadow-lg">
             <p className="text-xl font-semibold text-white">
-                Sunday, 6th July | ⏰ 11 AM | 📍Johny Dar Experience, Al Quoz, Dubai
+                📍 Available at multiple venues across Dubai
             </p>
+        </div>
+        {/* Location status indicator */}
+        <div className={`mt-2 text-sm font-medium ${getLocationStatus().color}`}>
+          <span className="inline-flex items-center gap-1">
+            {isLoadingLocation ? (
+              <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            ) : userLocation.lat && userLocation.lng ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            )}
+            {getLocationStatus().message}
+          </span>
         </div>
       </section>
       <Separator className="my-4" />

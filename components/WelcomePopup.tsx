@@ -23,34 +23,61 @@ export function WelcomePopup() {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-[480px] bg-white/10 backdrop-blur-xl text-white border border-white/30 p-0">
+      <DialogContent className="sm:max-w-[520px] bg-white/10 backdrop-blur-xl text-white border border-white/30 p-0">
         <DialogHeader className="p-6 pb-0">
-          <DialogTitle className="text-2xl font-bold text-white">Don't Miss Our Best Deal!</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-white">Your Personal Hydration Guide</DialogTitle>
           <DialogDescription className="text-stone-200">
-            Experience the full Morning Party for just 85 DHS.
+            Discover your exact fluid needs with our AI-powered Water Barista
           </DialogDescription>
         </DialogHeader>
         <div className="p-6 pt-2">
-          <div className="relative mb-4 rounded-lg overflow-hidden">
-            <Image
-              src="/ticket.png" // Make sure this image exists in your /public folder
-              alt="The Morning Party Deal"
-              width={480}
-              height={270}
-              className="w-full h-auto"
-            />
+          <div className="relative mb-4 rounded-lg overflow-hidden bg-gradient-to-r from-blue-600/30 to-teal-600/30 p-4 border border-white/20">
+            <div className="flex items-center gap-4 mb-3">
+              <div className="w-12 h-12 rounded-full bg-blue-500/40 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium">Chat with our AI Water Barista</h3>
+            </div>
+            <p className="text-stone-100 ml-16">
+              "Tell me about your goals, activity level, and I'll calculate your personalized hydration plan with exact fluid volumes."
+            </p>
           </div>
-          <p className="text-base font-semibold text-stone-100">
-            Entry + Mocktail + Your Choice Of (first come first serve on the morning while availability lasts)
-          </p>
-          <ul className="list-disc list-inside text-stone-200 mt-2 mb-4">
-            <li>🔥 Fire (Infrared Sauna)</li>
-            <li>🧊 Ice (Cold Plunge)</li>
-            <li>💆‍♀️ Massage (20minutes)</li>
-            <li>💧 Float (30 minutes)</li>
+          
+          <h3 className="text-lg font-bold mb-2">How It Works:</h3>
+          <ul className="space-y-3 text-stone-200 mb-4">
+            <li className="flex items-start gap-2">
+              <span className="text-blue-300 font-bold">1.</span> 
+              <span>Share your goals and lifestyle with our AI barista</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-blue-300 font-bold">2.</span> 
+              <span>Get personalized recommendations for optimal hydration and nutrition</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-blue-300 font-bold">3.</span> 
+              <span>Discover functional drinks tailored to your needs:</span>
+            </li>
           </ul>
-          <p className="text-sm text-stone-300">
-            📍 Johny Dar Experience, Al Quoz, Dubai | 🗓️ Sunday, 6th July | ⏰ 11 AM - 2 PM
+          
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="bg-blue-600/20 p-2 rounded-md text-center">
+              <div className="text-xl mb-1">⚡</div>
+              <div className="text-sm font-medium">Energy</div>
+            </div>
+            <div className="bg-purple-600/20 p-2 rounded-md text-center">
+              <div className="text-xl mb-1">🧠</div>
+              <div className="text-sm font-medium">Focus</div>
+            </div>
+            <div className="bg-indigo-600/20 p-2 rounded-md text-center">
+              <div className="text-xl mb-1">😴</div>
+              <div className="text-sm font-medium">Rest</div>
+            </div>
+          </div>
+          
+          <p className="text-sm text-stone-300 italic">
+            Our AI recommends the perfect balance of drinks and meals for your optimal wellness journey
           </p>
         </div>
       </DialogContent>

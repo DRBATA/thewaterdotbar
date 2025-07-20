@@ -38,38 +38,17 @@ export interface MenuItem {
     id: string
     name: string
     address: string
-    distance?: number // km away
+    lat?: number // Latitude coordinate
+    lng?: number // Longitude coordinate
+    distance?: number // km away - will be calculated client-side
     qty_on_hand: number
   }[]
 }
 
-// Simple distance calculation function (Haversine formula)
-function calculateDistance(lat1?: number, lon1?: number, lat2?: number, lon2?: number): number {
-  if (!lat1 || !lon1 || !lat2 || !lon2) return 999; // Default to far away if coordinates missing
-  
-  // Convert degrees to radians
-  const toRad = (x: number) => x * Math.PI / 180;
-  const R = 6371; // Radius of the earth in km
-  
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-  const distance = R * c; // Distance in km
-  
-  return distance;
-}
+// Distance calculation moved to client-side in location-provider.tsx
 
 export default async function HomePage() {
   const supabase = await createClient()
-  
-  // Get user location (in production this would come from browser geolocation)
-  // For demo purposes we'll use a default Dubai location
-  const userLat = 25.2048; // Dubai default latitude
-  const userLng = 55.2708; // Dubai default longitude
 
   // Fetch all products with venue stock information, regardless of is_active flag
   const { data: drinksData, error: drinksError } = await supabase
@@ -123,13 +102,10 @@ export default async function HomePage() {
         id: vs.venue.id,
         name: vs.venue.name,
         address: vs.venue.address,
-        distance: calculateDistance(userLat, userLng, vs.venue.lat, vs.venue.lng),
+        lat: vs.venue.lat,
+        lng: vs.venue.lng,
         qty_on_hand: vs.qty_on_hand
-      }))
-      // Sort PURELY by distance - stock quantity doesn't affect ranking
-      ?.sort((a: any, b: any) => a.distance - b.distance)
-      // Limit to top 3 closest venues
-      ?.slice(0, 3) || [];
+      })) || [];
       
     return {
       id: d.id,
@@ -161,13 +137,10 @@ export default async function HomePage() {
         id: vs.venue.id,
         name: vs.venue.name,
         address: vs.venue.address,
-        distance: calculateDistance(userLat, userLng, vs.venue.lat, vs.venue.lng),
+        lat: vs.venue.lat,
+        lng: vs.venue.lng,
         qty_on_hand: vs.qty_on_hand
-      }))
-      // Sort PURELY by distance - stock quantity doesn't affect ranking
-      ?.sort((a: any, b: any) => a.distance - b.distance)
-      // Limit to top 3 closest venues
-      ?.slice(0, 3) || [];
+      })) || [];
       
     return {
       id: w.id,

@@ -1,16 +1,15 @@
 "use client";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { useSearchParams } from "next/navigation";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// Create a ClaimForm component that uses useSearchParams
-function ClaimForm() {
-  const searchParams = useSearchParams();
+// Main claim page component
+export default function ClaimPage() {
+  const isEventLive = process.env.NEXT_PUBLIC_EVENT_LIVE === 'true';
   
   const [pin, setPin] = useState("");
   const [status, setStatus] = useState<string | null>(null);
@@ -18,6 +17,8 @@ function ClaimForm() {
   const [emailOk, setEmailOk] = useState(false);
   const [tokenOk, setTokenOk] = useState(false);
   const [redemptionChoice, setRedemptionChoice] = useState<string>("");
+  
+  // Venue state
   const [venues, setVenues] = useState<Array<{id: string; name: string}>>([]);
   const [selectedVenueId, setSelectedVenueId] = useState<string>("");
   const [isLoadingVenues, setIsLoadingVenues] = useState(false);
@@ -39,11 +40,8 @@ function ClaimForm() {
           console.error("Error fetching venues:", error);
         } else {
           setVenues(data || []);
-          
-          // Check if venue_id is in URL parameters (for QR code scanning)
-          const venueIdFromUrl = searchParams.get('venue_id');
-          if (venueIdFromUrl && data?.some(v => v.id === venueIdFromUrl)) {
-            setSelectedVenueId(venueIdFromUrl);
+          if (data && data.length > 0) {
+            setSelectedVenueId(data[0].id); // Default select the first venue
           }
         }
       } catch (err) {
@@ -54,10 +52,7 @@ function ClaimForm() {
     };
     
     fetchVenues();
-  }, [searchParams]);
-  
-  // Rest of the component (fetchDetails, completeClaim, etc) will be added below
-  // We'll just move everything from the original component here
+  }, []);
   
   const fetchDetails = async () => {
     setStatus("loading");
@@ -98,13 +93,6 @@ function ClaimForm() {
     setDetails(null);
   };
 
-}
-
-
-// Main component that wraps ClaimForm in Suspense
-export default function ClaimPage() {
-  const isEventLive = process.env.NEXT_PUBLIC_EVENT_LIVE === 'true';
-
   if (!isEventLive) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
@@ -115,19 +103,13 @@ export default function ClaimPage() {
       </main>
     );
   }
-  
-  // Wrap the ClaimForm component in Suspense
-  return (
-    <Suspense fallback={<main className="min-h-screen flex flex-col items-center justify-center"><p>Loading claim page...</p></main>}>
-      <ClaimForm />
-    </Suspense>
-  );
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
       <h1 className="text-3xl font-semibold mb-6">Claim Page</h1>
+      
       {status === null && (
-        <div className="space-y-4">
+        <div className="space-y-4 max-w-md w-full">
           <input
             type="number"
             value={pin}
@@ -135,17 +117,41 @@ export default function ClaimPage() {
             className="border p-2 text-center text-xl w-40"
             placeholder="PIN"
           />
+          
+          {/* Venue Selection Dropdown */}
+          <div className="mt-4">
+            <label htmlFor="venue" className="block text-sm font-medium text-gray-700 mb-1">Select Venue</label>
+            <select
+              id="venue"
+              value={selectedVenueId}
+              onChange={(e) => setSelectedVenueId(e.target.value)}
+              className="border p-2 rounded w-full"
+              disabled={isLoadingVenues}
+              required
+            >
+              {isLoadingVenues ? (
+                <option value="">Loading venues...</option>
+              ) : venues.length > 0 ? (
+                venues.map(venue => (
+                  <option key={venue.id} value={venue.id}>{venue.name}</option>
+                ))
+              ) : (
+                <option value="">No venues available</option>
+              )}
+            </select>
+          </div>
+          
           <button
             onClick={fetchDetails}
-            disabled={pin.length !== 4}
-            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+            disabled={pin.length !== 4 || !selectedVenueId}
+            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50 w-full mt-4"
           >
             Redeem
           </button>
         </div>
       )}
 
-      {status === "loading" && <p>Loading…</p>}
+      {status === "loading" && <p>Loading...</p>}
 
       {status === "confirm" && details && (
         <div className="space-y-4 max-w-sm text-left">
@@ -176,8 +182,8 @@ export default function ClaimPage() {
                 ))}
               </select>
             )}
-            {searchParams.get('venue_id') && selectedVenueId && (
-              <p className="text-xs text-blue-600 mt-1">Venue pre-selected from QR code</p>
+            {selectedVenueId && (
+              <p className="text-xs text-blue-600 mt-1">Please confirm this venue is correct</p>
             )}
           </div>
 
