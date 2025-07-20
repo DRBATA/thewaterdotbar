@@ -57,12 +57,6 @@ export function LocationProvider({ children, fallbackLocation }: { children: Rea
   const isBrowser = typeof window !== 'undefined';
 
   useEffect(() => {
-    // Default to fallback location if provided
-    if (fallbackLocation) {
-      setUserLocation({ lat: fallbackLocation.lat, lng: fallbackLocation.lng });
-      setIsLoading(false);
-      return;
-    }
 
     if (!isBrowser) {
       setIsLoading(false);
@@ -82,8 +76,13 @@ export function LocationProvider({ children, fallbackLocation }: { children: Rea
         (error) => {
           console.error("Geolocation error:", error);
           setError("Unable to retrieve your location. Using default location instead.");
-          // Fall back to Dubai coordinates if geolocation fails
-          setUserLocation({ lat: 25.2048, lng: 55.2708 });
+          // Fall back to provided fallback location if geolocation fails
+          if (fallbackLocation) {
+            setUserLocation({ lat: fallbackLocation.lat, lng: fallbackLocation.lng });
+          } else {
+            // Default to Dubai if no fallback provided
+            setUserLocation({ lat: 25.2048, lng: 55.2708 });
+          }
           setIsLoading(false);
         },
         {
@@ -94,8 +93,13 @@ export function LocationProvider({ children, fallbackLocation }: { children: Rea
       );
     } else {
       setError("Geolocation is not supported by your browser. Using default location instead.");
-      // Fall back to Dubai coordinates if geolocation not supported
-      setUserLocation({ lat: 25.2048, lng: 55.2708 });
+      // Fall back to provided fallback location if geolocation not supported
+      if (fallbackLocation) {
+        setUserLocation({ lat: fallbackLocation.lat, lng: fallbackLocation.lng });
+      } else {
+        // Default to Dubai if no fallback provided
+        setUserLocation({ lat: 25.2048, lng: 55.2708 });
+      }
       setIsLoading(false);
     }
   }, [isBrowser, fallbackLocation]);

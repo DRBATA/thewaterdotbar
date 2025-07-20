@@ -149,7 +149,7 @@ export function VirtualBaristaChat() {
             className="rounded-full px-6 py-3 bg-teal-400/90 hover:bg-teal-500 text-white shadow-lg flex items-center gap-2 font-bold text-base"
           >
             <MessageSquare className="size-5" />
-            Perfect your morning
+            Perfect your functional hydration
           </Button>
         </div>
       </>

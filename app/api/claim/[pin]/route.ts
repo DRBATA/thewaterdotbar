@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { Resend } from 'resend';
 
 const supabaseAdmin = createSupabaseClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -93,6 +94,63 @@ export async function POST(req: NextRequest, { params }: { params: { pin: string
       console.error("Failed to update stock:", stockError);
       // We don't return an error here, as the PIN was successfully claimed
       // But we do log the error for monitoring
+    } else {
+      // 4. Check if stock is running low after decrement
+      const LOW_STOCK_THRESHOLD = 5; // Alert when 5 or fewer items left
+      
+      // Get current stock level
+      const { data: currentStock } = await supabaseAdmin
+        .from("venue_stock")
+        .select("qty_on_hand")
+        .eq("venue_id", venue_id)
+        .eq("product_id", orderItem.item_id)
+        .single();
+      
+      // Get product and venue details for the alert
+      if (currentStock && currentStock.qty_on_hand <= LOW_STOCK_THRESHOLD) {
+        // Get product name
+        const { data: product } = await supabaseAdmin
+          .from("products")
+          .select("name")
+          .eq("id", orderItem.item_id)
+          .single();
+        
+        // Get venue name
+        const { data: venue } = await supabaseAdmin
+          .from("venues")
+          .select("name")
+          .eq("id", venue_id)
+          .single();
+        
+        if (product && venue) {
+          // Send low stock alert email
+          try {
+            const resend = new Resend(process.env.RESEND_API_KEY);
+            await resend.emails.send({
+              from: 'The Water Bar Stock Alert <alerts@thewater.bar>',
+              to: ['gaia@inspiredbeingco.com'],
+              subject: `🚨 Low Stock Alert: ${product.name} at ${venue.name}`,
+              html: `
+                <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                  <h1 style="color: #e53e3e;">⚠️ Low Stock Alert</h1>
+                  <p>Hello Water Bar Team,</p>
+                  <p>The following product is running low and needs restocking:</p>
+                  <div style="background-color: #f9f9f9; border-left: 4px solid #e53e3e; padding: 15px; margin: 20px 0;">
+                    <p><strong>Product:</strong> ${product.name}</p>
+                    <p><strong>Location:</strong> ${venue.name}</p>
+                    <p><strong>Remaining Stock:</strong> ${currentStock.qty_on_hand} units</p>
+                  </div>
+                  <p>Please arrange for a restock as soon as possible.</p>
+                  <p>Thank you,<br>The Water Bar System</p>
+                </div>
+              `
+            });
+            console.log(`Low stock alert sent for ${product.name} at ${venue.name}`);
+          } catch (emailError) {
+            console.error('Failed to send low stock alert email:', emailError);
+          }
+        }
+      }
     }
   }
   
