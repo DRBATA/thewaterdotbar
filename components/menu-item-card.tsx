@@ -31,7 +31,13 @@ interface MenuItemCardProps {
   quantity: number
 }
 
+// Import location context
+import { useLocation } from "@/components/location-provider";
+
 export function MenuItemCard({ item, onAddToCartAction, onRemoveFromCartAction, quantity }: MenuItemCardProps) {
+  // Get location enabled state from context
+  const { locationEnabled } = useLocation();
+  
   // State to track if venue list is expanded
   const [venuesExpanded, setVenuesExpanded] = useState(false);
   
@@ -88,7 +94,9 @@ export function MenuItemCard({ item, onAddToCartAction, onRemoveFromCartAction, 
                 aria-label={`Get directions to ${venue.name}`}
               >
                 <span>
-                  {venue.name} ({venue.distance !== undefined ? venue.distance.toFixed(1) : '?'} km) • {venue.qty_on_hand} in stock
+                  {venue.name} {locationEnabled 
+                    ? `(${venue.distance !== undefined ? venue.distance.toFixed(1) : '?'} km)` 
+                    : ''} • {venue.qty_on_hand} in stock
                 </span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">
                   <path d="M9 18l6-6-6-6"></path>
