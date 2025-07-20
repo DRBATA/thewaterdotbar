@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { useSearchParams } from "next/navigation";
 
@@ -8,19 +8,8 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export default function ClaimPage() {
-  const isEventLive = process.env.NEXT_PUBLIC_EVENT_LIVE === 'true';
-
-  if (!isEventLive) {
-    return (
-      <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-6 rounded-md shadow-lg max-w-md mx-auto" role="alert">
-          <h1 className="font-bold text-2xl mb-2">The Event is Now Over</h1>
-          <p className="text-lg">PIN claims are no longer being accepted. Thank you for attending!</p>
-        </div>
-      </main>
-    );
-  }
+// Create a ClaimForm component that uses useSearchParams
+function ClaimForm() {
   const searchParams = useSearchParams();
   
   const [pin, setPin] = useState("");
@@ -67,7 +56,9 @@ export default function ClaimPage() {
     fetchVenues();
   }, [searchParams]);
   
-
+  // Rest of the component (fetchDetails, completeClaim, etc) will be added below
+  // We'll just move everything from the original component here
+  
   const fetchDetails = async () => {
     setStatus("loading");
     const res = await fetch(`/api/claim/${pin}`);
@@ -106,6 +97,31 @@ export default function ClaimPage() {
     setStatus(null);
     setDetails(null);
   };
+
+}
+
+
+// Main component that wraps ClaimForm in Suspense
+export default function ClaimPage() {
+  const isEventLive = process.env.NEXT_PUBLIC_EVENT_LIVE === 'true';
+
+  if (!isEventLive) {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-6 rounded-md shadow-lg max-w-md mx-auto" role="alert">
+          <h1 className="font-bold text-2xl mb-2">The Event is Now Over</h1>
+          <p className="text-lg">PIN claims are no longer being accepted. Thank you for attending!</p>
+        </div>
+      </main>
+    );
+  }
+  
+  // Wrap the ClaimForm component in Suspense
+  return (
+    <Suspense fallback={<main className="min-h-screen flex flex-col items-center justify-center"><p>Loading claim page...</p></main>}>
+      <ClaimForm />
+    </Suspense>
+  );
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
