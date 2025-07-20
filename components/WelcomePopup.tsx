@@ -3,16 +3,16 @@
 import { useState, useEffect } from 'react';
 import {
   Dialog,
-  DialogPortal,
-  DialogOverlay,
+  DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import * as DialogPrimitive from "@radix-ui/react-dialog";
+
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { X } from 'lucide-react';
 import Image from 'next/image';
 
 export function WelcomePopup() {
@@ -28,64 +28,61 @@ export function WelcomePopup() {
     }
   }, []);
 
+  const handleClose = () => {
+    sessionStorage.setItem('hasSeenWelcomePopup', 'true');
+    setIsOpen(false);
+  };
+
   const handleContinue = () => {
-    // Only proceed if both checkboxes are checked
-    if (locationConsent && medicalDisclaimer) {
-      // Request location permission if user consented
-      if (locationConsent && navigator.geolocation) {
-        setIsRequestingLocation(true);
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            // Location successfully acquired
-            console.log("Geolocation acquired:", position.coords.latitude, position.coords.longitude);
-            setIsRequestingLocation(false);
-            sessionStorage.setItem('hasSeenWelcomePopup', 'true');
-            setIsOpen(false);
-          },
-          (error) => {
-            // Error getting location - still close dialog but log the error
-            console.error("Geolocation error:", error.message);
-            setIsRequestingLocation(false);
-            sessionStorage.setItem('hasSeenWelcomePopup', 'true');
-            setIsOpen(false);
-          }
-        );
-      } else {
-        // If no location consent or geolocation not available, just close
-        sessionStorage.setItem('hasSeenWelcomePopup', 'true');
-        setIsOpen(false);
-      }
+    // Request location permission if user consented
+    if (locationConsent && navigator.geolocation) {
+      setIsRequestingLocation(true);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          // Location successfully acquired
+          console.log("Geolocation acquired:", position.coords.latitude, position.coords.longitude);
+          setIsRequestingLocation(false);
+          handleClose();
+        },
+        (error) => {
+          // Error getting location - still close dialog but log the error
+          console.error("Geolocation error:", error.message);
+          setIsRequestingLocation(false);
+          handleClose();
+        }
+      );
+    } else {
+      // If no location consent or geolocation not available, just close
+      handleClose();
     }
   };
 
   return (
-    // Remove ability to close with escape key or clicking outside
-    <Dialog open={isOpen} onOpenChange={() => {}} modal={true}>
-      <DialogPortal>
-        <DialogOverlay />
-        <DialogPrimitive.Content 
-          className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-[520px] translate-x-[-50%] translate-y-[-50%] gap-4 bg-white/10 backdrop-blur-xl text-white border border-white/30 p-0 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg"
-        >
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent className="sm:max-w-[520px] bg-white/10 backdrop-blur-xl text-white border border-white/30 p-0">
+        {/* Add X button */}
+        <div className="absolute right-4 top-4">
+          <button 
+            onClick={handleClose}
+            className="rounded-full bg-white/10 p-1 hover:bg-white/20 transition-colors"
+          >
+            <X className="h-4 w-4 text-white/70" />
+          </button>
+        </div>
+        
         <DialogHeader className="p-6 pb-2">
           <DialogTitle className="text-2xl font-bold text-white text-center">Welcome to The Water Bar</DialogTitle>
         </DialogHeader>
+        
         <div className="p-6 pt-0">
-          <div className="relative mb-6 rounded-lg overflow-hidden bg-gradient-to-r from-blue-600/30 to-teal-600/30 p-4 border border-white/20">
-            <div className="flex items-center gap-4 mb-3">
-              <div className="w-12 h-12 rounded-full bg-blue-500/40 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium">Advanced AI Hydration Intelligence</h3>
-            </div>
-            <p className="text-stone-100 ml-16">
-              "I can analyze your activity level, performance needs, and recovery goals to create a precision-targeted hydration plan."
+          <div className="mb-6 text-center">
+            <p className="text-stone-100 mb-4">
+              Discover premium functional hydration tailored to your wellness goals.
             </p>
           </div>
           
-          <div className="space-y-4 border-t border-white/20 pt-4">
-            <div className="flex items-center space-x-2">
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3">
               <Checkbox 
                 id="location-consent" 
                 checked={locationConsent} 
@@ -93,13 +90,13 @@ export function WelcomePopup() {
               />
               <label 
                 htmlFor="location-consent" 
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-stone-200"
+                className="text-base leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-white"
               >
-                I allow The Water Bar to use my location to show the nearest venues with available drinks
+                Find locations near me with available drinks
               </label>
             </div>
             
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
               <Checkbox 
                 id="medical-disclaimer" 
                 checked={medicalDisclaimer} 
@@ -107,9 +104,9 @@ export function WelcomePopup() {
               />
               <label 
                 htmlFor="medical-disclaimer" 
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-stone-200"
+                className="text-base leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-white"
               >
-                I confirm I have no medical conditions that would be affected by the consumption of functional drinks
+                I have no health concerns with functional ingredients
               </label>
             </div>
           </div>
@@ -118,14 +115,13 @@ export function WelcomePopup() {
         <DialogFooter className="bg-black/20 px-6 py-4">
           <Button 
             onClick={handleContinue} 
-            disabled={!locationConsent || !medicalDisclaimer || isRequestingLocation}
+            variant="default"
             className="w-full bg-blue-600 hover:bg-blue-700"
           >
-            {isRequestingLocation ? 'Getting location...' : 'Continue'}
+            {isRequestingLocation ? 'Finding venues near you...' : 'Explore The Water Bar'}
           </Button>
         </DialogFooter>
-        </DialogPrimitive.Content>
-      </DialogPortal>
+      </DialogContent>
     </Dialog>
   );
 }
