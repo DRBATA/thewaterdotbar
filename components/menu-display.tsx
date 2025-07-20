@@ -38,12 +38,29 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
     return (
       <>
         <section className="container mx-auto px-4 pt-24 pb-2 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-stone-900">The Water Bar</h1>
-          <p className="text-lg md:text-xl text-stone-700 mb-6">Our virtual barista helps you shape your own wellness journey—share your mood, your goals, or just what brings you here.</p>
-          <div className="bg-stone-100 rounded-lg p-4 inline-block mb-2 shadow-md">
-              <p className="text-xl font-semibold text-stone-800">
-                  📍 Available at multiple venues across Dubai
-              </p>
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-2 text-stone-900">The Water Bar</h1>
+          <p className="text-xl md:text-2xl font-semibold text-blue-600 mb-3">Perfect Your Functional Hydration</p>
+          
+          <div className="max-w-3xl mx-auto mb-4">
+            <p className="text-lg text-stone-700">AI-assisted advanced electrolyte optimization with premium Prana spring glacial water</p>
+          </div>
+          
+          <div className="flex justify-center gap-4 mb-5">
+            <div className="bg-blue-50 rounded-lg px-4 py-2 inline-block shadow-sm border border-blue-100">
+              <p className="font-medium text-blue-800">🏃 Performance</p>
+            </div>
+            <div className="bg-purple-50 rounded-lg px-4 py-2 inline-block shadow-sm border border-purple-100">
+              <p className="font-medium text-purple-800">⚡ Electrolytes</p>
+            </div>
+            <div className="bg-indigo-50 rounded-lg px-4 py-2 inline-block shadow-sm border border-indigo-100">
+              <p className="font-medium text-indigo-800">🔄 Recovery</p>
+            </div>
+          </div>
+          
+          <div className="bg-stone-100 rounded-lg p-3 inline-block mb-2 shadow-md">
+            <p className="text-xl font-semibold text-stone-800">
+                📍 Available at multiple venues across Dubai
+            </p>
           </div>
         </section>
         <Separator className="my-4" />
