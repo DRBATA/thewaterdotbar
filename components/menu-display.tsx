@@ -42,7 +42,8 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
           <p className="text-xl md:text-2xl font-semibold text-blue-600 mb-3">Perfect Your Functional Hydration</p>
           
           <div className="max-w-3xl mx-auto mb-4">
-            <p className="text-lg text-stone-700">AI-assisted advanced electrolyte optimization with premium Prana spring glacial water</p>
+            <p className="text-lg text-stone-700">Get a precision-crafted hydration plan tailored to your body type, activity level, and wellness goals.</p>
+            <p className="text-md text-stone-600 mt-1">Our AI Hydration Coach analyzes your unique needs for optimal performance, electrolyte balance, and recovery.</p>
           </div>
           
           <div className="flex justify-center gap-4 mb-5">
@@ -57,11 +58,24 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
             </div>
           </div>
           
-          <div className="bg-stone-100 rounded-lg p-3 inline-block mb-2 shadow-md">
-            <p className="text-xl font-semibold text-stone-800">
-                📍 Available at multiple venues across Dubai
-            </p>
-          </div>
+          <button 
+            onClick={() => {
+              if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                  (position) => {
+                    console.log("Geolocation acquired:", position.coords.latitude, position.coords.longitude);
+                    // Location is handled by the LocationProvider
+                  },
+                  (error) => {
+                    console.error("Geolocation error:", error.message);
+                  }
+                );
+              }
+            }} 
+            className="bg-stone-100 hover:bg-stone-200 transition-colors rounded-lg p-3 inline-block mb-2 shadow-md cursor-pointer"
+          >
+            <p className="font-medium text-stone-800">🔴 {userLocation ? 'Showing venues near you' : 'Find venues with available drinks near me'}</p>
+          </button>
         </section>
         <Separator className="my-4" />
         <main className="container mx-auto px-4 py-8 text-center">

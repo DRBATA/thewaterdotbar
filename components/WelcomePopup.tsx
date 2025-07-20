@@ -22,10 +22,16 @@ export function WelcomePopup() {
   const [isRequestingLocation, setIsRequestingLocation] = useState(false);
 
   useEffect(() => {
+    // Popup is currently disabled
+    // To re-enable, remove the next line and uncomment the code below
+    return;
+    
+    /* 
     const hasSeenPopup = sessionStorage.getItem('hasSeenWelcomePopup');
     if (!hasSeenPopup) {
       setIsOpen(true);
     }
+    */
   }, []);
 
   const handleClose = () => {
