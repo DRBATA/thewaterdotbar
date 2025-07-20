@@ -20,11 +20,9 @@ export async function POST(req: Request) {
   const { data: products, error: productsError } = await supabase
     .from("products")
     .select("id, name, description, price, tags, pairings")
-    .eq("is_active", true)
   const { data: experiences, error: experiencesError } = await supabase
     .from("experiences")
     .select("id, name, description, price, duration_minutes, tags, pairings")
-    .eq("is_active", true)
 
   if (productsError || experiencesError) {
     console.error("Supabase error:", productsError || experiencesError)
@@ -94,7 +92,9 @@ This is your most advanced function. Once you know the user's daily targets and 
     This package MUST be a hybrid of:
     *   **Water Bar Products** (from the 'MENU_DATA')
     *   **General Food/Drink Items** (from the 'NUTRITIONAL_DATA')
-5.  **Justify Your Choices:** Briefly explain why you're recommending each item, connecting it to BOTH their nutritional deficits AND their wellness goals (e.g., "For your potassium deficit, I've added a banana. And for your gut health goal, I've included our 'Aqua Aura' which contains probiotics...").
+5.  **Justify Your Choices:** Briefly explain why you're recommending each item, connecting it to BOTH their nutritional deficits AND their wellness goals (e.g., "For your potassium deficit, I've added a banana. And for your gut health goal, I've included our 'Aqua Aura' which contains probiotics..."). 
+
+   **Health Guidance Note:** In your explanations, always include a gentle reminder that your recommendations are designed for generally healthy individuals. Use conversational language to mention that people with specific health conditions or those taking medications that affect hydration should consult healthcare providers before making significant changes. This should be woven naturally into your recommendations rather than presented as a formal disclaimer. This ensures all users receive appropriate context while still benefiting from your general hydration principles.
 
 ---
 # Body Fat Estimation Reference
