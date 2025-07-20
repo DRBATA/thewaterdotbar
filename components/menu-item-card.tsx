@@ -18,6 +18,8 @@ interface MenuItem {
     address: string
     distance?: number
     qty_on_hand: number
+    lat?: number
+    lng?: number
   }[]
 }
 
@@ -48,16 +50,32 @@ export function MenuItemCard({ item, onAddToCartAction, onRemoveFromCartAction, 
       {/* Venue availability badges */}
       {hasVenues && (
         <div className="absolute bottom-0 left-0 z-10 w-full">
-          {item.venues?.map((venue, index) => (
-            <div 
-              key={venue.id}
-              className={`${index === 0 ? 'bg-emerald-500' : index === 1 ? 'bg-emerald-600' : 'bg-emerald-700'} 
-                        text-white py-1 px-3 text-xs font-medium ${index === 0 ? 'rounded-tr-lg' : ''}`}
-              style={{ marginTop: index > 0 ? '-1px' : '0' }}
-            >
-              {venue.name} ({venue.distance !== undefined ? venue.distance.toFixed(1) : '?'} km) • {venue.qty_on_hand} in stock
-            </div>
-          ))}
+          {item.venues?.map((venue, index) => {
+            // Create a Google Maps URL using venue coordinates if available, otherwise use venue name
+            const mapUrl = venue.lat && venue.lng
+              ? `https://www.google.com/maps/dir/?api=1&destination=${venue.lat},${venue.lng}`
+              : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue.name)}+Dubai`;
+            
+            return (
+              <div 
+                key={venue.id}
+                className={`${index === 0 ? 'bg-emerald-500' : index === 1 ? 'bg-emerald-600' : 'bg-emerald-700'} 
+                          text-white py-1 px-3 text-xs font-medium ${index === 0 ? 'rounded-tr-lg' : ''} cursor-pointer flex items-center justify-between group`}
+                style={{ marginTop: index > 0 ? '-1px' : '0' }}
+                onClick={() => window.open(mapUrl, '_blank')}
+                role="button"
+                tabIndex={0}
+                aria-label={`Get directions to ${venue.name}`}
+              >
+                <span>
+                  {venue.name} ({venue.distance !== undefined ? venue.distance.toFixed(1) : '?'} km) • {venue.qty_on_hand} in stock
+                </span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                  <path d="M9 18l6-6-6-6"></path>
+                </svg>
+              </div>
+            );
+          })}
         </div>
       )}
       <div className="relative h-48 w-full">
