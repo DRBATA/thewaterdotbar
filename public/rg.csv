@@ -1,0 +1,2 @@
+name,description,price,image_url,category,tags,created_at,pairings,id,stripe_price_id,is_active
+Rite Greens,,20.00,rg.png,drink,"[""micronutrient"",""greens"",""magnesium"",""b-vitamins"",""brain"",""focus"",""energy"",""ATP"",""mitochondria"",""mental performance""]",2025-07-17 16:43:04.677826+00,[],8449b9da-6f17-4a62-885f-813bd4c5f4d4,price_1RljcDDrbIjw1y3SrIOjqjq1,true

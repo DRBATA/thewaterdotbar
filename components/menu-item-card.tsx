@@ -12,6 +12,13 @@ interface MenuItem {
   description: string
   price: number
   image: string
+  venues?: {
+    id: string
+    name: string
+    address: string
+    distance?: number
+    qty_on_hand: number
+  }[]
 }
 
 interface MenuItemCardProps {
@@ -26,11 +33,31 @@ export function MenuItemCard({ item, onAddToCartAction, onRemoveFromCartAction, 
   const isMorningParty = item.name.toLowerCase().includes("morning party");
   const isFree = item.price === 0;
   
+  // Check if this item has venue availability information
+  const hasVenues = item.venues && item.venues.length > 0;
+  
   return (
     <Card className={`relative w-full max-w-sm rounded-xl ${isMorningParty ? "bg-amber-50 border-amber-300 shadow-lg" : "bg-white/40 backdrop-blur-lg border-white/50 shadow-lg"} transition-all hover:shadow-xl border`}>
+      {/* Free badge */}
       {(isMorningParty && isFree) && (
         <div className="absolute top-0 right-0 z-10 bg-green-500 text-white py-1 px-3 rounded-bl-lg font-bold tracking-wide">
           FREE
+        </div>
+      )}
+      
+      {/* Venue availability badges */}
+      {hasVenues && (
+        <div className="absolute bottom-0 left-0 z-10 w-full">
+          {item.venues?.map((venue, index) => (
+            <div 
+              key={venue.id}
+              className={`${index === 0 ? 'bg-emerald-500' : index === 1 ? 'bg-emerald-600' : 'bg-emerald-700'} 
+                        text-white py-1 px-3 text-xs font-medium ${index === 0 ? 'rounded-tr-lg' : ''}`}
+              style={{ marginTop: index > 0 ? '-1px' : '0' }}
+            >
+              {venue.name} ({venue.distance !== undefined ? venue.distance.toFixed(1) : '?'} km) • {venue.qty_on_hand} in stock
+            </div>
+          ))}
         </div>
       )}
       <div className="relative h-48 w-full">

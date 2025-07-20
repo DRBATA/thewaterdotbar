@@ -38,21 +38,67 @@ export async function GET(_req: NextRequest, { params }: { params: { pin: string
   return NextResponse.json(result);
 }
 
-export async function POST(_req: NextRequest, { params }: { params: { pin: string } }) {
+export async function POST(req: NextRequest, { params }: { params: { pin: string } }) {
   const { pin } = params;
-  const { error, data } = await supabaseAdmin
+  const body = await req.json();
+  const { venue_id, redemption_choice } = body;
+  
+  // Validate venue_id is provided
+  if (!venue_id) {
+    return NextResponse.json({ error: "Venue selection required" }, { status: 400 });
+  }
+  
+  // 1. First get the order item to confirm it exists and is unclaimed
+  const { data: orderItem, error: fetchError } = await supabaseAdmin
     .from("order_items")
-    .update({ claimed_at: new Date().toISOString() })
+    .select("id, item_id")
     .eq("pin_code", pin)
     .is("claimed_at", null)
+    .maybeSingle();
+    
+  if (fetchError) {
+    return NextResponse.json({ error: fetchError.message }, { status: 500 });
+  }
+  
+  if (!orderItem) {
+    return NextResponse.json({ error: "Invalid PIN or already claimed" }, { status: 404 });
+  }
+  
+  // 2. Update order_item with claimed_at and venue_id
+  const { error, data } = await supabaseAdmin
+    .from("order_items")
+    .update({ 
+      claimed_at: new Date().toISOString(),
+      venue_id: venue_id,
+      redemption_choice: redemption_choice || null
+    })
+    .eq("id", orderItem.id)
     .select()
     .maybeSingle();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  if (!data) {
-    return NextResponse.json({ error: "Invalid or already claimed" }, { status: 404 });
+  
+  // 3. Decrement stock at the selected venue
+  if (orderItem.item_id) {
+    const { error: stockError } = await supabaseAdmin
+      .from("venue_stock")
+      .update({ qty_on_hand: supabaseAdmin.rpc('decrement', { val: 1 }) })
+      .eq("venue_id", venue_id)
+      .eq("product_id", orderItem.item_id)
+      .gt("qty_on_hand", 0);
+      
+    if (stockError) {
+      console.error("Failed to update stock:", stockError);
+      // We don't return an error here, as the PIN was successfully claimed
+      // But we do log the error for monitoring
+    }
   }
-  return NextResponse.json({ success: true, claimed_at: data.claimed_at });
+  
+  return NextResponse.json({ 
+    success: true, 
+    claimed_at: data.claimed_at, 
+    venue_id: data.venue_id 
+  });
 }
