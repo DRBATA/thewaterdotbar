@@ -1,9 +1,10 @@
 "use client"
 import Image from "next/image"
+import { useState } from "react"
 import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Minus } from "lucide-react"
+import { Plus, Minus, ChevronDown, ChevronUp } from "lucide-react"
 import GlowEffect from "./GlowEffect"
 
 interface MenuItem {
@@ -31,12 +32,16 @@ interface MenuItemCardProps {
 }
 
 export function MenuItemCard({ item, onAddToCartAction, onRemoveFromCartAction, quantity }: MenuItemCardProps) {
+  // State to track if venue list is expanded
+  const [venuesExpanded, setVenuesExpanded] = useState(false);
+  
   // Check if this is the Morning Party ticket
   const isMorningParty = item.name.toLowerCase().includes("morning party");
   const isFree = item.price === 0;
   
   // Check if this item has venue availability information
   const hasVenues = item.venues && item.venues.length > 0;
+  const hasMultipleVenues = item.venues && item.venues.length > 1;
   
   return (
     <Card className={`relative w-full max-w-sm rounded-xl ${isMorningParty ? "bg-amber-50 border-amber-300 shadow-lg" : "bg-white/40 backdrop-blur-lg border-white/50 shadow-lg"} transition-all hover:shadow-xl border`}>
@@ -50,19 +55,34 @@ export function MenuItemCard({ item, onAddToCartAction, onRemoveFromCartAction, 
       {/* Venue availability badges */}
       {hasVenues && (
         <div className="absolute bottom-0 left-0 z-10 w-full">
-          {item.venues?.map((venue, index) => {
+          {/* Show closest venue or all venues if expanded */}
+          {item.venues?.slice(0, venuesExpanded ? item.venues.length : 1).map((venue, index) => {
             // Create a Google Maps URL using venue coordinates if available, otherwise use venue name
             const mapUrl = venue.lat && venue.lng
               ? `https://www.google.com/maps/dir/?api=1&destination=${venue.lat},${venue.lng}`
               : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue.name)}+Dubai`;
             
+            // Determine color based on venue position
+            const bgColorClass = index === 0 
+              ? 'bg-emerald-500' 
+              : index === 1 
+                ? 'bg-emerald-600' 
+                : 'bg-emerald-700';
+            
             return (
               <div 
                 key={venue.id}
-                className={`${index === 0 ? 'bg-emerald-500' : index === 1 ? 'bg-emerald-600' : 'bg-emerald-700'} 
-                          text-white py-1 px-3 text-xs font-medium ${index === 0 ? 'rounded-tr-lg' : ''} cursor-pointer flex items-center justify-between group`}
+                className={`${bgColorClass} text-white py-1 px-3 text-xs font-medium 
+                          ${index === 0 && !venuesExpanded ? 'rounded-tr-lg' : ''} cursor-pointer 
+                          flex items-center justify-between group`}
                 style={{ marginTop: index > 0 ? '-1px' : '0' }}
-                onClick={() => window.open(mapUrl, '_blank')}
+                onClick={(e) => {
+                  // Don't navigate if clicking the toggle button area
+                  if ((e.target as HTMLElement).closest('.venue-expand-button')) {
+                    return;
+                  }
+                  window.open(mapUrl, '_blank');
+                }}
                 role="button"
                 tabIndex={0}
                 aria-label={`Get directions to ${venue.name}`}
@@ -76,6 +96,27 @@ export function MenuItemCard({ item, onAddToCartAction, onRemoveFromCartAction, 
               </div>
             );
           })}
+          
+          {/* Expand/collapse button only if multiple venues */}
+          {hasMultipleVenues && (
+            <div 
+              className="venue-expand-button bg-emerald-800 text-white py-1 px-3 text-xs font-medium rounded-br-lg cursor-pointer flex items-center justify-center"
+              onClick={(e) => {
+                e.stopPropagation();
+                setVenuesExpanded(!venuesExpanded);
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label={venuesExpanded ? 'Show fewer venues' : 'Show all venues'}
+            >
+              <span className="mr-1">{venuesExpanded ? 'Show less' : `+${item.venues!.length - 1} more venues`}</span>
+              {venuesExpanded ? (
+                <ChevronUp size={14} />
+              ) : (
+                <ChevronDown size={14} />
+              )}
+            </div>
+          )}
         </div>
       )}
       <div className="relative h-48 w-full">
