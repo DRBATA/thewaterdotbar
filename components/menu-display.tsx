@@ -282,14 +282,44 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
     <>
       <WelcomePopup />
       <section className="container mx-auto px-4 pt-24 pb-2 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-stone-900">The Water Bar</h1>
-        <p className="text-lg md:text-xl text-stone-700 mb-6">Our virtual barista helps you shape your own wellness journey—share your mood, your goals, or just what brings you here.</p>
-        <p className="text-md md:text-lg text-teal-600 font-medium">Add more items to your cart to unlock exclusive discounts!</p>
-        <div className="bg-white/20 backdrop-blur-lg border border-white/30 rounded-lg p-4 inline-block mb-2 shadow-lg">
-            <p className="text-xl font-semibold text-white">
-                📍 Available at multiple venues across Dubai
-            </p>
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-2 text-stone-900">The Water Bar</h1>
+        <p className="text-xl md:text-2xl font-semibold text-blue-600 mb-3">Perfect Your Functional Hydration</p>
+        
+        <div className="max-w-3xl mx-auto mb-4">
+          <p className="text-lg text-stone-700">Get a precision-crafted hydration plan tailored to your body type, activity level, and wellness goals.</p>
+          <p className="text-md text-stone-600 mt-1">Our AI Hydration Coach analyzes your unique needs for optimal performance, electrolyte balance, and recovery.</p>
         </div>
+        
+        <div className="flex justify-center gap-4 mb-5">
+          <div className="bg-blue-50 rounded-lg px-4 py-2 inline-block shadow-sm border border-blue-100">
+            <p className="font-medium text-blue-800">🏃 Performance</p>
+          </div>
+          <div className="bg-purple-50 rounded-lg px-4 py-2 inline-block shadow-sm border border-purple-100">
+            <p className="font-medium text-purple-800">⚡ Electrolytes</p>
+          </div>
+          <div className="bg-indigo-50 rounded-lg px-4 py-2 inline-block shadow-sm border border-indigo-100">
+            <p className="font-medium text-indigo-800">🔄 Recovery</p>
+          </div>
+        </div>
+        
+        <button 
+          onClick={() => {
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (position) => {
+                  console.log("Geolocation acquired:", position.coords.latitude, position.coords.longitude);
+                  // Location is handled by the LocationProvider
+                },
+                (error) => {
+                  console.error("Geolocation error:", error.message);
+                }
+              );
+            }
+          }} 
+          className="bg-white/20 backdrop-blur-lg border border-white/30 hover:bg-white/30 transition-colors rounded-lg p-4 inline-block mb-2 shadow-lg cursor-pointer"
+        >
+          <p className="text-xl font-semibold text-white">🔴 {userLocation ? 'Showing venues near you' : 'Find venues with available drinks near me'}</p>
+        </button>
         {/* Location status indicator */}
         <div className={`mt-2 text-sm font-medium ${getLocationStatus().color}`}>
           <span className="inline-flex items-center gap-1">
