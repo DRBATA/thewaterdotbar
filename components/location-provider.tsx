@@ -10,7 +10,9 @@ interface LocationContextType {
   };
   isLoading: boolean;
   error: string | null;
+  locationEnabled: boolean;
   calculateDistance: (venueLat?: number, venueLng?: number) => number;
+  toggleLocation: () => void;
 }
 
 // Default context values
@@ -18,7 +20,9 @@ const defaultLocationContext: LocationContextType = {
   userLocation: { lat: null, lng: null },
   isLoading: true,
   error: null,
+  locationEnabled: false,
   calculateDistance: () => 999, // Default to far away
+  toggleLocation: () => {}, // Placeholder implementation
 };
 
 // Create the context
@@ -52,18 +56,39 @@ export function LocationProvider({ children, fallbackLocation }: { children: Rea
   const [userLocation, setUserLocation] = useState({ lat: null as number | null, lng: null as number | null });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [locationEnabled, setLocationEnabled] = useState(false);
 
   // Determine if we're in a browser environment
   const isBrowser = typeof window !== 'undefined';
-
-  useEffect(() => {
-
+  
+  // Function to toggle location services
+  const toggleLocation = () => {
+    if (locationEnabled) {
+      // Turn off location services
+      setLocationEnabled(false);
+      setUserLocation({ lat: null, lng: null });
+      if (fallbackLocation) {
+        setUserLocation({ lat: fallbackLocation.lat, lng: fallbackLocation.lng });
+      } else {
+        // Default to Dubai if no fallback provided
+        setUserLocation({ lat: 25.2048, lng: 55.2708 });
+      }
+    } else {
+      // Turn on location services
+      setLocationEnabled(true);
+      requestLocation();
+    }
+  };
+  
+  // Function to request location
+  const requestLocation = () => {
     if (!isBrowser) {
       setIsLoading(false);
       return;
     }
-
-    // Only try to get location in browser environment
+    
+    setIsLoading(true);
+    
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -71,11 +96,13 @@ export function LocationProvider({ children, fallbackLocation }: { children: Rea
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           });
+          setLocationEnabled(true);
           setIsLoading(false);
         },
         (error) => {
           console.error("Geolocation error:", error);
           setError("Unable to retrieve your location. Using default location instead.");
+          setLocationEnabled(false);
           // Fall back to provided fallback location if geolocation fails
           if (fallbackLocation) {
             setUserLocation({ lat: fallbackLocation.lat, lng: fallbackLocation.lng });
@@ -93,6 +120,7 @@ export function LocationProvider({ children, fallbackLocation }: { children: Rea
       );
     } else {
       setError("Geolocation is not supported by your browser. Using default location instead.");
+      setLocationEnabled(false);
       // Fall back to provided fallback location if geolocation not supported
       if (fallbackLocation) {
         setUserLocation({ lat: fallbackLocation.lat, lng: fallbackLocation.lng });
@@ -102,7 +130,44 @@ export function LocationProvider({ children, fallbackLocation }: { children: Rea
       }
       setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+
+    // Check if we have sessionStorage and try to get stored location preference
+    if (isBrowser && window.sessionStorage) {
+      const storedLocationEnabled = sessionStorage.getItem('locationEnabled') === 'true';
+      if (storedLocationEnabled) {
+        setLocationEnabled(true);
+        requestLocation();
+      } else {
+        // Use fallback location if location is not enabled
+        if (fallbackLocation) {
+          setUserLocation({ lat: fallbackLocation.lat, lng: fallbackLocation.lng });
+        } else {
+          // Default to Dubai if no fallback provided
+          setUserLocation({ lat: 25.2048, lng: 55.2708 });
+        }
+        setIsLoading(false);
+      }
+    } else {
+      // Use fallback location if sessionStorage is not available
+      if (fallbackLocation) {
+        setUserLocation({ lat: fallbackLocation.lat, lng: fallbackLocation.lng });
+      } else {
+        // Default to Dubai if no fallback provided
+        setUserLocation({ lat: 25.2048, lng: 55.2708 });
+      }
+      setIsLoading(false);
+    }
   }, [isBrowser, fallbackLocation]);
+  
+  // Save location preference to sessionStorage when it changes
+  useEffect(() => {
+    if (isBrowser && window.sessionStorage) {
+      sessionStorage.setItem('locationEnabled', locationEnabled.toString());
+    }
+  }, [locationEnabled, isBrowser]);
 
   // Calculate distance function that uses the current user location
   const calculateDistance = (venueLat?: number, venueLng?: number) => {
@@ -115,7 +180,9 @@ export function LocationProvider({ children, fallbackLocation }: { children: Rea
         userLocation,
         isLoading,
         error,
-        calculateDistance
+        locationEnabled,
+        calculateDistance,
+        toggleLocation
       }}
     >
       {children}

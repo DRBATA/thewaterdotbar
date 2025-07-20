@@ -31,7 +31,7 @@ export function MenuDisplay(props: MenuDisplayProps) {
 
 // Inner component with access to location data
 function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }: MenuDisplayProps) {
-  const { userLocation, isLoading: isLoadingLocation, error: locationError, calculateDistance } = useLocation();
+  const { userLocation, isLoading: isLoadingLocation, error: locationError, calculateDistance, locationEnabled, toggleLocation } = useLocation();
   const isEventLive = process.env.NEXT_PUBLIC_EVENT_LIVE === 'true';
 
   if (!isEventLive) {
@@ -283,11 +283,10 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
       <WelcomePopup />
       <section className="container mx-auto px-4 pt-24 pb-2 text-center">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-2 text-stone-900">The Water Bar</h1>
-        <p className="text-xl md:text-2xl font-semibold text-blue-600 mb-3">Perfect Your Functional Hydration</p>
+        <p className="text-xl md:text-2xl font-semibold text-blue-600 mb-3">Experience Highdrartion</p>
         
         <div className="max-w-3xl mx-auto mb-4">
-          <p className="text-lg text-stone-700">Get a precision-crafted hydration plan tailored to your body type, activity level, and wellness goals.</p>
-          <p className="text-md text-stone-600 mt-1">Our AI Hydration Coach analyzes your unique needs for optimal performance, electrolyte balance, and recovery.</p>
+          <p className="text-lg text-stone-700">Get a precision-crafted hydration plan tailored to your body type, activity level, and wellness goals. Our AI Hydration Coach analyzes your unique needs for optimal performance, electrolyte balance, and recovery.</p>
         </div>
         
         <div className="flex justify-center gap-4 mb-5">
@@ -303,22 +302,16 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
         </div>
         
         <button 
-          onClick={() => {
-            if (navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition(
-                (position) => {
-                  console.log("Geolocation acquired:", position.coords.latitude, position.coords.longitude);
-                  // Location is handled by the LocationProvider
-                },
-                (error) => {
-                  console.error("Geolocation error:", error.message);
-                }
-              );
-            }
-          }} 
-          className="bg-white/20 backdrop-blur-lg border border-white/30 hover:bg-white/30 transition-colors rounded-lg p-4 inline-block mb-2 shadow-lg cursor-pointer"
+          onClick={() => toggleLocation()}
+          className={`backdrop-blur-lg border transition-all rounded-lg p-4 inline-block mb-2 shadow-lg cursor-pointer ${locationEnabled 
+            ? 'bg-green-500/30 border-green-500/50 hover:bg-green-500/40' 
+            : 'bg-white/20 border-white/30 hover:bg-white/30'}`}
         >
-          <p className="text-xl font-semibold text-white">🔴 {userLocation ? 'Showing venues near you' : 'Find venues with available drinks near me'}</p>
+          <p className="text-xl font-semibold text-white">
+            {locationEnabled 
+              ? '🟢 Location active - tap to disable' 
+              : '🔴 Find venues with available drinks near me'}
+          </p>
         </button>
         {/* Location status indicator */}
         <div className={`mt-2 text-sm font-medium ${getLocationStatus().color}`}>
