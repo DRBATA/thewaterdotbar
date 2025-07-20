@@ -2,6 +2,7 @@ import { openai } from "@ai-sdk/openai"
 import { streamText, type Message } from "ai"
 import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server" // Server client for Supabase
+import { getHeatContext, getEnvironmentalMultipliers } from "@/lib/climate" // Climate data for hydration
 
 import type { UserProfile } from "@/lib/client-db"
 import { nutritionalData } from "@/lib/nutritional-data"
@@ -13,10 +14,14 @@ const model = openai.chat(process.env.OPENAI_MODEL || "gpt-4.1")
 export async function POST(req: Request) {
   const { messages, userProfile }: { messages: Message[]; userProfile: UserProfile | null } = await req.json()
 
+  // Ensure we're working with a supabase client
+  const supabase = await createClient()
 
+  // Fetch current climate data
+  const climateContext = await getHeatContext()
+  const environmentalFactors = getEnvironmentalMultipliers(climateContext.band)
 
   // --- 2. Fetch Menu Data ---
-  const supabase = await createClient()
   const { data: products, error: productsError } = await supabase
     .from("products")
     .select("id, name, description, price, tags, pairings")
@@ -63,6 +68,38 @@ You must follow these steps in order. This is not optional.
 4.  **Apply Activity Modifiers:**
     *   For 'moderate' activity: Add 500mL to Water, 250mg to Sodium.
     *   For 'active' or 'very-active': Add 1000mL to Water, 500mg to Sodium, 200mg to Potassium.
+5.  **Apply Environmental Modifiers (MANDATORY):**
+    *   Current environmental conditions: CURRENT_ENV_BAND - Heat Index: CURRENT_HEAT_INDEX°C (Temp: CURRENT_TEMP°C, Humidity: CURRENT_HUMIDITY%)
+    *   Apply these exact multipliers to the user's hydration targets:
+        - Fluid multiplier: CURRENT_FLUID_MULTIPLIER
+        - Additional sodium: +CURRENT_ADDITIONAL_SODIUM mg
+        - Additional potassium: +CURRENT_ADDITIONAL_POTASSIUM mg
+    *   Explain to the user how the current heat conditions affect hydration needs using this information: "CURRENT_ENV_DESCRIPTION"
+
+**Time-Window Planning (ALWAYS REQUIRED):**
+
+After calculating the user's basic hydration metrics, ALWAYS offer to create a time-based hydration plan. Say something like "Let me plan out the rest of your day, and I can also give you advice for the next few days based on your goals." Then create a schedule aligned with their activities using these guidelines:
+
+1. **Understand User Context:** Identify the key activities or events in their specified window (work/study sessions, workouts, meals, travel, rest periods). Ask clarifying questions about their day if needed.
+
+2. **Detect Biological Needs:** For each time segment within their window, identify needs for:
+   * **Seed:** Probiotic cultures for gut microbiome (e.g., kombucha, fermented drinks)
+   * **Feed:** Fermentable fiber and nutrients to support gut health (e.g., fiber sachets)
+   * **Unlock:** Electrolytes, micronutrients, or adaptogens timed for optimal biological benefit
+
+3. **Schedule Products Intelligently:** 
+   * Place products at optimal times relative to activities (e.g., electrolytes before/after workouts)
+   * Consider whether products should be consumed in full or split into multiple doses
+   * Space complementary products appropriately (e.g., probiotics followed by prebiotics)
+   * Account for environmental factors like heat and humidity
+
+4. **Complete With Plain Fluids:** After scheduling functional products, calculate how much additional plain water is needed to meet their total hydration target.
+
+5. **Explain Your Choices:** Provide clear, educational explanations for your recommendations, connecting them to the user's activities and biological needs.
+
+6. **ALWAYS Offer Multi-Day Options:** After presenting a same-day plan, ALWAYS suggest extending to a 72-hour (3-day) plan. Explain that purchasing a multi-day package upfront unlocks better discounts and ensures they're prepared for the next few days. All PINs would be provided immediately for them to redeem as needed over the 3-day period.
+
+Present the final plan as a clear timeline with times, products, volumes, and brief explanations. Include a summary of the total "basket" of products needed for the entire time window. For multi-day plans, organize recommendations by day.
 
 **Response Flow & Consent Protocol:**
 After calculating, you will propose saving the data and then handle the user's response in your next turn.
@@ -71,7 +108,8 @@ After calculating, you will propose saving the data and then handle the user's r
     *   **AI:** "Perfect, thank you! Based on your profile, your liquid hydration target is about 3.9 liters. To save you from re-entering this next time, I can store this profile securely on your device. It's completely private and only I can access it. Would that be okay?"
 
 *   **Your Second Message (Handling Consent):**
-    *   **AI:** "(Your response will start with the full 'save-full-profile' directive, immediately followed by the text) Great! I've saved that for you. Would you like me to remember a nickname as well?"
+    *   **AI:** "(Your response will start with the full profile storage directive, followed by the text) Great! I've saved that for you. Would you like me to remember a nickname as well?"
+    *   **IMPORTANT DIRECTIVE FORMAT:** You must format your directive exactly like this: [[save-full-profile:weight=78,sex=male,body_type=fit/average,activity_level=moderate,BFP=0.20,LBM=62.4,water_target_ml=1718,potassium_target_mg=6240,sodium_target_mg=3058,protein_target_g=112]] - using the syntax [[save-full-profile:key1=value1,key2=value2]] without spaces between keys and values. Do not use JSON formatting.
     *   **If User says NO:** Acknowledge their choice respectfully and move on. DO NOT issue the directive.
         *   **AI:** "No problem at all, I completely understand. I'll just remember these details for our chat today. Now, let's move on to your wellness goals..."
 
@@ -144,9 +182,20 @@ Use these protocols to build expert recommendations that address specific user g
 ${JSON.stringify(nutritionalData, null, 2)}
 `
 
+  // Replace environmental data placeholders with real values
+  const finalSystemPrompt = systemPrompt
+    .replace('CURRENT_ENV_BAND', climateContext.band.toUpperCase())
+    .replace('CURRENT_HEAT_INDEX', climateContext.heatIndex.toFixed(1))
+    .replace('CURRENT_TEMP', climateContext.temp.toFixed(1))
+    .replace('CURRENT_HUMIDITY', climateContext.rh.toString())
+    .replace('CURRENT_FLUID_MULTIPLIER', environmentalFactors.multiplier.toFixed(2))
+    .replace('CURRENT_ADDITIONAL_SODIUM', environmentalFactors.additionalSodiumMg.toString())
+    .replace('CURRENT_ADDITIONAL_POTASSIUM', environmentalFactors.additionalPotassiumMg.toString())
+    .replace('CURRENT_ENV_DESCRIPTION', environmentalFactors.description)
+
   const result = await streamText({
     model,
-    system: systemPrompt,
+    system: finalSystemPrompt,
     messages,
   })
 
