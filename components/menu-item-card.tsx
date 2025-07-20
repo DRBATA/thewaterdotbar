@@ -145,29 +145,21 @@ export function MenuItemCard({ item, onAddToCartAction, onRemoveFromCartAction, 
         </CardTitle>
         <CardDescription className="text-sm text-stone-500 mt-1">{item.description}</CardDescription>
       </CardHeader>
-      <CardContent className="flex items-center justify-between p-5 pt-0">
+      <CardContent className="flex items-center justify-between p-5 pt-0 pb-16">
         <span className={`text-xl font-bold ${isFree ? "text-green-600" : "text-amber-700"}`}>
           {isFree ? "FREE" : formatCurrency(item.price)}
         </span>
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onRemoveFromCartAction(item.id)}
-            disabled={quantity === 0}
-            className="size-8 rounded-full text-amber-700 hover:bg-amber-50 hover:text-amber-800 disabled:text-stone-400"
-          >
-            <Minus className="size-4" />
-            <span className="sr-only">Remove from cart</span>
-          </Button>
-          <span className="w-6 text-center font-medium text-stone-700">{quantity}</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onAddToCartAction(item)}
-            className="size-8 rounded-full text-amber-700 hover:bg-amber-50 hover:text-amber-800"
-          >
-            <Plus className="size-4" />
+        <div className="flex items-center gap-2">
+          {quantity > 0 && (
+            <Button variant="outline" size="icon" onClick={() => onRemoveFromCartAction(item.id)} className="h-8 w-8">
+              <Minus className="h-4 w-4" />
+            </Button>
+          )}
+          {quantity > 0 && (
+            <span className="w-4 text-center">{quantity}</span>
+          )}
+          <Button variant="outline" size="icon" onClick={() => onAddToCartAction(item)} className="h-8 w-8">
+            <Plus className="h-4 w-4" />
             <span className="sr-only">Add to cart</span>
           </Button>
         </div>
