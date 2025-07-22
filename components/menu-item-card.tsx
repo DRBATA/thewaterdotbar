@@ -4,7 +4,7 @@ import { useState } from "react"
 import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Minus, ChevronDown, ChevronUp } from "lucide-react"
+import { Plus, Minus, ChevronDown, ChevronUp, MapPin } from "lucide-react"
 import GlowEffect from "./GlowEffect"
 
 interface MenuItem {
@@ -98,9 +98,7 @@ export function MenuItemCard({ item, onAddToCartAction, onRemoveFromCartAction, 
                     ? `(${venue.distance !== undefined ? venue.distance.toFixed(1) : '?'} km)` 
                     : ''} • {venue.qty_on_hand} in stock
                 </span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">
-                  <path d="M9 18l6-6-6-6"></path>
-                </svg>
+                <MapPin className="opacity-0 group-hover:opacity-100 transition-opacity ml-1 h-4 w-4" />
               </div>
             );
           })}

@@ -46,17 +46,7 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
             <p className="text-md text-stone-600 mt-1">Our AI Hydration Coach analyzes your unique needs for optimal performance, electrolyte balance, and recovery.</p>
           </div>
           
-          <div className="flex justify-center gap-4 mb-5">
-            <div className="bg-blue-50 rounded-lg px-4 py-2 inline-block shadow-sm border border-blue-100">
-              <p className="font-medium text-blue-800">🏃 Performance</p>
-            </div>
-            <div className="bg-purple-50 rounded-lg px-4 py-2 inline-block shadow-sm border border-purple-100">
-              <p className="font-medium text-purple-800">⚡ Electrolytes</p>
-            </div>
-            <div className="bg-indigo-50 rounded-lg px-4 py-2 inline-block shadow-sm border border-indigo-100">
-              <p className="font-medium text-indigo-800">🔄 Recovery</p>
-            </div>
-          </div>
+          {/* Performance/electrolytes/recovery buttons removed as requested */}
           
           <button 
             onClick={() => {
@@ -74,7 +64,7 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
             }} 
             className="bg-stone-100 hover:bg-stone-200 transition-colors rounded-lg p-3 inline-block mb-2 shadow-md cursor-pointer"
           >
-            <p className="font-medium text-stone-800">🔴 {userLocation ? 'Showing venues near you' : 'Find venues with available drinks near me'}</p>
+            <p className="font-medium text-stone-800">🔴 {userLocation ? 'Showing venues near you' : 'GPS inactive - click to activate to find distance to venue with available stock'}</p>
           </button>
         </section>
         <Separator className="my-4" />
@@ -126,7 +116,13 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
   }, [initialDrinks, initialWellnessExperiences, isLoadingLocation, calculateDistance]);
 
   // Use the initial data passed as props
-  const { activeTags } = useFilters()
+  // Set up predefined filter tags as specified
+  const { activeTags, setSuggestedTags } = useFilters()
+  
+  // Set predefined filter options
+  useEffect(() => {
+    setSuggestedTags(['kombucha', 'electrolytes', 'water', 'perrier', 'chaga', 'gut health', 'greens'])
+  }, [setSuggestedTags])
   
   // Location status indicator content
   const getLocationStatus = () => {
