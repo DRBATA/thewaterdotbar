@@ -26,12 +26,8 @@ export async function POST(req: Request) {
     .from("products")
     .select(`id, name, description, price, tags, pairings, venue_stock(qty_on_hand, venue:venue_id(id, name, from_date, to_date))`)
 
-  const { data: wellnessData, error: wellnessError } = await supabase
-    .from("experiences")
-    .select(`id, name, description, price, duration_minutes, tags, pairings, venue_stock(qty_on_hand, venue:venue_id(id, name, from_date, to_date))`)
-
-  if (drinksError || wellnessError) {
-    console.error("Supabase error fetching menu:", drinksError || wellnessError)
+  if (drinksError) {
+    console.error("Supabase error fetching menu:", drinksError)
     return new Response(JSON.stringify({ error: "Failed to fetch menu data" }), { status: 500 })
   }
 
@@ -52,7 +48,7 @@ export async function POST(req: Request) {
   };
 
   const products = transformAndFilter(drinksData || []);
-  const experiences = transformAndFilter(wellnessData || []);
+  const experiences: any[] = []; // Temporarily disabled due to DB relationship error
 
   const menuItems = [
     ...(products || []).map((p) => ({ ...p, type: "drink" })),
