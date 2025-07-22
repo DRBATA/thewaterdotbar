@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { MenuItemCard } from "@/components/menu-item-card"
 import { CartSummary } from "@/components/cart-summary"
+import FilterBar from "@/components/FilterBar"
 import { Separator } from "@/components/ui/separator"
 import { VirtualBaristaChat } from "@/components/virtual-barista-chat"
 import { useFilters } from "@/context/filter-context"
@@ -134,7 +135,7 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
         color: "text-green-600" 
       };
     }
-    return { message: "Using default location", color: "text-amber-600" };
+    return { message: "Using default location (Dubai)", color: "text-amber-600" };
   };
 
   const tagMatch = (item: MenuItem) => {
@@ -306,7 +307,7 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
           <p className="text-xl font-semibold text-white">
             {locationEnabled 
               ? '🟢 Location active - tap to disable' 
-              : '🔴 Find venues with available drinks near me'}
+              : '🔴 Location inactive - tap to enable to find available drinks near me'}
           </p>
         </button>
         {/* Location status indicator */}
@@ -331,6 +332,11 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
         </div>
       </section>
       <Separator className="my-4" />
+      
+      {/* Filter bar now placed at top of menu */}
+      <div className="px-4 py-2 mb-4">
+        <FilterBar />
+      </div>
 
       <main className="container mx-auto px-4 py-8">
         <section className="mb-12">

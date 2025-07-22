@@ -11,7 +11,7 @@ export default function FilterBar() {
     suggestedTags,
     toggleTag,
   } = useFilters()
-  const [showFilters, setShowFilters] = useState(false)
+  const [showFilters, setShowFilters] = useState(true)
 
   if (suggestedTags.length === 0) return null
 

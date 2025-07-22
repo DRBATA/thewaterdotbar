@@ -1,6 +1,6 @@
 "use client"
 import Image from "next/image"
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -38,8 +38,9 @@ export function MenuItemCard({ item, onAddToCartAction, onRemoveFromCartAction, 
   // Get location enabled state from context
   const { locationEnabled } = useLocation();
   
-  // State to track if venue list is expanded
+  // State to track if venue list is expanded and clicked pins
   const [venuesExpanded, setVenuesExpanded] = useState(false);
+  const [clickedPins, setClickedPins] = useState<{[key: string]: boolean}>({});
   
   // Check if this is the Morning Party ticket
   const isMorningParty = item.name.toLowerCase().includes("morning party");
@@ -98,7 +99,18 @@ export function MenuItemCard({ item, onAddToCartAction, onRemoveFromCartAction, 
                     ? `(${venue.distance !== undefined ? venue.distance.toFixed(1) : '?'} km)` 
                     : ''} • {venue.qty_on_hand} in stock
                 </span>
-                <MapPin className="opacity-0 group-hover:opacity-100 transition-opacity ml-1 h-4 w-4" />
+                <MapPin 
+                  className={`ml-1 h-4 w-4 ${clickedPins[venue.id] ? 'text-red-500' : 'text-white'} cursor-pointer`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setClickedPins(prev => ({
+                      ...prev,
+                      [venue.id]: !prev[venue.id]
+                    }));
+                    // Open map in new tab
+                    window.open(mapUrl, '_blank');
+                  }}
+                />
               </div>
             );
           })}
