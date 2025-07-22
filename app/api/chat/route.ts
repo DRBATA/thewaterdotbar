@@ -21,44 +21,38 @@ export async function POST(req: Request) {
   const climateContext = await getHeatContext()
   const environmentalFactors = getEnvironmentalMultipliers(climateContext.band)
 
-  // --- 2. Fetch Menu Data ---
-  const currentDate = new Date();
-  const currentDateStr = currentDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
-
-  // Fetch all products with their venue stock information
-  const { data: productsWithStock, error: productsError } = await supabase
+  // --- 2. Fetch Menu Data (replicating logic from app/page.tsx) ---
+  const { data: drinksData, error: drinksError } = await supabase
     .from("products")
-    .select(`id, name, description, price, tags, pairings, venue_stock(qty_on_hand, venue:venue_id(id, from_date, to_date))`);
+    .select(`id, name, description, price, tags, pairings, venue_stock(qty_on_hand, venue:venue_id(id, name, from_date, to_date))`)
 
-  // Fetch all experiences with their venue stock information
-  const { data: experiencesWithStock, error: experiencesError } = await supabase
+  const { data: wellnessData, error: wellnessError } = await supabase
     .from("experiences")
-    .select(`id, name, description, price, duration_minutes, tags, pairings, venue_stock(qty_on_hand, venue:venue_id(id, from_date, to_date))`);
+    .select(`id, name, description, price, duration_minutes, tags, pairings, venue_stock(qty_on_hand, venue:venue_id(id, name, from_date, to_date))`)
 
-  // Filter products to only include those that are in stock at an active venue
-  const products = (productsWithStock || []).filter((p: any) => 
-    p.venue_stock.some((vs: any) => 
-      vs.qty_on_hand > 0 &&
-      vs.venue &&
-      (!vs.venue.from_date || vs.venue.from_date <= currentDateStr) &&
-      (!vs.venue.to_date || vs.venue.to_date >= currentDateStr)
-    )
-  );
-
-  // Filter experiences to only include those that are in stock at an active venue
-  const experiences = (experiencesWithStock || []).filter((e: any) => 
-    e.venue_stock.some((vs: any) => 
-      vs.qty_on_hand > 0 &&
-      vs.venue &&
-      (!vs.venue.from_date || vs.venue.from_date <= currentDateStr) &&
-      (!vs.venue.to_date || vs.venue.to_date >= currentDateStr)
-    )
-  );
-
-  if (productsError || experiencesError) {
-    console.error("Supabase error:", productsError || experiencesError)
+  if (drinksError || wellnessError) {
+    console.error("Supabase error fetching menu:", drinksError || wellnessError)
     return new Response(JSON.stringify({ error: "Failed to fetch menu data" }), { status: 500 })
   }
+
+  const currentDateStr = new Date().toISOString().split('T')[0];
+
+  const transformAndFilter = (items: any[]) => {
+    return items.map((item: any) => {
+      const venues = item.venue_stock
+        ?.filter((vs: any) => 
+          vs.qty_on_hand > 0 && 
+          vs.venue && 
+          (!vs.venue.from_date || vs.venue.from_date <= currentDateStr) &&
+          (!vs.venue.to_date || vs.venue.to_date >= currentDateStr)
+        )
+        ?.map((vs: any) => ({ id: vs.venue.id, name: vs.venue.name, qty_on_hand: vs.qty_on_hand })) || [];
+      return { ...item, venues };
+    }).filter(item => item.venues.length > 0);
+  };
+
+  const products = transformAndFilter(drinksData || []);
+  const experiences = transformAndFilter(wellnessData || []);
 
   const menuItems = [
     ...(products || []).map((p) => ({ ...p, type: "drink" })),
