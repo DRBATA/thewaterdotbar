@@ -129,13 +129,13 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
   const getLocationStatus = () => {
     if (isLoadingLocation) return { message: "Finding your location...", color: "text-blue-600" };
     if (locationError) return { message: "Using default location (Dubai)", color: "text-amber-600" };
-    if (userLocation.lat && userLocation.lng) {
+    if (locationEnabled && userLocation.lat && userLocation.lng) {
       return { 
         message: `Using your current location ${userLocation.lat.toFixed(3)}, ${userLocation.lng.toFixed(3)}`, 
         color: "text-green-600" 
       };
     }
-    return { message: "Using default location (Dubai)", color: "text-amber-600" };
+    return { message: "Location services are disabled", color: "text-amber-600" };
   };
 
   const tagMatch = (item: MenuItem) => {
