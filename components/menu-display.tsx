@@ -286,17 +286,7 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
           <p className="text-lg text-stone-700">Get a precision-crafted hydration plan tailored to your body type, activity level, and wellness goals. Our AI Hydration Coach analyzes your unique needs for optimal performance, electrolyte balance, and recovery.</p>
         </div>
         
-        <div className="flex justify-center gap-4 mb-5">
-          <div className="bg-blue-50 rounded-lg px-4 py-2 inline-block shadow-sm border border-blue-100">
-            <p className="font-medium text-blue-800">🏃 Performance</p>
-          </div>
-          <div className="bg-purple-50 rounded-lg px-4 py-2 inline-block shadow-sm border border-purple-100">
-            <p className="font-medium text-purple-800">⚡ Electrolytes</p>
-          </div>
-          <div className="bg-indigo-50 rounded-lg px-4 py-2 inline-block shadow-sm border border-indigo-100">
-            <p className="font-medium text-indigo-800">🔄 Recovery</p>
-          </div>
-        </div>
+
         
         <button 
           onClick={() => toggleLocation()}
@@ -333,10 +323,7 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
       </section>
       <Separator className="my-4" />
       
-      {/* Filter bar now placed at top of menu */}
-      <div className="px-4 py-2 mb-4">
-        <FilterBar />
-      </div>
+
 
       <main className="container mx-auto px-4 py-8">
         <section className="mb-12">

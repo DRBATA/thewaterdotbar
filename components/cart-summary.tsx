@@ -28,6 +28,7 @@ interface CartSummaryProps {
 export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart }: CartSummaryProps) {
   const [loading, setLoading] = useState(false)
   const [clearingCart, setClearingCart] = useState(false)
+  const [isConfirmationModalOpen, setConfirmationModalOpen] = useState(false)
   const { tier, subtotal, discount, total: discountedTotal } = useVolumeDiscount(cartItems)
   const [showConfetti, setShowConfetti] = useState(false)
   const prevTierRef = useRef(tier)
@@ -145,14 +146,42 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
             </div>
           </div>
           <CopyDiscountCode tier={tier} />
+
+          {tier && (
+            <div className="mt-4 text-center text-sm text-amber-200 bg-amber-900/50 p-3 rounded-lg border border-amber-500/50">
+              <p className="font-semibold">Remember to apply your discount code on the next screen!</p>
+            </div>
+          )}
           {cartItems.length > 0 && (
             <Button variant="outline" className="w-full mt-3 border-teal-500 text-teal-300 hover:bg-teal-500/20" onClick={handleClearCart} disabled={clearingCart}>
               {clearingCart ? "Clearing..." : "Clear Cart"}
             </Button>
           )}
-          <Button size="lg" className="w-full mt-6 bg-teal-500 text-white hover:bg-teal-600 h-12 text-lg" onClick={handleCheckout} disabled={loading || cartItems.length === 0}>
+          <Button 
+            size="lg" 
+            className="w-full mt-6 bg-teal-500 text-white hover:bg-teal-600 h-12 text-lg" 
+            onClick={() => tier ? setConfirmationModalOpen(true) : handleCheckout()}
+            disabled={loading || cartItems.length === 0}
+          >
             {loading ? "Redirecting..." : "Proceed to Checkout"}
           </Button>
+        {isConfirmationModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100]">
+            <div className="bg-gray-800 border border-teal-500/50 p-8 rounded-2xl shadow-2xl text-white max-w-md w-full mx-4">
+              <h2 className="text-2xl font-bold mb-4 text-teal-300">One Last Step!</h2>
+              <p className="mb-6 text-gray-300">Have you copied your discount code? Remember to paste it on the next screen to get your discount.</p>
+              <div className="flex justify-end space-x-4">
+                <Button variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white" onClick={() => setConfirmationModalOpen(false)}>Cancel</Button>
+                <Button className="bg-teal-500 text-white hover:bg-teal-600" onClick={() => {
+                  setConfirmationModalOpen(false);
+                  handleCheckout();
+                }}>
+                  Yes, Proceed to Checkout
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
         </SheetContent>
       </Sheet>
     </>

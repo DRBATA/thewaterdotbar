@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from 'resend';
-import { WaterBarOrderConfirmationEmail } from '@/emails/water-bar-order-confirmation';
+import { OrderConfirmationEmail } from '@/emails/order-confirmation';
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 
@@ -59,20 +59,17 @@ export async function POST(req: Request) {
         console.error('Error fetching order for email:', orderError);
         // Don't block the response for this, just log it
       } else {
-        const itemsWithImages = await Promise.all(
-          orderData.order_items.map(async (item: any) => {
-            const { data: product } = await supabase.from('products').select('image_url').eq('id', item.item_id).single();
-            return { ...item, image_url: product?.image_url || '/placeholder.png' };
-          })
-        );
-        const fullOrderDetails = { ...orderData, order_items: itemsWithImages };
-
         const resend = new Resend(process.env.RESEND_API_KEY);
         await resend.emails.send({
           from: 'The Water Bar <hello@thewater.bar>',
-          to: [session.customer_details?.email!],
-          subject: `Your Water Bar Order Confirmation #${order_id.substring(0, 8)}`,
-          react: WaterBarOrderConfirmationEmail({ order: fullOrderDetails, userEmail: session.customer_details?.email! }),
+          to: [orderData.email!],
+          subject: `Your Water Bar Order Confirmation #${orderData.id.substring(0, 8)}`,
+          react: OrderConfirmationEmail({
+            orderId: orderData.id,
+            userFirstName: session.customer_details?.name?.split(' ')[0] || 'Valued Customer',
+            orderItems: orderData.order_items.map((item: { name: string; qty: number; pin_code: string; }) => ({ name: item.name, quantity: item.qty, pin_code: item.pin_code })),
+            total: orderData.total,
+          }),
         });
       }
 

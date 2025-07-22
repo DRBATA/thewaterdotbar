@@ -81,12 +81,7 @@ export default async function TicketPage({ params }: TicketPageProps) {
     <div className="bg-gray-50 min-h-screen font-sans flex items-center justify-center p-4 sm:p-6 lg:p-8 print:bg-white print:p-0">
       <div className="max-w-4xl w-full bg-white shadow-lg rounded-lg p-8 print:shadow-none print:rounded-none">
   {/* Event Info Block */}
-  <div className="mb-8 p-6 rounded-lg bg-yellow-50 border-l-4 border-yellow-400">
-    <h2 className="text-2xl font-bold text-yellow-900 mb-2">The Morning Party: Mocktail + Fire/Ice</h2>
-    <div className="text-lg font-semibold text-yellow-800 mb-1">Sunday, 6th July | ⏰ 11 AM</div>
-    <div className="text-md text-yellow-700 mb-2">Johny Dar Experience, Al Quoz, Dubai</div>
-    <div className="mt-2 text-yellow-800 font-medium">Includes Fire (sauna) or Ice Experience (Cold Plunge)</div>
-  </div>
+
         <div className="flex justify-between items-start mb-8 border-b border-gray-200 pb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">The Water Bar</h1>
@@ -101,7 +96,17 @@ export default async function TicketPage({ params }: TicketPageProps) {
         </div>
 
         <div className="mb-8">
-          <p className="text-gray-700"><strong>Billed to:</strong> {order.email}</p>
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Confirmation Details</h3>
+          {order.email ? (
+            <>
+              <p className="text-gray-700"><strong>Billed to:</strong> {order.email}</p>
+              <p className="text-sm text-gray-500 mt-1">A confirmation email has been sent to this address.</p>
+            </>
+          ) : (
+            <p className="text-amber-700 bg-amber-50 p-3 rounded-md">
+              Your order is confirmed. The email address was not recorded for this transaction.
+            </p>
+          )}
         </div>
 
         <div className="flow-root mb-8">

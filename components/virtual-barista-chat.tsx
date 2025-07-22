@@ -67,29 +67,48 @@ export function VirtualBaristaChat() {
         wasModified = true;
       }
 
-      // Handle Body Fat Percentage Saving: [[save-bfp:0.25]]
-      const bfpPattern = /\[\[save-bfp:(\d\.\d+)]]/;
-      // New Directive Handler: [[save-full-profile:key=value,key=value]]
-      const profileMatch = messageContent.match(/\[\[save-full-profile:(.*?)\]\]/);
+      // New, robust directive handler for saving profile data
+      const profilePattern = /\[\[save-full-profile:(.*?)]]/i;
+      const profileMatch = messageContent.match(profilePattern);
+
       if (profileMatch && profileMatch[1]) {
         const dataPairs = profileMatch[1].split(',');
-        const newProfileData: Record<string, number> = {};
+        const newProfileData: Partial<UserProfile> = {};
+
+        const keyMapping: { [key: string]: keyof UserProfile } = {
+          weight: 'weightKg',
+          sex: 'sex',
+          activity_level: 'activityLevel',
+          bfp: 'estimatedBodyFatPercentage',
+          lbm: 'leanBodyMassKg',
+          water_target_ml: 'dailyWaterTargetMl',
+          potassium_target_mg: 'dailyPotassiumTargetMg',
+          sodium_target_mg: 'dailySodiumTargetMg',
+          protein_target_g: 'dailyProteinTargetG',
+        };
 
         dataPairs.forEach((pair: string) => {
           const [key, value] = pair.split('=');
-          if (key && value) {
-            newProfileData[key] = parseFloat(value);
+          const mappedKey = keyMapping[key.trim()];
+          if (mappedKey && value) {
+            const trimmedValue = value.trim();
+            // Check if the property should be a number
+            if (['weightKg', 'estimatedBodyFatPercentage', 'leanBodyMassKg', 'dailyWaterTargetMl', 'dailySodiumTargetMg', 'dailyPotassiumTargetMg', 'dailyProteinTargetG'].includes(mappedKey)) {
+              (newProfileData as any)[mappedKey] = parseFloat(trimmedValue);
+            } else {
+              (newProfileData as any)[mappedKey] = trimmedValue;
+            }
           }
         });
 
-        console.log('Full profile directive found, saving data:', newProfileData);
-
-        // Save the parsed data to the database
-        await db.saveProfile(newProfileData);
-
-        // Re-fetch profile to ensure UI consistency
-        const updatedProfile = await db.getProfile();
-        setUserProfile(updatedProfile || null);
+        if (Object.keys(newProfileData).length > 0) {
+          console.log('Full profile directive found, saving data:', newProfileData);
+          await db.saveProfile(newProfileData);
+          const updatedProfile = await db.getProfile();
+          setUserProfile(updatedProfile || null);
+          messageContent = messageContent.replace(profilePattern, '').trim();
+          wasModified = true;
+        }
       }
 
       // If any directives were processed, update the message list with the cleaned content

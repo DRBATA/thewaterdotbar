@@ -83,12 +83,11 @@ export async function POST(req: NextRequest, { params }: { params: { pin: string
   
   // 3. Decrement stock at the selected venue
   if (orderItem.item_id) {
-    const { error: stockError } = await supabaseAdmin
-      .from("venue_stock")
-      .update({ qty_on_hand: supabaseAdmin.rpc('decrement', { val: 1 }) })
-      .eq("venue_id", venue_id)
-      .eq("product_id", orderItem.item_id)
-      .gt("qty_on_hand", 0);
+    const { error: stockError } = await supabaseAdmin.rpc('decrement_venue_stock', {
+      p_venue_id: venue_id,
+      p_product_id: orderItem.item_id,
+      p_amount: 1
+    });
       
     if (stockError) {
       console.error("Failed to update stock:", stockError);
