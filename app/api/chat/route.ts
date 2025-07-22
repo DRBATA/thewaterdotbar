@@ -22,12 +22,38 @@ export async function POST(req: Request) {
   const environmentalFactors = getEnvironmentalMultipliers(climateContext.band)
 
   // --- 2. Fetch Menu Data ---
-  const { data: products, error: productsError } = await supabase
+  const currentDate = new Date();
+  const currentDateStr = currentDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+
+  // Fetch all products with their venue stock information
+  const { data: productsWithStock, error: productsError } = await supabase
     .from("products")
-    .select("id, name, description, price, tags, pairings")
-  const { data: experiences, error: experiencesError } = await supabase
+    .select(`id, name, description, price, tags, pairings, venue_stock(qty_on_hand, venue:venue_id(id, from_date, to_date))`);
+
+  // Fetch all experiences with their venue stock information
+  const { data: experiencesWithStock, error: experiencesError } = await supabase
     .from("experiences")
-    .select("id, name, description, price, duration_minutes, tags, pairings")
+    .select(`id, name, description, price, duration_minutes, tags, pairings, venue_stock(qty_on_hand, venue:venue_id(id, from_date, to_date))`);
+
+  // Filter products to only include those that are in stock at an active venue
+  const products = (productsWithStock || []).filter((p: any) => 
+    p.venue_stock.some((vs: any) => 
+      vs.qty_on_hand > 0 &&
+      vs.venue &&
+      (!vs.venue.from_date || vs.venue.from_date <= currentDateStr) &&
+      (!vs.venue.to_date || vs.venue.to_date >= currentDateStr)
+    )
+  );
+
+  // Filter experiences to only include those that are in stock at an active venue
+  const experiences = (experiencesWithStock || []).filter((e: any) => 
+    e.venue_stock.some((vs: any) => 
+      vs.qty_on_hand > 0 &&
+      vs.venue &&
+      (!vs.venue.from_date || vs.venue.from_date <= currentDateStr) &&
+      (!vs.venue.to_date || vs.venue.to_date >= currentDateStr)
+    )
+  );
 
   if (productsError || experiencesError) {
     console.error("Supabase error:", productsError || experiencesError)
@@ -60,21 +86,16 @@ You must follow these steps in order. This is not optional.
 1. Estimate Body Fat Percentage (BFP): First, use the user's body type description and the reference table to find their estimated BFP as a decimal.
 2. Calculate Lean Body Mass (LBM): Second, you must calculate their LBM in kg using the formula: LBM = User's Weight (kg) * (1 - BFP).
 3. Calculate ALL KPIs from LBM: Third, you must use the calculated LBM as the basis for all of the following Key Performance Indicators (KPIs):
-    *   **Total Fluid Requirement (TFR) in mL:** LBM * 33
+    *   **Total Fluid Requirement (TFR) in mL:** LBM * 33 * CURRENT_FLUID_MULTIPLIER
     *   **Liquid Water Target in mL:** TFR * 0.8  (This is the 80% rule to account for food)
-    *   **Potassium Target in mg:** LBM * 100
-    *   **Sodium Target in mg:** LBM * 45
+    *   **Potassium Target in mg:** (LBM * 40) + CURRENT_ADDITIONAL_POTASSIUM
+    *   **Sodium Target in mg:** (LBM * 45) + CURRENT_ADDITIONAL_SODIUM
     *   **Protein Target in g:** LBM * 1.8 (Use a baseline of 1.8 for active users)
 4.  **Apply Activity Modifiers:**
     *   For 'moderate' activity: Add 500mL to Water, 250mg to Sodium.
     *   For 'active' or 'very-active': Add 1000mL to Water, 500mg to Sodium, 200mg to Potassium.
-5.  **Apply Environmental Modifiers (MANDATORY):**
-    *   Current environmental conditions: CURRENT_ENV_BAND - Heat Index: CURRENT_HEAT_INDEX°C (Temp: CURRENT_TEMP°C, Humidity: CURRENT_HUMIDITY%)
-    *   Apply these exact multipliers to the user's hydration targets:
-        - Fluid multiplier: CURRENT_FLUID_MULTIPLIER
-        - Additional sodium: +CURRENT_ADDITIONAL_SODIUM mg
-        - Additional potassium: +CURRENT_ADDITIONAL_POTASSIUM mg
-    *   Explain to the user how the current heat conditions affect hydration needs using this information: "CURRENT_ENV_DESCRIPTION"
+5. **Explain Environmental Impact:**
+    *   You MUST inform the user how the current heat conditions affect their hydration needs. Use this information: "The current heat index is CURRENT_HEAT_INDEX°C (CURRENT_ENV_BAND), which means CURRENT_ENV_DESCRIPTION. I've already adjusted your targets to account for this."
 
 **Time-Window Planning (ALWAYS REQUIRED):**
 

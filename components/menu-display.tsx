@@ -122,7 +122,7 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
   
   // Set predefined filter options
   useEffect(() => {
-    setSuggestedTags(['kombucha', 'electrolytes', 'water', 'perrier', 'chaga', 'gut health', 'greens'])
+    setSuggestedTags(['kombucha', 'water', 'perrier', 'chaga', 'gut health', 'greens'])
   }, [setSuggestedTags])
   
   // Location status indicator content
