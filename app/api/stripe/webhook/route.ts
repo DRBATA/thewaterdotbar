@@ -59,18 +59,23 @@ export async function POST(req: Request) {
         console.error('Error fetching order for email:', orderError);
         // Don't block the response for this, just log it
       } else {
-        const resend = new Resend(process.env.RESEND_API_KEY);
-        await resend.emails.send({
-          from: 'The Water Bar <hello@thewater.bar>',
-          to: [orderData.email!],
-          subject: `Your Water Bar Order Confirmation #${orderData.id.substring(0, 8)}`,
-          react: OrderConfirmationEmail({
-            orderId: orderData.id,
-            userFirstName: session.customer_details?.name?.split(' ')[0] || 'Valued Customer',
-            orderItems: orderData.order_items.map((item: { name: string; qty: number; pin_code: string; }) => ({ name: item.name, quantity: item.qty, pin_code: item.pin_code })),
-            total: orderData.total,
-          }),
-        });
+        try {
+          const resend = new Resend(process.env.RESEND_API_KEY);
+          await resend.emails.send({
+            from: 'The Water Bar <hello@thewater.bar>',
+            to: [orderData.email!],
+            subject: `Your Water Bar Order Confirmation #${orderData.id.substring(0, 8)}`,
+            react: OrderConfirmationEmail({
+              orderId: orderData.id,
+              userFirstName: session.customer_details?.name?.split(' ')[0] || 'Valued Customer',
+              orderItems: orderData.order_items.map((item: { name: string; qty: number; pin_code: string; }) => ({ name: item.name, quantity: item.qty, pin_code: item.pin_code })),
+              total: orderData.total,
+            }),
+          });
+          console.log(`Order confirmation email sent successfully to ${orderData.email}`);
+        } catch (emailError) {
+          console.error('Failed to send confirmation email:', emailError);
+        }
       }
 
       // Log analytics event

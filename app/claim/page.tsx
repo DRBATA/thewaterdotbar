@@ -156,8 +156,11 @@ export default function ClaimPage() {
       {status === "confirm" && details && (
         <div className="space-y-4 max-w-sm text-left">
           <p className="text-green-700 text-xl font-semibold text-center">PIN {details.pin_code} accepted</p>
-          <p><strong>Guest email:</strong> {details.orders?.email}</p>
-          <p><strong>Item:</strong> {details.name} (qty {details.qty})</p>
+          <p><strong>Guest email:</strong> {details.order?.email}</p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 my-4">
+            <p className="text-lg font-medium text-gray-800"><strong>Item:</strong> {details.name}</p>
+            <p className="text-2xl font-bold text-blue-600 mt-2">Quantity to provide: {details.qty}</p>
+          </div>
           
           {/* Venue Selection */}
           <div className="py-2 border-t border-b border-gray-200 my-3">

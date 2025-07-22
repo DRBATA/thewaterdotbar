@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import PrintButton from './PrintButton.tsx';
+import SendEmailButton from './SendEmailButton';
 
 type TicketPageProps = {
   params: {
@@ -85,7 +86,7 @@ export default async function TicketPage({ params }: TicketPageProps) {
         <div className="flex justify-between items-start mb-8 border-b border-gray-200 pb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">The Water Bar</h1>
-            <p className="text-gray-500 mt-1">Open Ticket - Show at Event</p>
+            <p className="text-gray-500 mt-1">Your Digital Receipt & PINs</p>
           </div>
           <div className="text-right">
             <h2 className="text-xl font-semibold text-gray-700">Order #{order.id.toString().substring(0, 8)}</h2>
@@ -170,16 +171,17 @@ export default async function TicketPage({ params }: TicketPageProps) {
         </div>
 
         <div className="mt-8 pt-6 border-t border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">Important Event Information:</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">How to Claim:</h3>
           <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-            <li>Please present this ticket (digital or printed) and be prepared to confirm your email address ({order.email}) upon arrival.</li>
-            <li>To ensure you can schedule all your booked experiences, we advise arriving 15-20 minutes before your first desired session.</li>
-            <li>We look forward to welcoming you to The Water Bar!</li>
+            <li>Visit any of our partner venues to redeem your items.</li>
+            <li>Present the PIN code for each item to the staff at the venue.</li>
+            <li>The staff will confirm your PIN and hand over your purchase. Enjoy!</li>
           </ul>
         </div>
 
-        <div className="mt-8 text-center print:hidden">
+        <div className="mt-8 text-center print:hidden flex justify-center items-center space-x-4">
           <PrintButton />
+          <SendEmailButton orderId={order.id} />
         </div>
 
         <div className="mt-12 text-center text-sm text-gray-500">

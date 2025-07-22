@@ -52,7 +52,7 @@ export async function POST(req: NextRequest, { params }: { params: { pin: string
   // 1. First get the order item to confirm it exists and is unclaimed
   const { data: orderItem, error: fetchError } = await supabaseAdmin
     .from("order_items")
-    .select("id, item_id")
+    .select("id, item_id, qty")
     .eq("pin_code", pin)
     .is("claimed_at", null)
     .maybeSingle();
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest, { params }: { params: { pin: string
     const { error: stockError } = await supabaseAdmin.rpc('decrement_venue_stock', {
       p_venue_id: venue_id,
       p_product_id: orderItem.item_id,
-      p_amount: 1
+      p_amount: orderItem.qty
     });
       
     if (stockError) {
