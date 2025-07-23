@@ -54,9 +54,6 @@ export default function SendEmailButton({ orderId }: SendEmailButtonProps) {
         {isSent ? 'Email Sent!' : isSending ? 'Sending...' : 'Send Receipt to Email'}
       </button>
       {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-      <p className="text-gray-600 text-sm mt-4 max-w-md">
-        We value your feedback! If you have ideas for new features, like saving your hydration plans, let us know. If enough people want it, we'll look into building it.
-      </p>
     </div>
   );
 }

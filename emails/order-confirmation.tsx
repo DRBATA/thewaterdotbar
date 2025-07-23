@@ -19,7 +19,9 @@ export const OrderConfirmationEmail = ({ userFirstName = 'Valued Customer', orde
     <Body style={main}>
       <Container>
         <Section style={logo}>
-          <Img src={`${baseUrl}/drinks/logo.png`} width="150" alt="The Water Bar Logo" />
+          <Link href="https://thewater.bar">
+            <Img src="https://www.thewater.bar/logo.png" width="150" alt="The Water Bar Logo" />
+          </Link>
         </Section>
 
         <Section style={content}>
@@ -86,30 +88,29 @@ export const OrderConfirmationEmail = ({ userFirstName = 'Valued Customer', orde
             </Row>
           </Section>
 
-          <Text style={paragraph}>
-            You can view your full receipt online here:
-          </Text>
-          <Button style={button} href={`${baseUrl}/receipt/${orderId}`}>
-            View Online Receipt
-          </Button>
-          
-          <Hr style={hr} />
-          
-          <Text style={paragraph}>
-            We love all feedback so we can make the service better meet your requirements.
-          </Text>
-          <Button 
-            style={whatsappButton} 
-            href="https://api.whatsapp.com/send?phone=442081336235&text=Hi%20Water%20Bar!%20I%27d%20love%20to%20share%20some%20feedback%20about%20my%20experience."
-          >
-            💬 Share Feedback on WhatsApp
-          </Button>
-          
+          <Section style={{ textAlign: 'center' }}>
+            <Button 
+              style={whatsappButton} 
+              href="https://api.whatsapp.com/send?phone=442081336235&text=Hi%20Water%20Bar!%20I%27d%20love%20to%20share%20some%20feedback%20about%20my%20experience."
+            >
+              💬 Share Feedback on WhatsApp
+            </Button>
+            <Text style={paragraph}>
+              We love all feedback so we can make the service better meet your requirements.
+            </Text>
+          </Section>
+
           <Hr style={hr} />
         </Section>
 
         <Text style={footerText}>
-          © 2024 | The Water Bar | Dubai, UAE
+          Thank you for your purchase! If you have any questions, please contact us.
+        </Text>
+        <Link href="https://www.instagram.com/thewaterbarglobal/" style={{ color: '#007ee6', textDecoration: 'underline', fontSize: '12px', textAlign: 'center' }}>
+          Follow us on Instagram
+        </Link>
+        <Text style={footerText}>
+          &copy; 2024 | The Water Bar | Dubai, UAE
         </Text>
       </Container>
     </Body>
@@ -199,19 +200,6 @@ const totalsSection = {
 const totalsText = {
   fontSize: '18px',
   margin: 0,
-};
-
-const button = {
-  backgroundColor: '#007ee6',
-  borderRadius: '3px',
-  color: '#fff',
-  fontSize: '16px',
-  textDecoration: 'none',
-  textAlign: 'center' as const,
-  display: 'block',
-  padding: '12px',
-  margin: '20px auto',
-  width: '200px',
 };
 
 const whatsappButton = {
