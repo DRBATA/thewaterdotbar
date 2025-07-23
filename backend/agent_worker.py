@@ -27,8 +27,8 @@ async def entrypoint(ctx: JobContext):
     stt = STT()
     tts = TTS()
     
-    # Load the local avatar image using Pillow, as per the documentation
-    avatar_path = os.path.join(os.path.dirname(__file__), '..', 'public', 'images', 'avatar_live.png')
+    # Load the local avatar image
+    avatar_path = os.path.join(os.path.dirname(__file__), 'avatar.png')
     avatar_image = Image.open(avatar_path)
     hedra = AvatarSession(avatar_image=avatar_image)
 
