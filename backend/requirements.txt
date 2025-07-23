@@ -1,0 +1,8 @@
+flask==3.0.0
+gunicorn==21.2.0
+livekit-agents[hedra]==0.8.0
+livekit-agents[openai]==0.8.0
+livekit-agents[deepgram]==0.8.0
+python-dotenv==1.0.0
+Pillow==10.1.0
+asyncio
