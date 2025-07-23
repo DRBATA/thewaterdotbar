@@ -36,22 +36,27 @@ export default function SendEmailButton({ orderId }: SendEmailButtonProps) {
     }
   };
 
+  const buttonStyles = "w-64 px-6 py-3 text-white font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-opacity-75 transition-colors";
+
   return (
-    <div>
+    <div className="flex flex-col items-center">
       <button
         onClick={handleClick}
         disabled={isSending || isSent}
-        className={`px-4 py-2 rounded-md text-white font-semibold transition-colors ${
+        className={`${buttonStyles} ${
           isSent
-            ? 'bg-green-500 cursor-not-allowed'
+            ? 'bg-green-500 cursor-not-allowed focus:ring-green-400'
             : isSending
-            ? 'bg-gray-400 cursor-wait'
-            : 'bg-blue-600 hover:bg-blue-700'
+            ? 'bg-gray-400 cursor-wait focus:ring-gray-300'
+            : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
         }`}
       >
         {isSent ? 'Email Sent!' : isSending ? 'Sending...' : 'Send Receipt to Email'}
       </button>
       {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+      <p className="text-gray-600 text-sm mt-4 max-w-md">
+        We value your feedback! If you have ideas for new features, like saving your hydration plans, let us know. If enough people want it, we'll look into building it.
+      </p>
     </div>
   );
 }

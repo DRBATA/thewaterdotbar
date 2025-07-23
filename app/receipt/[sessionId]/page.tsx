@@ -81,7 +81,10 @@ export default async function TicketPage({ params }: TicketPageProps) {
     <>
     <div className="bg-gray-50 min-h-screen font-sans flex items-center justify-center p-4 sm:p-6 lg:p-8 print:bg-white print:p-0">
       <div className="max-w-4xl w-full bg-white shadow-lg rounded-lg p-8 print:shadow-none print:rounded-none">
-  {/* Event Info Block */}
+        <div className="flex justify-center mb-8">
+          <Image src="/logo.png" alt="The Water Bar Logo" width={150} height={50} />
+        </div>
+        {/* Event Info Block */}
 
         <div className="flex justify-between items-start mb-8 border-b border-gray-200 pb-6">
           <div>
@@ -187,6 +190,9 @@ export default async function TicketPage({ params }: TicketPageProps) {
         <div className="mt-12 text-center text-sm text-gray-500">
           <p>Thank you for your purchase!</p>
           <p>If you have any questions, please contact us.</p>
+          <a href="https://www.instagram.com/thewaterbarglobal/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline mt-2 inline-block">
+            Follow us on Instagram
+          </a>
         </div>
       </div>
     </div>
