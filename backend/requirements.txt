@@ -1,8 +1,5 @@
-flask==3.0.0
+flask==3.0.1
 gunicorn==21.2.0
-livekit-agents==0.8.0
-livekit-plugins-hedra
-livekit-plugins-openai
-livekit-plugins-deepgram
+livekit-agents[openai,deepgram,hedra]~=1.0
 python-dotenv==1.0.0
 Pillow==10.4.0
