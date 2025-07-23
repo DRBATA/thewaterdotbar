@@ -60,49 +60,18 @@ async def main():
     livekit_api_key = os.environ.get("LIVEKIT_API_KEY")
     livekit_api_secret = os.environ.get("LIVEKIT_API_SECRET")
     
-    print(f"Attempting to connect to LiveKit server at: {livekit_url}")
-    print(f"API Key: {livekit_api_key[:10]}..." if livekit_api_key else "API Key: None")
-    print(f"API Secret: {livekit_api_secret[:10]}..." if livekit_api_secret else "API Secret: None")
-
-    # Test mode - verify all components work without network connection
-    print("\n=== TESTING AVATAR LOADING ===")
-    try:
-        avatar_image = Image.open("avatar.png")
-        print(f"✅ Avatar image loaded successfully: {avatar_image.size}")
-    except Exception as e:
-        print(f"❌ Avatar loading failed: {e}")
+    print(f"Starting LiveKit agent...")
+    print(f"Connecting to: {livekit_url}")
     
-    print("\n=== TESTING PLUGIN IMPORTS ===")
-    try:
-        from livekit.plugins.deepgram import STT
-        from livekit.plugins.openai import LLM, TTS
-        from livekit.plugins.hedra import AvatarSession
-        print("✅ All plugins imported successfully")
-    except Exception as e:
-        print(f"❌ Plugin import failed: {e}")
-    
-    print("\n=== TESTING ENVIRONMENT VARIABLES ===")
-    required_vars = ["LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET", "OPENAI_API_KEY", "HEDRA_API_KEY"]
-    for var in required_vars:
-        value = os.environ.get(var)
-        if value:
-            print(f"✅ {var}: {value[:10]}...")
-        else:
-            print(f"❌ {var}: Missing")
-    
-    print("\n=== NETWORK CONNECTION TEST ===")
-    print("Skipping LiveKit connection due to network issues...")
-    print("All components verified! Ready for deployment to cloud environment.")
-    
-    # Comment out the actual worker creation for now
-    # opts = WorkerOptions(
-    #     entrypoint_fnc=entrypoint,
-    #     ws_url=livekit_url,
-    #     api_key=livekit_api_key,
-    #     api_secret=livekit_api_secret,
-    # )
-    # worker = Worker(opts)
-    # await worker.run()
+    # Create and run the LiveKit worker
+    opts = WorkerOptions(
+        entrypoint_fnc=entrypoint,
+        ws_url=livekit_url,
+        api_key=livekit_api_key,
+        api_secret=livekit_api_secret,
+    )
+    worker = Worker(opts)
+    await worker.run()
 
 if __name__ == "__main__":
     try:
