@@ -1,6 +1,7 @@
 from flask import Flask, jsonify
 import threading
 import os
+import asyncio
 from agent_worker import main as agent_main
 
 app = Flask(__name__)
@@ -41,7 +42,7 @@ def start_agent():
             agent_last_error = None  # Clear last error on start
             try:
                 print("Agent thread started")
-                agent_main()
+                asyncio.run(agent_main())
                 print("Agent thread finished gracefully")
             except Exception as e:
                 print(f"Agent thread crashed: {e}")
