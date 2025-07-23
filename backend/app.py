@@ -1,6 +1,5 @@
 from flask import Flask, jsonify
 import threading
-import asyncio
 import os
 from agent_worker import main as agent_main
 
@@ -9,6 +8,7 @@ app = Flask(__name__)
 # Global variable to track agent status
 agent_running = False
 agent_thread = None
+agent_last_error = None
 
 @app.route('/')
 def home():
@@ -28,7 +28,7 @@ def health():
 
 @app.route('/start-agent', methods=['POST', 'GET'])
 def start_agent():
-    global agent_running, agent_thread
+    global agent_running, agent_thread, agent_last_error
     
     if agent_running:
         return jsonify({'status': 'Agent already running'})
@@ -36,12 +36,16 @@ def start_agent():
     try:
         # Start the LiveKit agent in a background thread
         def run_agent():
-            global agent_running
+            global agent_running, agent_last_error
             agent_running = True
+            agent_last_error = None  # Clear last error on start
             try:
-                asyncio.run(agent_main())
+                print("Agent thread started")
+                agent_main()
+                print("Agent thread finished gracefully")
             except Exception as e:
-                print(f"Agent error: {e}")
+                print(f"Agent thread crashed: {e}")
+                agent_last_error = str(e)
             finally:
                 agent_running = False
         
@@ -60,15 +64,17 @@ def stop_agent():
 
 @app.route('/status')
 def status():
+    env_vars = {
+        'livekit_url': os.environ.get('LIVEKIT_URL', 'Not set'),
+        'openai_key': 'Set' if os.getenv("OPENAI_API_KEY") else 'Not set',
+        'hedra_key': 'Set' if os.environ.get('HEDRA_API_KEY') else 'Not set',
+        'deepgram_key': 'Set' if os.environ.get('DEEPGRAM_API_KEY') else 'Not set'
+    }
     return jsonify({
         'agent_running': agent_running,
         'thread_alive': agent_thread.is_alive() if agent_thread else False,
-        'environment': {
-            'livekit_url': os.environ.get('LIVEKIT_URL', 'Not set'),
-            'openai_key': 'Set' if os.environ.get('OPENAI_API_KEY') else 'Not set',
-            'hedra_key': 'Set' if os.environ.get('HEDRA_API_KEY') else 'Not set',
-            'deepgram_key': 'Set' if os.environ.get('DEEPGRAM_API_KEY') else 'Not set'
-        }
+        'environment': env_vars,
+        'last_error': agent_last_error
     })
 
 if __name__ == '__main__':
