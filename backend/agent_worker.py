@@ -2,24 +2,21 @@ import asyncio
 import logging
 import os
 from dotenv import load_dotenv
-from PIL import Image
 from livekit.agents import JobContext, Worker, WorkerOptions
 from livekit.plugins.deepgram import STT
 from livekit.plugins.openai import TTS
 from livekit.plugins.hedra import AvatarSession
 import aiohttp
-import json
 
-# Load environment variables from .env file
+# Load environment variables
 load_dotenv()
 
-# Configure logging
+# Set up logging
 logging.basicConfig(level=logging.INFO)
 
-# Store conversation history per session
+# Global conversation sessions storage
 conversation_sessions = {}
 
-# Main agent entrypoint
 async def entrypoint(ctx: JobContext):
     logging.info("Agent entrypoint triggered")
 
@@ -27,14 +24,21 @@ async def entrypoint(ctx: JobContext):
     stt = STT()
     tts = TTS()
     
-    # Load the local avatar image
-    avatar_path = os.path.join(os.path.dirname(__file__), 'avatar.png')
-    avatar_image = Image.open(avatar_path)
-    hedra = AvatarSession(avatar_image=avatar_image)
+    # Initialize Hedra avatar session using the uploaded avatar ID
+    avatar_id = os.environ.get('HEDRA_AVATAR_ID')
+    if not avatar_id:
+        logging.error("HEDRA_AVATAR_ID environment variable not set")
+        raise ValueError("HEDRA_AVATAR_ID environment variable is required")
+    
+    logging.info(f"Using Hedra avatar ID: {avatar_id}")
+    hedra = AvatarSession(avatar_id=avatar_id)
 
-    # Start the avatar's video stream
-    video_out = hedra.stream(ctx)
-    await ctx.room.local_participant.publish_track(video_out.track)
+    # Start the avatar session
+    await hedra.start(session=ctx, room=ctx.room)
+    
+    # Get the video track from the avatar session
+    video_track = hedra.video_track()
+    await ctx.room.local_participant.publish_track(video_track)
 
     # Start listening to the user
     stt_stream = stt.stream(ctx)
@@ -89,46 +93,48 @@ async def entrypoint(ctx: JobContext):
                             
                             # Stream the response to both TTS for audio and Hedra for animation
                             await asyncio.gather(
-                                tts.say(response_text, stream_id=video_out.stream_id),
-                                video_out.play(response_text)
+                                tts.say(response_text, stream_id=video_track.stream_id),
+                                hedra.play(response_text)
                             )
                         else:
                             error_msg = "I'm having trouble accessing my knowledge base right now. Let me give you some general hydration advice instead."
                             logging.error(f"Chat API error: {response.status}")
                             await asyncio.gather(
-                                tts.say(error_msg, stream_id=video_out.stream_id),
-                                video_out.play(error_msg)
+                                tts.say(error_msg, stream_id=video_track.stream_id),
+                                hedra.play(error_msg)
                             )
                             
             except Exception as e:
                 error_msg = "I'm experiencing some technical difficulties. Please try again in a moment."
                 logging.error(f"Error calling chat API: {e}")
                 await asyncio.gather(
-                    tts.say(error_msg, stream_id=video_out.stream_id),
-                    video_out.play(error_msg)
+                    tts.say(error_msg, stream_id=video_track.stream_id),
+                    hedra.play(error_msg)
                 )
 
 # CLI command to run the agent
 async def main():
-    livekit_url = os.environ.get("LIVEKIT_URL")
-    livekit_api_key = os.environ.get("LIVEKIT_API_KEY")
-    livekit_api_secret = os.environ.get("LIVEKIT_API_SECRET")
+    logging.info("Starting LiveKit agent...")
     
-    print(f"Starting LiveKit agent...")
-    print(f"Connecting to: {livekit_url}")
+    # Get environment variables
+    livekit_url = os.environ.get('LIVEKIT_URL')
+    livekit_api_key = os.environ.get('LIVEKIT_API_KEY')
+    livekit_api_secret = os.environ.get('LIVEKIT_API_SECRET')
     
-    # Create and run the LiveKit worker
-    opts = WorkerOptions(
+    logging.info(f"Connecting to: {livekit_url}")
+    
+    # Create worker
+    worker = Worker(
         entrypoint_fnc=entrypoint,
-        ws_url=livekit_url,
-        api_key=livekit_api_key,
-        api_secret=livekit_api_secret,
+        options=WorkerOptions(
+            api_key=livekit_api_key,
+            api_secret=livekit_api_secret,
+            ws_url=livekit_url,
+        ),
     )
-    worker = Worker(opts)
+    
+    # Start the worker
     await worker.run()
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        pass
+    asyncio.run(main())
