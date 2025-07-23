@@ -1,8 +1,9 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import threading
 import os
 import asyncio
 from agent_worker import main as agent_main
+from livekit import api
 
 app = Flask(__name__)
 
@@ -62,6 +63,37 @@ def stop_agent():
     global agent_running
     agent_running = False
     return jsonify({"status": "Agent stopped"})
+
+@app.route('/generate-token')
+def generate_token():
+    room_name = request.args.get('room', 'test-room')
+    participant_name = request.args.get('participant', 'user')
+    
+    try:
+        # Generate token using LiveKit API
+        token = api.AccessToken(
+            api_key=os.environ.get('LIVEKIT_API_KEY'),
+            api_secret=os.environ.get('LIVEKIT_API_SECRET')
+        )
+        token.with_identity(participant_name)
+        token.with_name(participant_name)
+        token.with_grants(api.VideoGrants(
+            room_join=True,
+            room=room_name,
+            can_publish=True,
+            can_subscribe=True,
+        ))
+        
+        jwt_token = token.to_jwt()
+        
+        return jsonify({
+            'token': jwt_token,
+            'url': os.environ.get('LIVEKIT_URL'),
+            'room': room_name,
+            'participant': participant_name
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/status')
 def status():
