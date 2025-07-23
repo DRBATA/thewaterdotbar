@@ -1,10 +1,10 @@
-import { Body, Button, Container, Head, Heading, Hr, Html, Img, Link, Preview, Section, Text } from '@react-email/components';
+import { Body, Button, Container, Head, Heading, Hr, Html, Img, Link, Preview, Section, Text, Row, Column } from '@react-email/components';
 import * as React from 'react';
 
 interface OrderConfirmationEmailProps {
   userFirstName?: string;
   orderId?: string;
-  orderItems?: { name: string; quantity: number; pin_code: string }[];
+  orderItems?: { name: string; quantity: number; pin_code: string | string[]; image_url?: string; price?: number }[];
   total?: number;
 }
 
@@ -17,46 +17,99 @@ export const OrderConfirmationEmail = ({ userFirstName = 'Valued Customer', orde
     <Head />
     <Preview>Your Water Bar Order Confirmation & Tickets</Preview>
     <Body style={main}>
-      <Container style={container}>
-        <Img
-          src={`${baseUrl}/logo-email.png`}
-          width="120"
-          height="50"
-          alt="The Water Bar"
-          style={logo}
-        />
-        <Heading style={heading}>Your Order is Confirmed!</Heading>
-        <Text style={paragraph}>Hi {userFirstName},</Text>
-        <Text style={paragraph}>
-          Thank you for your order! We're excited to see you. Below are your digital tickets with PIN codes. Please present these at the venue to claim your items.
-        </Text>
-        
-        <Hr style={hr} />
-
-        {orderItems.map((item, index) => (
-          <Section key={index} style={itemSection}>
-            <Text style={itemTitle}>{item.name} (x{item.quantity})</Text>
-            <Text style={pinLabel}>PIN Code:</Text>
-            <Text style={pinCode}>{item.pin_code}</Text>
-          </Section>
-        ))}
-
-        <Hr style={hr} />
-
-        <Section style={totalSection}>
-          <Text style={totalText}>Total: AED {total.toFixed(2)}</Text>
+      <Container>
+        <Section style={logo}>
+          <Img src={`${baseUrl}/drinks/logo.png`} width="150" alt="The Water Bar Logo" />
         </Section>
 
-        <Text style={paragraph}>
-          You can view your full receipt online here:
-        </Text>
-        <Button style={button} href={`${baseUrl}/receipt/${orderId}`}>
-          View Online Receipt
-        </Button>
-        
-        <Hr style={hr} />
-        <Text style={footer}>
-          The Water Bar | In partnership with AOI Rejuvenation
+        <Section style={content}>
+          <Heading style={heading}>Your Order is Confirmed!</Heading>
+          <Text style={paragraph}>Hi {userFirstName},</Text>
+          <Text style={paragraph}>
+            Thank you for your order! We're excited to see you. Below are your digital tickets with PIN codes. Please present these at the venue to claim your items.
+          </Text>
+          
+          {orderId && (
+            <Section style={{ marginBottom: '20px' }}>
+              <Row>
+                <Column><strong>Order ID:</strong> #{orderId.substring(0, 8)}</Column>
+                <Column style={{ textAlign: 'right' }}><strong>Date:</strong> {new Date().toLocaleDateString()}</Column>
+              </Row>
+            </Section>
+          )}
+
+          {orderItems.map((item, index) => (
+            <Section key={index} style={itemSection}>
+              <Row>
+                {item.image_url && (
+                  <Column style={{ width: '80px' }}>
+                    <Img src={`${baseUrl}${item.image_url}`} width="64" height="64" alt={item.name} style={{ borderRadius: '4px' }} />
+                  </Column>
+                )}
+                <Column>
+                  <Text style={itemText}><strong>{item.name}</strong></Text>
+                  <Text style={itemText}>Qty: {item.quantity}{item.price && ` | Price: AED ${item.price.toFixed(2)}`}</Text>
+                </Column>
+              </Row>
+              
+              {item.pin_code && (
+                <Section style={{ textAlign: 'center', marginTop: '16px' }}>
+                  {Array.isArray(item.pin_code) ? (
+                    <div style={{ display: 'inline-block' }}>
+                      {item.pin_code.map((pin: string, pinIndex: number) => {
+                        const pinLabels = ['Entry', 'Drink', 'Wellness'];
+                        return (
+                          <div key={pin} style={pinContainer}>
+                            <Text style={pinLabel}>{pinLabels[pinIndex] || 'Your'} PIN</Text>
+                            <Text style={pinCode}>{pin}</Text>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div style={pinContainer}>
+                      <Text style={pinLabel}>Your PIN</Text>
+                      <Text style={pinCode}>{item.pin_code}</Text>
+                    </div>
+                  )}
+                  <Text style={pinInfo}>You'll need these PINs to claim your purchases.</Text>
+                </Section>
+              )}
+            </Section>
+          ))}
+
+          <Section style={totalsSection}>
+            <Row>
+              <Column style={{ textAlign: 'right' }}>
+                <Text style={totalsText}><strong>Total: AED {total.toFixed(2)}</strong></Text>
+              </Column>
+            </Row>
+          </Section>
+
+          <Text style={paragraph}>
+            You can view your full receipt online here:
+          </Text>
+          <Button style={button} href={`${baseUrl}/receipt/${orderId}`}>
+            View Online Receipt
+          </Button>
+          
+          <Hr style={hr} />
+          
+          <Text style={paragraph}>
+            We love all feedback so we can make the service better meet your requirements.
+          </Text>
+          <Button 
+            style={whatsappButton} 
+            href="https://api.whatsapp.com/send?phone=442081336235&text=Hi%20Water%20Bar!%20I%27d%20love%20to%20share%20some%20feedback%20about%20my%20experience."
+          >
+            💬 Share Feedback on WhatsApp
+          </Button>
+          
+          <Hr style={hr} />
+        </Section>
+
+        <Text style={footerText}>
+          © 2024 | The Water Bar | Dubai, UAE
         </Text>
       </Container>
     </Body>
@@ -67,79 +120,102 @@ export default OrderConfirmationEmail;
 
 const main = {
   backgroundColor: '#f6f9fc',
-  fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif',
-};
-
-const container = {
-  backgroundColor: '#ffffff',
-  margin: '0 auto',
-  padding: '20px 0 48px',
-  marginBottom: '64px',
-  border: '1px solid #f0f0f0',
-  borderRadius: '4px',
+  fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif',
 };
 
 const logo = {
-  margin: '0 auto',
+  padding: '30px 20px',
+  textAlign: 'center' as const,
+};
+
+const content = {
+  border: '1px solid #e0e0e0',
+  borderRadius: '5px',
+  backgroundColor: '#ffffff',
+  padding: '20px',
 };
 
 const heading = {
   fontSize: '28px',
   fontWeight: 'bold',
-  marginTop: '48px',
+  marginTop: '20px',
   textAlign: 'center' as const,
   color: '#484848',
 };
 
 const paragraph = {
   fontSize: '16px',
-  lineHeight: '24px',
+  lineHeight: '26px',
   textAlign: 'left' as const,
-  padding: '0 20px',
   color: '#525f7f',
 };
 
 const itemSection = {
-  padding: '0 20px',
+  borderBottom: '1px solid #e0e0e0',
+  padding: '16px 0',
 };
 
-const itemTitle = {
-  fontSize: '18px',
-  fontWeight: 'bold',
-  color: '#484848',
-  margin: '10px 0 0 0',
+const itemText = {
+  margin: 0,
+  fontSize: '14px',
+  lineHeight: '22px',
+};
+
+const pinContainer = {
+  display: 'inline-block',
+  padding: '12px',
+  margin: '0 5px',
+  borderRadius: '8px',
+  backgroundColor: '#e0f2fe',
+  border: '2px solid #7dd3fc',
+  textAlign: 'center' as const,
 };
 
 const pinLabel = {
   fontSize: '14px',
-  color: '#525f7f',
-  margin: '5px 0 0 0',
+  fontWeight: 'bold',
+  color: '#0c4a6e',
+  margin: 0,
 };
 
 const pinCode = {
-  fontSize: '20px',
+  fontSize: '24px',
   fontWeight: 'bold',
-  color: '#007bff',
-  backgroundColor: '#f0f8ff',
-  padding: '8px 12px',
-  borderRadius: '4px',
-  display: 'inline-block',
-  margin: '5px 0 15px 0',
+  color: '#0369a1',
+  margin: '4px 0 0 0',
+  letterSpacing: '0.1em',
 };
 
-const totalSection = {
-  padding: '0 20px',
-  textAlign: 'right' as const,
+const pinInfo = {
+  marginTop: '8px',
+  fontSize: '12px',
+  color: '#075985',
 };
 
-const totalText = {
+const totalsSection = {
+  paddingTop: '16px',
+};
+
+const totalsText = {
   fontSize: '18px',
-  fontWeight: 'bold',
-  color: '#484848',
+  margin: 0,
 };
 
 const button = {
-  backgroundColor: '#007bff',
+  backgroundColor: '#007ee6',
+  borderRadius: '3px',
+  color: '#fff',
+  fontSize: '16px',
+  textDecoration: 'none',
+  textAlign: 'center' as const,
+  display: 'block',
+  padding: '12px',
+  margin: '20px auto',
+  width: '200px',
+};
+
+const whatsappButton = {
+  backgroundColor: '#25D366',
   borderRadius: '3px',
   color: '#fff',
   fontSize: '16px',
@@ -156,9 +232,9 @@ const hr = {
   margin: '20px 0',
 };
 
-const footer = {
-  color: '#8898aa',
-  fontSize: '12px',
-  lineHeight: '16px',
+const footerText = {
   textAlign: 'center' as const,
+  fontSize: '12px',
+  color: '#6b7280',
+  padding: '20px',
 };
