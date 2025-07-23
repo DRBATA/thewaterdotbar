@@ -4,5 +4,4 @@ livekit-agents[hedra]==0.8.0
 livekit-agents[openai]==0.8.0
 livekit-agents[deepgram]==0.8.0
 python-dotenv==1.0.0
-Pillow==10.1.0
-asyncio
+Pillow==10.4.0
