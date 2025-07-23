@@ -26,7 +26,7 @@ def health():
         'avatar': 'ready'
     })
 
-@app.route('/start-agent', methods=['POST'])
+@app.route('/start-agent', methods=['POST', 'GET'])
 def start_agent():
     global agent_running, agent_thread
     
@@ -48,15 +48,15 @@ def start_agent():
         agent_thread = threading.Thread(target=run_agent, daemon=True)
         agent_thread.start()
         
-        return jsonify({'status': 'Agent started successfully'})
+        return jsonify({"status": "Agent started"}), 200
     except Exception as e:
         return jsonify({'status': 'Failed to start agent', 'error': str(e)}), 500
 
-@app.route('/stop-agent', methods=['POST'])
+@app.route('/stop-agent', methods=['POST', 'GET'])
 def stop_agent():
     global agent_running
     agent_running = False
-    return jsonify({'status': 'Agent stop requested'})
+    return jsonify({"status": "Agent stopped"})
 
 @app.route('/status')
 def status():
