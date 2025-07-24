@@ -6,7 +6,7 @@ export default function PrintButton() {
   return (
     <button
       onClick={() => window.print()}
-      className={`${buttonStyles} bg-blue-600 hover:bg-blue-700 focus:ring-blue-500`}
+      className={`${buttonStyles} bg-gray-600 hover:bg-gray-700 focus:ring-gray-500`}
     >
       Print or Save as PDF
     </button>
