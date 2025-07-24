@@ -124,10 +124,7 @@ async def entrypoint(ctx: JobContext):
             except Exception as e:
                 error_msg = "I'm experiencing some technical difficulties. Please try again in a moment."
                 logging.error(f"Error calling chat API: {e}")
-                await asyncio.gather(
-                    tts.say(error_msg, stream_id=video_track.stream_id),
-                    hedra.play(error_msg)
-                )
+                await session.say(error_msg)
 
 # CLI command to run the agent
 async def main():
