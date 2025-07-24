@@ -1,0 +1,87 @@
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { Resend } from 'resend';
+import OrderConfirmationEmail from '@/emails/order-confirmation';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_KEY!
+);
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+export async function POST(request: Request) {
+  const { email } = await request.json();
+
+  if (!email) {
+    return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+  }
+
+  try {
+    // 1. Find all unclaimed order_items for the given email
+    const { data: unclaimedItems, error: itemsError } = await supabase
+      .from('order_item')
+      .select(`
+        *,
+        order:order!inner(email)
+      `)
+      .eq('order.email', email)
+      .is('claimed_at', null);
+
+    if (itemsError) throw itemsError;
+
+    if (!unclaimedItems || unclaimedItems.length === 0) {
+      // Still return success to prevent email enumeration
+      return NextResponse.json({ message: 'If any unclaimed PINs exist, they have been resent.' });
+    }
+
+    // 2. Group unclaimed items by order_id
+    const ordersToResend = unclaimedItems.reduce((acc, item) => {
+      if (!acc[item.order_id]) {
+        acc[item.order_id] = [];
+      }
+      acc[item.order_id].push(item);
+      return acc;
+    }, {} as Record<string, typeof unclaimedItems>);
+
+    // 3. For each order, fetch full details and resend the email
+    for (const orderId in ordersToResend) {
+      const { data: orderData, error: orderError } = await supabase
+        .from('order')
+        .select(`
+          *,
+          order_item (*)
+        `)
+        .eq('id', orderId)
+        .single();
+
+      if (orderError) {
+        console.error(`Error fetching order ${orderId}:`, orderError);
+        continue; // Skip to the next order
+      }
+
+      await resend.emails.send({
+        from: 'The Water Bar <noreply@receipt.thewater.bar>',
+        to: orderData.email,
+        subject: `Your Water Bar Receipt (Order #${orderData.id})`,
+        react: OrderConfirmationEmail({
+        orderId: orderData.id,
+        orderItems: orderData.order_item.map((item: { name: string; qty: number; pin_code: string; image_url?: string; price?: number }) => ({
+          name: item.name,
+          quantity: item.qty,
+          pin_code: item.pin_code,
+          image_url: item.image_url,
+          price: item.price
+        })),
+        total: orderData.total
+      }),
+      });
+    }
+
+    return NextResponse.json({ message: 'Emails for unclaimed PINs have been resent.' });
+
+  } catch (error) {
+    console.error('Error resending unclaimed PINs:', error);
+    return NextResponse.json({ error: 'An internal error occurred.' }, { status: 500 });
+  }
+}

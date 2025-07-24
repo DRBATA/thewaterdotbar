@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
+import { Dialog, Transition } from '@headlessui/react'
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -17,6 +18,9 @@ export default function ClaimPage() {
   const [emailOk, setEmailOk] = useState(false);
   const [tokenOk, setTokenOk] = useState(false);
   const [redemptionChoice, setRedemptionChoice] = useState<string>("");
+  const [isResendModalOpen, setIsResendModalOpen] = useState(false);
+  const [resendEmail, setResendEmail] = useState("");
+  const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   
   // Venue state
   const [venues, setVenues] = useState<Array<{id: string; name: string}>>([]);
@@ -87,6 +91,23 @@ export default function ClaimPage() {
     }
   };
 
+    const handleResend = async () => {
+    setResendStatus('sending');
+    try {
+      const response = await fetch('/api/email/resend-unclaimed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resendEmail }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to send email.');
+      }
+      setResendStatus('sent');
+    } catch (error) {
+      setResendStatus('error');
+    } 
+  };
+
   const reset = () => {
     setPin("");
     setStatus(null);
@@ -105,6 +126,7 @@ export default function ClaimPage() {
   }
 
   return (
+    <>
     <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
       <h1 className="text-3xl font-semibold mb-6">Claim Page</h1>
       
@@ -141,13 +163,19 @@ export default function ClaimPage() {
             </select>
           </div>
           
-          <button
+                    <button
             onClick={fetchDetails}
             disabled={pin.length !== 4 || !selectedVenueId}
             className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50 w-full mt-4"
           >
             Redeem
           </button>
+
+          <div className="text-center mt-4">
+            <button onClick={() => setIsResendModalOpen(true)} className="text-sm text-blue-600 hover:underline">
+              Lost your PINs? Resend to your email.
+            </button>
+          </div>
         </div>
       )}
 
@@ -259,5 +287,80 @@ export default function ClaimPage() {
         </div>
       )}
     </main>
+
+      <Transition appear show={isResendModalOpen} as={Fragment}>
+        <Dialog as="div" className="relative z-10" onClose={() => setIsResendModalOpen(false)}>
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black bg-opacity-25" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                  <Dialog.Title
+                    as="h3"
+                    className="text-lg font-medium leading-6 text-gray-900"
+                  >
+                    Resend Unclaimed PINs
+                  </Dialog.Title>
+                  {resendStatus === 'sent' ? (
+                    <div className="mt-4 text-center">
+                      <p className="text-green-600">If unclaimed PINs for this email exist, they have been resent.</p>
+                      <button onClick={() => { setIsResendModalOpen(false); setResendStatus('idle'); }} className="mt-4 bg-blue-600 text-white px-4 py-2 rounded">
+                        Close
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-500">
+                          Enter the email address you used to purchase. We'll resend the receipt with any PINs that haven't been claimed yet.
+                        </p>
+                        <input
+                          type="email"
+                          value={resendEmail}
+                          onChange={(e) => setResendEmail(e.target.value)}
+                          placeholder="your.email@example.com"
+                          className="mt-4 w-full border p-2 rounded"
+                        />
+                      </div>
+
+                      <div className="mt-4">
+                        <button
+                          type="button"
+                          className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
+                          onClick={handleResend}
+                          disabled={resendStatus === 'sending' || !resendEmail}
+                        >
+                          {resendStatus === 'sending' ? 'Sending...' : 'Send Email'}
+                        </button>
+                        {resendStatus === 'error' && <p className="text-red-500 text-sm mt-2">Something went wrong. Please try again.</p>}
+                      </div>
+                    </>
+                  )}
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+    </>
   );
 }
