@@ -14,6 +14,8 @@ export async function POST() {
       .from("cart_headers")
       .select("id")
       .eq("session_id", sessionId)
+      .order('created_at', { ascending: false })
+      .limit(1)
       .maybeSingle()
     
     if (headerError) {
