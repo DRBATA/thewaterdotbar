@@ -4,8 +4,11 @@ import os
 from dotenv import load_dotenv
 import aiohttp
 
-from livekit.agents import JobContext, Worker, WorkerOptions, agent
-from livekit.plugins import deepgram, openai, hedra
+from livekit.agents import JobContext, Worker, WorkerOptions
+from livekit.agents.voice import Agent, AgentSession
+from livekit.plugins.deepgram import STT
+from livekit.plugins.openai import TTS
+from livekit.plugins.hedra import AvatarSession
 
 # Load environment variables from .env file
 load_dotenv()
@@ -13,50 +16,42 @@ load_dotenv()
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-class MyAgent(agent.Agent):
+class WaterBarAgent(Agent):
     def __init__(self):
         super().__init__()
         self.chat_api_url = os.environ.get('CHAT_API_URL', 'https://waterbarmenu.vercel.app/api/chat')
-        self.stt = deepgram.STT()
-        self.tts = openai.TTS()
-        self.chat = openai.Chat()
 
-    async def start(self):
-        # This is where you can add any agent startup logic
-        logging.info("MyAgent started")
+    async def process_text(self, text: str):
+        logging.info(f'User said: "{text}"')
+        # The AgentSession automatically manages the history, so we just append the new user message
+        self.session.add_user_message(text)
 
-    async def process_text(self, text):
-        # The Agent class automatically handles history and TTS
-        logging.info(f"Processing user text: {text}")
-        
-        # Add user message to chat history
-        self.chat.add_user_message(text)
-        
         try:
-            # Call external chat API
             async with aiohttp.ClientSession() as http_session:
                 payload = {
-                    "messages": self.chat.chat_history(),
-                    "userProfile": None # Skipping profile for now
+                    "messages": self.session.chat_history(),
+                    "userProfile": None  # Skipping profile for now
                 }
-                logging.info(f"Sending payload to chat API with {len(self.chat.chat_history())} messages")
+                logging.info(f"Sending payload to chat API with {len(self.session.chat_history())} messages")
+
                 async with http_session.post(self.chat_api_url, json=payload) as response:
                     if response.status == 200:
                         response_text = await response.text()
-                        logging.info(f'Chat API response: "{response_text[:100]}..."')
+                        logging.info(f'Chat API response received: "{response_text[:100]}..."')
                         if not response_text.strip():
                             response_text = "I'm having a bit of trouble thinking. Could you ask that again?"
                         
-                        # Use the agent's built-in say method to stream TTS
-                        await self.say(response_text)
+                        # The agent session will handle TTS and history automatically
+                        await self.session.say(response_text)
                     else:
-                        error_msg = "I can't seem to connect to my knowledge base right now."
+                        error_msg = "I can't seem to connect to my knowledge base. Let's talk about general hydration."
                         logging.error(f"Chat API error: {response.status} - {await response.text()}")
-                        await self.say(error_msg)
+                        await self.session.say(error_msg)
+
         except Exception as e:
             error_msg = "I've encountered a technical glitch. Please give me a moment to reset."
             logging.error(f"Error in process_text: {e}", exc_info=True)
-            await self.say(error_msg)
+            await self.session.say(error_msg)
 
 async def entrypoint(ctx: JobContext):
     logging.info("AGENT_WORKER: Entrypoint started for room: %s", ctx.room.name)
@@ -68,19 +63,25 @@ async def entrypoint(ctx: JobContext):
 
         logging.info("AGENT_WORKER: Found Hedra Avatar ID: %s", avatar_id)
 
-        agent_instance = MyAgent()
-        logging.info("AGENT_WORKER: MyAgent instance created.")
+        agent = WaterBarAgent()
+        logging.info("AGENT_WORKER: WaterBarAgent instance created.")
 
-        avatar_session = hedra.AvatarSession(avatar_id=avatar_id)
+        avatar = AvatarSession(avatar_id=avatar_id)
         logging.info("AGENT_WORKER: Hedra AvatarSession created.")
 
+        session = AgentSession(
+            stt=STT(),
+            tts=TTS(),
+            agent=agent,
+        )
+        logging.info("AGENT_WORKER: Agent session created.")
+
         logging.info("AGENT_WORKER: Attempting to start avatar session...")
-        # The avatar session now takes the agent instance directly
-        await avatar_session.start(agent_instance, room=ctx.room)
+        await avatar.start(session, room=ctx.room)
         logging.info("AGENT_WORKER: Avatar session started successfully.")
 
         logging.info("AGENT_WORKER: Starting agent run loop...")
-        await agent_instance.run()
+        await session.run(room=ctx.room)
         logging.info("AGENT_WORKER: Agent run loop finished.")
 
     except Exception as e:
