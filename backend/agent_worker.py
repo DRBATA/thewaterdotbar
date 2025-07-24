@@ -2,142 +2,94 @@ import asyncio
 import logging
 import os
 from dotenv import load_dotenv
-from livekit.agents import JobContext, Worker, WorkerOptions, AgentSession, RoomOutputOptions
+import aiohttp
+from livekit.agents import JobContext, Worker, WorkerOptions
+from livekit.agents.voice import Agent, AgentSession
 from livekit.plugins.deepgram import STT
 from livekit.plugins.openai import TTS
 from livekit.plugins.hedra import AvatarSession
-import aiohttp
 
 # Load environment variables
 load_dotenv()
 
 # Set up logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Global conversation sessions storage
-conversation_sessions = {}
+# --- Agent Definition ---
+class WaterBarAgent(Agent):
+    def __init__(self):
+        super().__init__()
+        self.chat_api_url = os.environ.get('CHAT_API_URL', 'https://waterbarmenu.vercel.app/api/chat')
+        # The conversation history will be managed by the AgentSession
 
+    async def process_text(self, text: str):
+        logging.info(f'User said: "{text}"')
+        # The AgentSession automatically manages the history, so we just append the new user message
+        self.session.add_user_message(text)
+
+        try:
+            async with aiohttp.ClientSession() as http_session:
+                payload = {
+                    "messages": self.session.chat_history(),
+                    "userProfile": None  # Skipping profile for now
+                }
+                logging.info(f"Sending payload to chat API with {len(self.session.chat_history())} messages")
+
+                async with http_session.post(self.chat_api_url, json=payload) as response:
+                    if response.status == 200:
+                        response_text = await response.text()
+                        logging.info(f'Chat API response received: "{response_text[:100]}..."')
+                        if not response_text.strip():
+                            response_text = "I'm having a bit of trouble thinking. Could you ask that again?"
+                        
+                        # The agent session will handle TTS and history automatically
+                        await self.session.say(response_text)
+                    else:
+                        error_msg = "I can't seem to connect to my knowledge base. Let's talk about general hydration."
+                        logging.error(f"Chat API error: {response.status} - {await response.text()}")
+                        await self.session.say(error_msg)
+
+        except Exception as e:
+            error_msg = "I've encountered a technical glitch. Please give me a moment to reset."
+            logging.error(f"Error in process_text: {e}", exc_info=True)
+            await self.session.say(error_msg)
+
+# --- Entrypoint and Worker Setup ---
 async def entrypoint(ctx: JobContext):
-    logging.info("Agent entrypoint triggered")
+    logging.info("Agent entrypoint triggered for room: %s", ctx.room.name)
 
-    # Skip Supabase integration for now - focus on core avatar pipeline
-
-    # Initialize plugins
-    stt = STT()
-    tts = TTS()
-    
-    # Create agent session
-    session = AgentSession(
-        stt=stt,
-        tts=tts
-    )
-    
-    # Initialize Hedra avatar session using the uploaded avatar ID
     avatar_id = os.environ.get('HEDRA_AVATAR_ID')
     if not avatar_id:
         logging.error("HEDRA_AVATAR_ID environment variable not set")
-        raise ValueError("HEDRA_AVATAR_ID environment variable is required")
-    
+        return
+
     logging.info(f"Using Hedra avatar ID: {avatar_id}")
     avatar = AvatarSession(avatar_id=avatar_id)
 
-    # Start the avatar session (let Hedra handle track publishing)
-    await avatar.start(session, room=ctx.room)
-    logging.info("Avatar session started successfully")
-    
-    # Start the agent session with audio disabled (avatar will handle audio)
-    await session.start(
-        room=ctx.room,
-        room_output_options=RoomOutputOptions(audio_enabled=False)
+    session = AgentSession(
+        stt=STT(),
+        tts=TTS(),
+        agent=WaterBarAgent(),
     )
-    logging.info("Agent session started with audio disabled")
 
-    # Start listening to the user
-    stt_stream = stt.stream(ctx)
+    # The avatar session now takes the agent session
+    await avatar.start(session, room=ctx.room)
+    logging.info("Avatar session started.")
 
-    # Initialize conversation history for this session
-    session_id = ctx.room.name
-    if session_id not in conversation_sessions:
-        conversation_sessions[session_id] = []
+    # The agent session now runs its own loop
+    await session.run(room=ctx.room)
+    logging.info("Agent session finished.")
 
-    logging.info("Agent is ready and listening...")
-
-    async for event in stt_stream:
-        if event.type == 'final_transcript':
-            text = event.alternatives[0].transcript
-            if not text:
-                continue
-
-            logging.info(f'User said: "{text}"')
-
-            # Add user message to conversation history
-            conversation_sessions[session_id].append({
-                "role": "user",
-                "content": text
-            })
-
-            try:
-                # Skip user profile for now - use None
-                user_profile = None
-                logging.info("Using no user profile for this test")
-                
-                # Call the existing Water Bar chat API
-                async with aiohttp.ClientSession() as http_session:
-                    payload = {
-                        "messages": conversation_sessions[session_id],
-                        "userProfile": user_profile
-                    }
-                    
-                    logging.info(f"Sending payload to chat API with {len(conversation_sessions[session_id])} messages")
-                    
-                    # Use your deployed Next.js app URL or localhost for development
-                    api_url = os.environ.get('CHAT_API_URL', 'https://waterbarmenu.vercel.app/api/chat')
-                    
-                    async with http_session.post(api_url, json=payload) as response:
-                        if response.status == 200:
-                            # The chat API returns a streaming response
-                            response_text = ""
-                            async for chunk in response.content.iter_chunked(1024):
-                                chunk_text = chunk.decode('utf-8')
-                                response_text += chunk_text
-                            
-                            logging.info(f'Chat API response received: "{response_text[:100]}..."')
-                            
-                            if not response_text.strip():
-                                logging.error("Chat API returned empty response!")
-                                response_text = "I'm having trouble generating a response right now. Let me help you with general hydration advice."
-                            
-                            # Add assistant response to conversation history
-                            conversation_sessions[session_id].append({
-                                "role": "assistant", 
-                                "content": response_text
-                            })
-                            
-                            # Use the agent session's TTS (which will automatically feed to Hedra)
-                            logging.info(f"Sending text to TTS: {response_text[:50]}...")
-                            await session.say(response_text)
-                        else:
-                            error_msg = "I'm having trouble accessing my knowledge base right now. Let me give you some general hydration advice instead."
-                            logging.error(f"Chat API error: {response.status}")
-                            await session.say(error_msg)
-                            
-            except Exception as e:
-                error_msg = "I'm experiencing some technical difficulties. Please try again in a moment."
-                logging.error(f"Error calling chat API: {e}")
-                await session.say(error_msg)
-
-# CLI command to run the agent
 async def main():
-    logging.info("Starting LiveKit agent...")
-    
-    # Get environment variables
+    logging.info("Starting LiveKit agent worker...")
     livekit_url = os.environ.get('LIVEKIT_URL')
     livekit_api_key = os.environ.get('LIVEKIT_API_KEY')
     livekit_api_secret = os.environ.get('LIVEKIT_API_SECRET')
-    
-    logging.info(f"Connecting to: {livekit_url}")
-    
-    # Create worker
+
+    if not all([livekit_url, livekit_api_key, livekit_api_secret]):
+        logging.error("LiveKit environment variables are not fully set.")
+        return
+
     worker = Worker(
         entrypoint_fnc=entrypoint,
         options=WorkerOptions(
@@ -146,9 +98,10 @@ async def main():
             ws_url=livekit_url,
         ),
     )
-    
-    # Start the worker
     await worker.run()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logging.info("Worker shutting down...")
