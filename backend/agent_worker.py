@@ -7,7 +7,7 @@ import aiohttp
 from livekit.agents import JobContext, Worker, WorkerOptions
 from livekit.agents.voice import Agent, AgentSession
 from livekit.plugins.deepgram import STT
-from livekit.plugins.openai import TTS, Chat
+from livekit.plugins.openai import LLM, TTS
 from livekit.plugins.hedra import AvatarSession
 
 # Load environment variables from .env file
@@ -23,11 +23,7 @@ You are a friendly and knowledgeable hydration coach for The Water Bar. Your goa
 class WaterBarAgent(Agent):
     def __init__(self):
         super().__init__()
-        self.chat = Chat(
-            message_template=[
-                {'role': 'system', 'content': SYSTEM_PROMPT}
-            ]
-        )
+        self.llm = LLM()
 
     async def process_text(self, text: str):
         logging.info(f'User said: "{text}"')
@@ -35,7 +31,8 @@ class WaterBarAgent(Agent):
 
         try:
             logging.info(f"Generating response for: '{text}'")
-            llm_stream = await self.chat.stream(self.session.chat_history())
+            messages = [{'role': 'system', 'content': SYSTEM_PROMPT}] + self.session.chat_history()
+            llm_stream = await self.llm.chat(messages)
             await self.session.say(llm_stream)
 
         except Exception as e:

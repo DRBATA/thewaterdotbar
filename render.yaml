@@ -2,12 +2,12 @@ services:
   - type: worker
     name: hedra-avatar-agent
     runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: python agent_worker.py
-    plan: starter
+    plan: free
     region: oregon
     branch: feature/avatar-integration
     rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python agent_worker.py
     envVars:
       - key: LIVEKIT_URL
         sync: false
