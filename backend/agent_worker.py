@@ -4,10 +4,10 @@ import os
 from dotenv import load_dotenv
 import aiohttp
 
-from livekit.agents import JobContext, Worker, WorkerOptions
+from livekit.agents import JobContext, Worker, WorkerOptions, JobType
 from livekit.agents.voice import Agent, AgentSession
 from livekit.plugins.deepgram import STT
-from livekit.plugins.openai import TTS
+from livekit.plugins.openai import TTS, Chat
 from livekit.plugins.hedra import AvatarSession
 
 # Load environment variables from .env file
@@ -16,37 +16,27 @@ load_dotenv()
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+SYSTEM_PROMPT = """
+You are a friendly and knowledgeable hydration coach for The Water Bar. Your goal is to provide helpful, safe, and engaging advice on hydration and wellness. You are an expert on our products, which include a variety of waters, electrolytes, and supplements. Keep your answers concise and conversational. Do not recommend any external products or brands. Base your advice on established hydration science, but avoid overly technical jargon. Always prioritize safety and suggest users consult a doctor for serious medical concerns. You are a voice-only AI assistant, so do not reference any visual elements.
+"""
+
 class WaterBarAgent(Agent):
     def __init__(self):
         super().__init__()
-        self.chat_api_url = os.environ.get('CHAT_API_URL', 'https://waterbarmenu.vercel.app/api/chat')
+        self.chat = Chat(
+            message_template=[
+                {'role': 'system', 'content': SYSTEM_PROMPT}
+            ]
+        )
 
     async def process_text(self, text: str):
         logging.info(f'User said: "{text}"')
-        # The AgentSession automatically manages the history, so we just append the new user message
         self.session.add_user_message(text)
 
         try:
-            async with aiohttp.ClientSession() as http_session:
-                payload = {
-                    "messages": self.session.chat_history(),
-                    "userProfile": None  # Skipping profile for now
-                }
-                logging.info(f"Sending payload to chat API with {len(self.session.chat_history())} messages")
-
-                async with http_session.post(self.chat_api_url, json=payload) as response:
-                    if response.status == 200:
-                        response_text = await response.text()
-                        logging.info(f'Chat API response received: "{response_text[:100]}..."')
-                        if not response_text.strip():
-                            response_text = "I'm having a bit of trouble thinking. Could you ask that again?"
-                        
-                        # The agent session will handle TTS and history automatically
-                        await self.session.say(response_text)
-                    else:
-                        error_msg = "I can't seem to connect to my knowledge base. Let's talk about general hydration."
-                        logging.error(f"Chat API error: {response.status} - {await response.text()}")
-                        await self.session.say(error_msg)
+            logging.info(f"Generating response for: '{text}'")
+            llm_stream = await self.chat.stream(self.session.chat_history())
+            await self.session.say(llm_stream)
 
         except Exception as e:
             error_msg = "I've encountered a technical glitch. Please give me a moment to reset."
@@ -97,18 +87,27 @@ async def main():
         logging.error("LiveKit environment variables are not fully set.")
         return
 
-    worker = Worker(
-        entrypoint_fnc=entrypoint,
-        options=WorkerOptions(
-            api_key=livekit_api_key,
-            api_secret=livekit_api_secret,
-            ws_url=livekit_url,
-        ),
+    opts = WorkerOptions(
+        api_key=livekit_api_key,
+        api_secret=livekit_api_secret,
+        host=livekit_url,
     )
-    await worker.run()
+
+    worker = Worker(opts)
+    worker.register_entrypoint(entrypoint, job_type=JobType.AGENT)
+    logging.info("AGENT_WORKER: Worker started, waiting for jobs...")
+    return worker
 
 if __name__ == "__main__":
+    async def run_worker():
+        worker = await main()
+        if worker:
+            await worker.run()
+
     try:
+        asyncio.run(run_worker())
+    except KeyboardInterrupt:
+        logging.info("Worker shutting down...")
         asyncio.run(main())
     except KeyboardInterrupt:
         logging.info("Worker shutting down...")

@@ -2,12 +2,12 @@ services:
   - type: worker
     name: hedra-avatar-agent
     runtime: python
-    buildCommand: pip install -r backend/requirements.txt
-    startCommand: cd backend && python agent_worker.py
+    buildCommand: pip install -r requirements.txt
+    startCommand: python agent_worker.py
     plan: starter
     region: oregon
     branch: feature/avatar-integration
-    rootDir: .
+    rootDir: backend
     envVars:
       - key: LIVEKIT_URL
         sync: false
@@ -23,5 +23,3 @@ services:
         sync: false
       - key: DEEPGRAM_API_KEY
         sync: false
-      - key: CHAT_API_URL
-        value: https://waterbarmenu.vercel.app/api/chat
