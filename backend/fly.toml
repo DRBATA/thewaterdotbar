@@ -1,0 +1,37 @@
+# fly.toml app configuration file generated for waterbar-avatar-agent on 2025-07-25T13:44:32+01:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = "waterbar-avatar-agent"
+primary_region = "ord"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  LIVEKIT_URL = "wss://thewaterbar-arq6djc8.livekit.cloud"
+
+[[services]]
+  internal_port = 8080
+  protocol = "tcp"
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 8080
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512

@@ -85,13 +85,13 @@ async def main():
         return
 
     opts = WorkerOptions(
+        entrypoint_fnc=entrypoint,
         api_key=livekit_api_key,
         api_secret=livekit_api_secret,
         host=livekit_url,
     )
 
     worker = Worker(opts)
-    worker.register_entrypoint(entrypoint)
     logging.info("AGENT_WORKER: Worker started, waiting for jobs...")
     return worker
 
