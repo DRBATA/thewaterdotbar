@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 import aiohttp
 
-from livekit.agents import JobContext, Worker, WorkerOptions, JobType
+from livekit.agents import JobContext, Worker, WorkerOptions
 from livekit.agents.voice import Agent, AgentSession
 from livekit.plugins.deepgram import STT
 from livekit.plugins.openai import TTS, Chat
@@ -94,7 +94,7 @@ async def main():
     )
 
     worker = Worker(opts)
-    worker.register_entrypoint(entrypoint, job_type=JobType.AGENT)
+    worker.register_entrypoint(entrypoint)
     logging.info("AGENT_WORKER: Worker started, waiting for jobs...")
     return worker
 
