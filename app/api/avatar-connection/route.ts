@@ -75,6 +75,69 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Handle POST requests (same logic as GET but with JSON body)
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const sessionId = body.session_id;
+    
+    // Debug logging
+    console.log("POST LIVEKIT_URL:", LIVEKIT_URL);
+    console.log("POST LIVEKIT_API_KEY:", API_KEY ? "SET" : "MISSING");
+    console.log("POST LIVEKIT_API_SECRET:", API_SECRET ? "SET" : "MISSING");
+    console.log("POST SESSION_ID:", sessionId);
+
+    if (!API_KEY || !API_SECRET || !LIVEKIT_URL) {
+      console.error("Missing LiveKit configuration");
+      return NextResponse.json(
+        { error: "LiveKit configuration missing" },
+        { status: 500 }
+      );
+    }
+
+    // Create room name with session ID for persistence
+    const roomName = sessionId ? `waterbar_${sessionId}` : `waterbar_${Date.now()}`;
+    const participantName = "user";
+
+    // Generate participant token
+    const participantToken = await createParticipantToken(
+      {
+        identity: participantName,
+      },
+      roomName
+    );
+
+    const connectionDetails: ConnectionDetails = {
+      serverUrl: LIVEKIT_URL,
+      roomName,
+      participantName,
+      participantToken,
+    };
+
+    console.log("POST Connection details:", {
+      serverUrl: LIVEKIT_URL,
+      roomName,
+      participantName,
+      tokenLength: participantToken.length,
+    });
+
+    const headers = new Headers({
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
+      "Access-Control-Allow-Credentials": "true",
+    });
+
+    return NextResponse.json(connectionDetails, { headers });
+  } catch (error) {
+    console.error("POST Avatar connection error:", error);
+    return NextResponse.json(
+      { error: "Failed to create connection" },
+      { status: 500 }
+    );
+  }
+}
+
 // Handle CORS preflight requests
 export async function OPTIONS() {
   const headers = new Headers({
