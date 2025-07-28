@@ -2,6 +2,7 @@ import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 
 import { MenuDisplay } from "@/components/menu-display" // We will create this next
+import { UnifiedChatAvatar } from "@/components/UnifiedChatAvatar"
 
 // Define types for fetched data
 interface Product {
@@ -164,6 +165,7 @@ export default async function HomePage() {
         initialDrinks={availableDrinks} 
         initialWellnessExperiences={availableExperiences} 
       />
+      <UnifiedChatAvatar />
     </div>
   )
 }

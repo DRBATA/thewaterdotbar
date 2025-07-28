@@ -2,10 +2,15 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getSessionId } from "@/lib/session"
 
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = await createClient()
   
-  const sessionId = await getSessionId()
+  // Check for session_id parameter (for agent) or use browser session
+  const url = new URL(request.url)
+  const paramSessionId = url.searchParams.get('session_id')
+  const sessionId = paramSessionId || await getSessionId()
+  
+  console.log(`🔍 CART GET: Using session_id=${sessionId} (param: ${paramSessionId ? 'YES' : 'NO'})`)
 
   try {
     // Find cart header for this session

@@ -5,7 +5,7 @@ import { MenuItemCard } from "@/components/menu-item-card"
 import { CartSummary } from "@/components/cart-summary"
 import FilterBar from "@/components/FilterBar"
 import { Separator } from "@/components/ui/separator"
-import { VirtualBaristaChat } from "@/components/virtual-barista-chat"
+// VirtualBaristaChat removed - replaced with UnifiedChatAvatar
 import { useFilters } from "@/context/filter-context"
 import { logEvent } from "@/lib/analytics"
 import { WelcomePopup } from "@/components/WelcomePopup"
@@ -396,7 +396,6 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
           </div>
         </details>
       </section>
-      <VirtualBaristaChat />
       <CartSummary cartItems={cartItems} total={total} onRemoveItemAction={handleRemoveFromCart} onClearCart={handleClearCart} />
     </>
   )
