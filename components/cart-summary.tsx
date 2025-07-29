@@ -32,6 +32,7 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
   const { tier, subtotal, discount, total: discountedTotal } = useVolumeDiscount(cartItems)
   const [showConfetti, setShowConfetti] = useState(false)
   const prevTierRef = useRef(tier)
+  const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
     const prevMinItems = prevTierRef.current?.minItems ?? 0
@@ -43,6 +44,44 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
     
     prevTierRef.current = tier
   }, [tier])
+
+  // Add RPC event listeners for agent cart actions
+  useEffect(() => {
+    const handleAgentViewCart = () => {
+      console.log('Agent triggered view cart - opening cart modal');
+      setIsOpen(true);
+    };
+    
+    const handleAgentCheckout = () => {
+      console.log('Agent triggered checkout - proceeding to Stripe payment');
+      if (tier) {
+        setConfirmationModalOpen(true);
+      } else {
+        handleCheckout();
+      }
+    };
+    
+    const handleAgentCopyDiscount = () => {
+      console.log('Agent triggered copy discount code');
+      // Trigger the copy discount code component
+      const copyButton = document.querySelector('[data-copy-discount-trigger]') as HTMLButtonElement;
+      if (copyButton) {
+        copyButton.click();
+      }
+    };
+    
+    // Add event listeners
+    window.addEventListener('agent-view-cart', handleAgentViewCart);
+    window.addEventListener('agent-checkout', handleAgentCheckout);
+    window.addEventListener('agent-copy-discount', handleAgentCopyDiscount);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('agent-view-cart', handleAgentViewCart);
+      window.removeEventListener('agent-checkout', handleAgentCheckout);
+      window.removeEventListener('agent-copy-discount', handleAgentCopyDiscount);
+    };
+  }, [tier]);
 
   const handleConfettiComplete = () => {
     setShowConfetti(false)
@@ -85,7 +124,7 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
   return (
     <>
       <DiscountConfetti fire={showConfetti} onComplete={handleConfettiComplete} tier={tier} />
-      <Sheet>
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>
           <Button
             variant="default"

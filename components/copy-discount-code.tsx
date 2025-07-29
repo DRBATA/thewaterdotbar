@@ -24,6 +24,7 @@ export function CopyDiscountCode({ tier }: CopyDiscountCodeProps) {
       variant="outline"
       className="w-full mt-4 border-lime-400 text-lime-300 hover:bg-lime-400/20 hover:text-lime-200"
       onClick={handleCopy}
+      data-copy-discount-trigger
     >
       {copied ? (
         <><Check className="mr-2 h-4 w-4" /> COPIED!</>
