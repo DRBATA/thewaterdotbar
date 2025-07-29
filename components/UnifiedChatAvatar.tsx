@@ -135,11 +135,16 @@ export function UnifiedChatAvatar() {
     };
 
     // Handle RPC calls from the agent for cart actions
-    const handleRPC = async (data: any, participant: RemoteParticipant) => {
-      console.log('Received RPC from agent:', data);
+    const handleCartAction = async (data: any): Promise<string> => {
+      console.log('Received cart action RPC from agent:', data);
       
       try {
-        const payload: CartActionPayload = JSON.parse(data.payload);
+        // Parse the payload string into a JSON object (following education demo pattern)
+        const payload: CartActionPayload = typeof data.payload === 'string' 
+          ? JSON.parse(data.payload) 
+          : data.payload;
+        
+        console.log('Parsed cart action payload:', payload);
         
         switch (payload.action) {
           case 'add':
@@ -170,6 +175,14 @@ export function UnifiedChatAvatar() {
             }
             break;
             
+          case 'view_cart':
+            console.log('Agent wants to open cart modal');
+            // Dispatch custom event to open cart modal (like clicking VIEW CART button)
+            window.dispatchEvent(new CustomEvent('agent-view-cart', {
+              detail: {}
+            }));
+            break;
+            
           case 'checkout':
             console.log('Agent wants to proceed to checkout');
             // Dispatch custom event to trigger checkout
@@ -178,25 +191,28 @@ export function UnifiedChatAvatar() {
             }));
             break;
             
-          case 'apply_discount':
-            if (payload.discount_code) {
-              console.log(`Agent wants to apply discount code: ${payload.discount_code}`);
-              // Dispatch custom event to apply discount code
-              window.dispatchEvent(new CustomEvent('agent-apply-discount', {
-                detail: {
-                  discount_code: payload.discount_code
-                }
-              }));
-            }
+          case 'copy_discount':
+            console.log('Agent wants to copy discount code');
+            // Dispatch custom event to copy discount code to clipboard
+            window.dispatchEvent(new CustomEvent('agent-copy-discount', {
+              detail: {}
+            }));
             break;
         }
+        return "Success"; // Return success message to agent
       } catch (error) {
         console.error('Error parsing RPC payload:', error);
+        return "Error: " + (error instanceof Error ? error.message : String(error));
       }
     };
 
     room.on(RoomEvent.Disconnected, onDisconnected);
-    room.on(RoomEvent.RpcReceived, handleRPC);
+    
+    // Register RPC method to receive cart actions (following education demo pattern)
+    room.localParticipant.registerRpcMethod(
+      "client.cart_action",
+      handleCartAction
+    );
 
     if (sessionStarted && room.state === 'disconnected' && connectionDetails) {
       Promise.all([
@@ -211,7 +227,8 @@ export function UnifiedChatAvatar() {
 
     return () => {
       room.off(RoomEvent.Disconnected, onDisconnected);
-      room.off(RoomEvent.RpcReceived, handleRPC);
+      // Unregister RPC method when component unmounts
+      room.localParticipant.unregisterRpcMethod("client.cart_action");
       room.disconnect();
     };
   }, [room, sessionStarted, connectionDetails, refreshConnectionDetails]);
