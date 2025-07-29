@@ -65,7 +65,7 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
 
       {/* Chat Messages */}
       <div className="flex-1 overflow-hidden">
-        <div className="h-full max-h-64 overflow-y-auto p-4 space-y-4">
+        <div className="h-full overflow-y-auto p-4 space-y-4 select-text">
           {messages.map((message, index) => (
             <div key={`${message.id || 'msg'}-${index}-${message.timestamp || Date.now()}`} className={`flex ${message.from?.isLocal ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[75%] p-3 rounded-2xl shadow-sm ${
