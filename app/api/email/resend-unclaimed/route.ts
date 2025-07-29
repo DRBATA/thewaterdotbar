@@ -3,19 +3,20 @@ import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 import OrderConfirmationEmail from '@/emails/order-confirmation';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(request: Request) {
   const { email } = await request.json();
 
   if (!email) {
     return NextResponse.json({ error: 'Email is required' }, { status: 400 });
   }
+
+  // Create clients inside the function to avoid build-time issues
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_KEY!
+  );
+  
+  const resend = new Resend(process.env.RESEND_API_KEY);
 
   try {
     // 1. Find all unclaimed order_items for the given email
