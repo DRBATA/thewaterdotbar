@@ -18,26 +18,22 @@ export type ConnectionDetails = {
 
 export async function GET() {
   try {
-    // Debug logging
-    console.log("LIVEKIT_URL:", LIVEKIT_URL);
-    console.log("LIVEKIT_API_KEY:", API_KEY ? "SET" : "MISSING");
-    console.log("LIVEKIT_API_SECRET:", API_SECRET ? "SET" : "MISSING");
-    
     if (LIVEKIT_URL === undefined) {
-      throw new Error("LIVEKIT_URL is not defined");
+      throw new Error('LIVEKIT_URL is not defined');
     }
     if (API_KEY === undefined) {
-      throw new Error("LIVEKIT_API_KEY is not defined");
+      throw new Error('LIVEKIT_API_KEY is not defined');
     }
     if (API_SECRET === undefined) {
-      throw new Error("LIVEKIT_API_SECRET is not defined");
+      throw new Error('LIVEKIT_API_SECRET is not defined');
     }
 
     // Generate participant token
-    const participantIdentity = `hydration_coach_user_${crypto.randomUUID()}`;
-    const roomName = `hydration_coach_room_${crypto.randomUUID()}`;
+    const participantName = 'user';
+    const participantIdentity = `hydration_coach_user_${Math.floor(Math.random() * 10_000)}`;
+    const roomName = `hydration_coach_room_${Math.floor(Math.random() * 10_000)}`;
     const participantToken = await createParticipantToken(
-      { identity: participantIdentity },
+      { identity: participantIdentity, name: participantName },
       roomName
     );
 
@@ -46,26 +42,17 @@ export async function GET() {
       serverUrl: LIVEKIT_URL,
       roomName,
       participantToken: participantToken,
-      participantName: participantIdentity,
+      participantName,
     };
-    
-    console.log('DEBUG: Returning connection details:', {
-      serverUrl: LIVEKIT_URL,
-      roomName,
-      hasToken: !!participantToken
-    });
-    
     const headers = new Headers({
-      "Cache-Control": "no-store",
+      'Cache-Control': 'no-store',
     });
-    
     return NextResponse.json(data, { headers });
   } catch (error) {
-    console.error("Error generating connection details:", error);
-    return NextResponse.json(
-      { error: "Failed to generate connection details" },
-      { status: 500 }
-    );
+    if (error instanceof Error) {
+      console.error(error);
+      return new NextResponse(error.message, { status: 500 });
+    }
   }
 }
 
@@ -74,12 +61,11 @@ export async function POST() {
   return GET();
 }
 
-async function createParticipantToken(
-  userInfo: AccessTokenOptions,
-  roomName: string
-): Promise<string> {
-  const at = new AccessToken(API_KEY, API_SECRET, userInfo);
-  at.ttl = "5m";
+function createParticipantToken(userInfo: AccessTokenOptions, roomName: string) {
+  const at = new AccessToken(API_KEY, API_SECRET, {
+    ...userInfo,
+    ttl: '15m',
+  });
   const grant: VideoGrant = {
     room: roomName,
     roomJoin: true,
@@ -88,5 +74,5 @@ async function createParticipantToken(
     canSubscribe: true,
   };
   at.addGrant(grant);
-  return await at.toJwt();
+  return at.toJwt();
 }

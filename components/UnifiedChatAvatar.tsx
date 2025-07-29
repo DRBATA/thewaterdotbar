@@ -125,12 +125,7 @@ export function UnifiedChatAvatar() {
   // Fetch connection details
   const refreshConnectionDetails = async () => {
     try {
-      const response = await fetch('/api/avatar-connection', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch('/api/avatar-connection');
       if (response.ok) {
         const details = await response.json();
         setConnectionDetails(details);
