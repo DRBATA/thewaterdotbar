@@ -49,6 +49,12 @@ export async function GET() {
       participantName: participantIdentity,
     };
     
+    console.log('DEBUG: Returning connection details:', {
+      serverUrl: LIVEKIT_URL,
+      roomName,
+      hasToken: !!participantToken
+    });
+    
     const headers = new Headers({
       "Cache-Control": "no-store",
     });
