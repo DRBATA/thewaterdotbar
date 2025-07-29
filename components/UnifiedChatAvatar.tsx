@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo } from "react";
+import useConnectionDetails from '@/hooks/useConnectionDetails';
 import { Room, RoomEvent, Track } from 'livekit-client';
 import { 
   RoomAudioRenderer, 
@@ -111,74 +112,37 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
 }
 
 export function UnifiedChatAvatar() {
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [sessionStarted, setSessionStarted] = useState(false)
-  const [isConnecting, setIsConnecting] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [sessionStarted, setSessionStarted] = useState(false);
 
   const room = useMemo(() => new Room(), []);
-  const [connectionDetails, setConnectionDetails] = useState<{
-    serverUrl: string;
-    roomName: string;
-    participantToken: string;
-  } | null>(null);
+  const { connectionDetails, refreshConnectionDetails } = useConnectionDetails();
 
-  // Fetch connection details
-  const refreshConnectionDetails = async () => {
-    try {
-      const response = await fetch('/api/avatar-connection');
-      if (response.ok) {
-        const details = await response.json();
-        setConnectionDetails(details);
-      }
-    } catch (error) {
-      console.error('Failed to get connection details:', error);
-    }
-  };
-
-  // Initialize connection details on mount
-  useEffect(() => {
-    if (isExpanded && !connectionDetails) {
-      refreshConnectionDetails();
-    }
-  }, [isExpanded, connectionDetails]);
-
-  // Handle room events
+  // Handle room events and connection lifecycle
   useEffect(() => {
     const onDisconnected = () => {
       setSessionStarted(false);
-      setIsConnecting(false);
       refreshConnectionDetails();
     };
-    
+
     room.on(RoomEvent.Disconnected, onDisconnected);
+
+    if (sessionStarted && room.state === 'disconnected' && connectionDetails) {
+      Promise.all([
+        room.localParticipant.setMicrophoneEnabled(true, undefined, {
+          preConnectBuffer: true,
+        }),
+        room.connect(connectionDetails.serverUrl, connectionDetails.participantToken),
+      ]).catch((error) => {
+        console.error('Error connecting to the agent', error);
+      });
+    }
+
     return () => {
       room.off(RoomEvent.Disconnected, onDisconnected);
+      room.disconnect();
     };
-  }, [room]);
-
-  // Connect to room
-  const startSession = async () => {
-    if (!connectionDetails) return;
-    
-    setIsConnecting(true);
-    try {
-      await Promise.all([
-        room.localParticipant.setMicrophoneEnabled(true),
-        room.connect(connectionDetails.serverUrl, connectionDetails.participantToken)
-      ]);
-      setSessionStarted(true);
-    } catch (error) {
-      console.error('Failed to connect:', error);
-    } finally {
-      setIsConnecting(false);
-    }
-  };
-
-  // Disconnect from room
-  const endSession = async () => {
-    await room.disconnect();
-    setSessionStarted(false);
-  };
+  }, [room, sessionStarted, connectionDetails, refreshConnectionDetails]);
 
   if (!isExpanded) {
     return (
@@ -234,12 +198,12 @@ export function UnifiedChatAvatar() {
               <h3 className="text-white font-semibold mb-2">Ready to optimize your hydration?</h3>
               <p className="text-white/80 text-sm mb-6">I'll calculate your exact fluid needs and recommend the perfect products for your goals.</p>
               <Button 
-                onClick={startSession} 
-                disabled={isConnecting || !connectionDetails}
+                onClick={() => setSessionStarted(true)} 
+                disabled={sessionStarted || !connectionDetails}
                 className="bg-white/20 hover:bg-white/30 text-white border border-white/30"
               >
                 <Phone className="w-4 h-4 mr-2" />
-                {isConnecting ? 'Connecting...' : 'Talk to Coach'}
+                {room.state === 'connecting' ? 'Connecting...' : 'Talk to Coach'}
               </Button>
             </div>
           )}
