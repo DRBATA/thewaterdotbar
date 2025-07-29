@@ -63,8 +63,34 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const products = await fetchProducts();
-    
+    const productsData = await fetchProducts();
+
+    if (!productsData) {
+      console.error("Failed to fetch products data")
+      return new Response(JSON.stringify({ error: "Failed to fetch product data" }), { status: 500 })
+    }
+
+    const currentDateStr = new Date().toISOString().split('T')[0];
+
+    // Transform and filter products (same logic as chat API)
+    const transformAndFilter = (items: any[]) => {
+      return items.map((item: any) => {
+        const venues = item.venue_stock
+          ?.filter((vs: any) => 
+            vs.qty_on_hand > 0 && 
+            vs.venue && 
+            (!vs.venue.from_date || vs.venue.from_date <= currentDateStr) &&
+            (!vs.venue.to_date || vs.venue.to_date >= currentDateStr)
+          )
+          ?.map((vs: any) => ({ id: vs.venue.id, name: vs.venue.name, qty_on_hand: vs.qty_on_hand })) || [];
+        return { ...item, venues };
+      }).filter(item => item.venues.length > 0);
+    };
+
+    const products = transformAndFilter(productsData || []);
+
+    console.log(`Successfully fetched ${products.length} products for avatar agent`)
+
     return new Response(JSON.stringify(products), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }

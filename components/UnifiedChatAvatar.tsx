@@ -125,25 +125,7 @@ export function UnifiedChatAvatar() {
   // Fetch connection details
   const refreshConnectionDetails = async () => {
     try {
-      // Get session ID from cookies to synchronize with cart
-      const getSessionId = () => {
-        const cookies = document.cookie.split(';');
-        const sessionCookie = cookies.find(cookie => cookie.trim().startsWith('sb_session_id='));
-        return sessionCookie ? sessionCookie.split('=')[1] : null;
-      };
-      
-      const sessionId = getSessionId();
-      const url = new URL('/api/avatar-connection', window.location.origin);
-      
-      // Pass session ID as query parameter if available
-      if (sessionId) {
-        url.searchParams.set('session_id', sessionId);
-        console.log('🎯 UNIFIED AVATAR: Passing session_id to agent:', sessionId);
-      } else {
-        console.warn('⚠️ UNIFIED AVATAR: No session_id found in cookies');
-      }
-      
-      const response = await fetch(url.toString());
+      const response = await fetch('/api/avatar-connection');
       if (response.ok) {
         const details = await response.json();
         setConnectionDetails(details);
@@ -160,7 +142,7 @@ export function UnifiedChatAvatar() {
     }
   }, [isExpanded, connectionDetails]);
 
-  // Handle room events and data messages
+  // Handle room events
   useEffect(() => {
     const onDisconnected = () => {
       setSessionStarted(false);
@@ -168,36 +150,9 @@ export function UnifiedChatAvatar() {
       refreshConnectionDetails();
     };
     
-    const onDataReceived = async (payload: Uint8Array) => {
-      try {
-        const message = JSON.parse(new TextDecoder().decode(payload));
-        console.log('🎯 AVATAR: Received data message:', message);
-        
-        if (message.type === 'checkout_trigger') {
-          console.log('🔥 AVATAR: Checkout trigger received, redirecting to Stripe...');
-          
-          // Call the existing checkout API endpoint
-          const res = await fetch('/api/stripe/checkout', { method: 'POST' });
-          const data = await res.json();
-          
-          if (data.url) {
-            console.log('🔥 AVATAR: Redirecting to checkout:', data.url);
-            window.location.href = data.url;
-          } else {
-            console.error('🔥 AVATAR: Checkout failed:', data.error);
-          }
-        }
-      } catch (error) {
-        console.error('Error handling data message:', error);
-      }
-    };
-    
     room.on(RoomEvent.Disconnected, onDisconnected);
-    room.on(RoomEvent.DataReceived, onDataReceived);
-    
     return () => {
       room.off(RoomEvent.Disconnected, onDisconnected);
-      room.off(RoomEvent.DataReceived, onDataReceived);
     };
   }, [room]);
 
@@ -243,7 +198,7 @@ export function UnifiedChatAvatar() {
     <div className="fixed bottom-6 right-6 w-96 h-[500px] bg-gradient-to-br from-teal-500/90 to-blue-600/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 overflow-hidden z-50">
       <RoomContext.Provider value={room}>
         <RoomAudioRenderer />
-        <StartAudio />
+        <StartAudio label="Enable audio" />
         
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/20">

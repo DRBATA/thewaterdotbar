@@ -1,6 +1,5 @@
 import { AccessToken, AccessTokenOptions, VideoGrant } from "livekit-server-sdk";
 import { NextResponse } from "next/server";
-import { NextRequest } from "next/server";
 
 // LiveKit connection details from environment variables
 const API_KEY = process.env.LIVEKIT_API_KEY;
@@ -17,17 +16,12 @@ export type ConnectionDetails = {
   participantToken: string;
 };
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    // Get session ID from query params or headers
-    const { searchParams } = new URL(request.url);
-    const sessionId = searchParams.get('session_id') || request.headers.get('x-session-id');
-    
     // Debug logging
     console.log("LIVEKIT_URL:", LIVEKIT_URL);
     console.log("LIVEKIT_API_KEY:", API_KEY ? "SET" : "MISSING");
     console.log("LIVEKIT_API_SECRET:", API_SECRET ? "SET" : "MISSING");
-    console.log("SESSION_ID:", sessionId);
     
     if (LIVEKIT_URL === undefined) {
       throw new Error("LIVEKIT_URL is not defined");
@@ -39,11 +33,9 @@ export async function GET(request: NextRequest) {
       throw new Error("LIVEKIT_API_SECRET is not defined");
     }
 
-    // Generate participant token with session ID embedded in room name
+    // Generate participant token
     const participantIdentity = `hydration_coach_user_${crypto.randomUUID()}`;
-    const roomName = sessionId 
-      ? `hydration_coach_room_${sessionId}` 
-      : `hydration_coach_room_${crypto.randomUUID()}`;
+    const roomName = `hydration_coach_room_${crypto.randomUUID()}`;
     const participantToken = await createParticipantToken(
       { identity: participantIdentity },
       roomName
@@ -59,10 +51,6 @@ export async function GET(request: NextRequest) {
     
     const headers = new Headers({
       "Cache-Control": "no-store",
-      "Access-Control-Allow-Origin": "*", // Allow all origins for avatar frontend
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
-      "Access-Control-Allow-Credentials": "true",
     });
     
     return NextResponse.json(data, { headers });
@@ -73,81 +61,6 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-// Handle POST requests (same logic as GET but with JSON body)
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const sessionId = body.session_id;
-    
-    // Debug logging
-    console.log("POST LIVEKIT_URL:", LIVEKIT_URL);
-    console.log("POST LIVEKIT_API_KEY:", API_KEY ? "SET" : "MISSING");
-    console.log("POST LIVEKIT_API_SECRET:", API_SECRET ? "SET" : "MISSING");
-    console.log("POST SESSION_ID:", sessionId);
-
-    if (!API_KEY || !API_SECRET || !LIVEKIT_URL) {
-      console.error("Missing LiveKit configuration");
-      return NextResponse.json(
-        { error: "LiveKit configuration missing" },
-        { status: 500 }
-      );
-    }
-
-    // Create room name with session ID for persistence
-    const roomName = sessionId ? `waterbar_${sessionId}` : `waterbar_${Date.now()}`;
-    const participantName = "user";
-
-    // Generate participant token
-    const participantToken = await createParticipantToken(
-      {
-        identity: participantName,
-      },
-      roomName
-    );
-
-    const connectionDetails: ConnectionDetails = {
-      serverUrl: LIVEKIT_URL,
-      roomName,
-      participantName,
-      participantToken,
-    };
-
-    console.log("POST Connection details:", {
-      serverUrl: LIVEKIT_URL,
-      roomName,
-      participantName,
-      tokenLength: participantToken.length,
-    });
-
-    const headers = new Headers({
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
-      "Access-Control-Allow-Credentials": "true",
-    });
-
-    return NextResponse.json(connectionDetails, { headers });
-  } catch (error) {
-    console.error("POST Avatar connection error:", error);
-    return NextResponse.json(
-      { error: "Failed to create connection" },
-      { status: 500 }
-    );
-  }
-}
-
-// Handle CORS preflight requests
-export async function OPTIONS() {
-  const headers = new Headers({
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
-    "Access-Control-Allow-Credentials": "true",
-  });
-  
-  return new Response(null, { status: 200, headers });
 }
 
 async function createParticipantToken(
