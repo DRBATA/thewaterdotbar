@@ -132,7 +132,7 @@ export function UnifiedChatAvatar() {
         room.localParticipant.setMicrophoneEnabled(true, undefined, {
           preConnectBuffer: true,
         }),
-        room.connect(connectionDetails.serverUrl, connectionDetails.participantToken),
+        room.connect(process.env.NEXT_PUBLIC_LIVEKIT_WS_URL || connectionDetails.serverUrl, connectionDetails.participantToken),
       ]).catch((error) => {
         console.error('Error connecting to the agent', error);
       });
