@@ -155,7 +155,8 @@ export function UnifiedChatAvatar() {
                 detail: {
                   product_id: payload.product_id,
                   product_name: payload.product_name,
-                  quantity: payload.quantity
+                  quantity: payload.quantity,
+                  scrollToItem: payload.scroll_to_item
                 }
               }));
             }
@@ -179,6 +180,22 @@ export function UnifiedChatAvatar() {
             console.log('Agent wants to open cart modal');
             // Dispatch custom event to open cart modal (like clicking VIEW CART button)
             window.dispatchEvent(new CustomEvent('agent-view-cart', {
+              detail: {}
+            }));
+            break;
+            
+          case 'close_cart':
+            console.log('Agent wants to close cart modal');
+            // Dispatch custom event to close cart modal
+            window.dispatchEvent(new CustomEvent('agent-close-cart', {
+              detail: {}
+            }));
+            break;
+            
+          case 'clear_cart':
+            console.log('Agent wants to clear cart');
+            // Dispatch custom event to clear cart
+            window.dispatchEvent(new CustomEvent('agent-clear-cart', {
               detail: {}
             }));
             break;

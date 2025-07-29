@@ -280,7 +280,7 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
   // Listen for agent cart action events (placed after handler functions are defined)
   useEffect(() => {
     const handleAgentAddToCart = (event: CustomEvent) => {
-      const { product_id, product_name, quantity } = event.detail;
+      const { product_id, product_name, quantity, scrollToItem } = event.detail;
       console.log(`Agent triggered add to cart: ${product_name} (${product_id}) x${quantity}`);
       
       // Find the product in our data
@@ -291,6 +291,27 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
         // Add to cart the specified number of times
         for (let i = 0; i < quantity; i++) {
           handleAddToCart(product);
+        }
+        
+        // If requested, scroll to the item that was just added
+        if (scrollToItem) {
+          console.log(`🎯 Scrolling to product: ${product_name}`);
+          // Find the menu item card for this product
+          const productCard = document.querySelector(`[data-product-id="${product_id}"]`);
+          if (productCard) {
+            productCard.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'center' // Center the item in the viewport
+            });
+            
+            // Add a subtle highlight effect
+            productCard.classList.add('ring-2', 'ring-blue-400', 'ring-opacity-50');
+            setTimeout(() => {
+              productCard.classList.remove('ring-2', 'ring-blue-400', 'ring-opacity-50');
+            }, 2000); // Remove highlight after 2 seconds
+          } else {
+            console.warn(`Could not find product card for ${product_name} (${product_id})`);
+          }
         }
       } else {
         console.error(`Product not found: ${product_id}`);

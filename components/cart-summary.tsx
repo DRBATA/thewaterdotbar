@@ -48,12 +48,28 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
   // Add RPC event listeners for agent cart actions
   useEffect(() => {
     const handleAgentViewCart = () => {
-      console.log('Agent triggered view cart - opening cart modal');
+      console.log('🛒 Agent triggered view cart - opening cart modal');
       setIsOpen(true);
     };
     
+    const handleAgentCloseCart = () => {
+      console.log('🛒 Agent triggered close cart - closing cart modal');
+      setIsOpen(false);
+    };
+    
+    const handleAgentClearCart = () => {
+      console.log('🛒 Agent triggered clear cart - clearing all items');
+      // Trigger the clear cart button
+      const clearButton = document.querySelector('[data-clear-cart-button]') as HTMLButtonElement;
+      if (clearButton) {
+        clearButton.click();
+      } else {
+        console.warn('Could not find clear cart button');
+      }
+    };
+    
     const handleAgentCheckout = () => {
-      console.log('Agent triggered checkout - proceeding to Stripe payment');
+      console.log('🛒 Agent triggered checkout - proceeding to Stripe payment');
       if (tier) {
         setConfirmationModalOpen(true);
       } else {
@@ -62,7 +78,7 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
     };
     
     const handleAgentCopyDiscount = () => {
-      console.log('Agent triggered copy discount code');
+      console.log('🛒 Agent triggered copy discount code');
       // Trigger the copy discount code component
       const copyButton = document.querySelector('[data-copy-discount-trigger]') as HTMLButtonElement;
       if (copyButton) {
@@ -72,16 +88,23 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
     
     // Add event listeners
     window.addEventListener('agent-view-cart', handleAgentViewCart);
+    window.addEventListener('agent-close-cart', handleAgentCloseCart);
+    window.addEventListener('agent-clear-cart', handleAgentClearCart);
     window.addEventListener('agent-checkout', handleAgentCheckout);
     window.addEventListener('agent-copy-discount', handleAgentCopyDiscount);
+    
+    console.log('🛒 Cart event listeners registered successfully');
     
     // Cleanup
     return () => {
       window.removeEventListener('agent-view-cart', handleAgentViewCart);
+      window.removeEventListener('agent-close-cart', handleAgentCloseCart);
+      window.removeEventListener('agent-clear-cart', handleAgentClearCart);
       window.removeEventListener('agent-checkout', handleAgentCheckout);
       window.removeEventListener('agent-copy-discount', handleAgentCopyDiscount);
+      console.log('🛒 Cart event listeners cleaned up');
     };
-  }, [tier]);
+  }, []); // Remove tier dependency to ensure listeners are always registered
 
   const handleConfettiComplete = () => {
     setShowConfetti(false)

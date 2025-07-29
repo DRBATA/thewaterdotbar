@@ -51,7 +51,10 @@ export function MenuItemCard({ item, onAddToCartAction, onRemoveFromCartAction, 
   const hasMultipleVenues = item.venues && item.venues.length > 1;
   
   return (
-    <Card className={`relative w-full max-w-sm rounded-xl ${isMorningParty ? "bg-amber-50 border-amber-300 shadow-lg" : "bg-white/40 backdrop-blur-lg border-white/50 shadow-lg"} transition-all hover:shadow-xl border`}>
+    <Card 
+      data-product-id={item.id}
+      className={`relative w-full max-w-sm rounded-xl ${isMorningParty ? "bg-amber-50 border-amber-300 shadow-lg" : "bg-white/40 backdrop-blur-lg border-white/50 shadow-lg"} transition-all hover:shadow-xl border`}
+    >
       {/* Free badge */}
       {(isMorningParty && isFree) && (
         <div className="absolute top-0 right-0 z-10 bg-green-500 text-white py-1 px-3 rounded-bl-lg font-bold tracking-wide">
