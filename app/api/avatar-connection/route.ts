@@ -9,6 +9,9 @@ const LIVEKIT_URL = process.env.LIVEKIT_URL;
 // Don't cache the results
 export const revalidate = 0;
 
+// Force Node.js runtime for proper crypto API (Edge runtime breaks LiveKit token signing)
+export const runtime = "nodejs";
+
 export type ConnectionDetails = {
   serverUrl: string;
   roomName: string;
