@@ -69,6 +69,11 @@ export async function GET() {
   }
 }
 
+// Also handle POST requests (some LiveKit clients prefer POST)
+export async function POST() {
+  return GET();
+}
+
 async function createParticipantToken(
   userInfo: AccessTokenOptions,
   roomName: string
