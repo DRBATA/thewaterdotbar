@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import useConnectionDetails from '@/hooks/useConnectionDetails';
-import { Room, RoomEvent, Track } from 'livekit-client';
+import { Room, RoomEvent, Track, RemoteParticipant } from 'livekit-client';
 import { 
   RoomAudioRenderer, 
   RoomContext, 
@@ -111,6 +111,15 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
   );
 }
 
+// Define the interface for cart action RPC payloads
+interface CartActionPayload {
+  action: 'add' | 'remove' | 'checkout' | 'apply_discount';
+  product_id?: string;
+  product_name?: string;
+  quantity?: number;
+  discount_code?: string;
+}
+
 export function UnifiedChatAvatar() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [sessionStarted, setSessionStarted] = useState(false);
@@ -125,7 +134,69 @@ export function UnifiedChatAvatar() {
       refreshConnectionDetails();
     };
 
+    // Handle RPC calls from the agent for cart actions
+    const handleRPC = async (data: any, participant: RemoteParticipant) => {
+      console.log('Received RPC from agent:', data);
+      
+      try {
+        const payload: CartActionPayload = JSON.parse(data.payload);
+        
+        switch (payload.action) {
+          case 'add':
+            if (payload.product_id && payload.quantity) {
+              console.log(`Agent wants to add ${payload.quantity} of product ${payload.product_id}`);
+              // Dispatch custom event to trigger add to cart
+              window.dispatchEvent(new CustomEvent('agent-add-to-cart', {
+                detail: {
+                  product_id: payload.product_id,
+                  product_name: payload.product_name,
+                  quantity: payload.quantity
+                }
+              }));
+            }
+            break;
+            
+          case 'remove':
+            if (payload.product_id && payload.quantity) {
+              console.log(`Agent wants to remove ${payload.quantity} of product ${payload.product_id}`);
+              // Dispatch custom event to trigger remove from cart
+              window.dispatchEvent(new CustomEvent('agent-remove-from-cart', {
+                detail: {
+                  product_id: payload.product_id,
+                  product_name: payload.product_name,
+                  quantity: payload.quantity
+                }
+              }));
+            }
+            break;
+            
+          case 'checkout':
+            console.log('Agent wants to proceed to checkout');
+            // Dispatch custom event to trigger checkout
+            window.dispatchEvent(new CustomEvent('agent-checkout', {
+              detail: {}
+            }));
+            break;
+            
+          case 'apply_discount':
+            if (payload.discount_code) {
+              console.log(`Agent wants to apply discount code: ${payload.discount_code}`);
+              // Dispatch custom event to apply discount code
+              window.dispatchEvent(new CustomEvent('agent-apply-discount', {
+                detail: {
+                  discount_code: payload.discount_code
+                }
+              }));
+            }
+            break;
+        }
+      } catch (error) {
+        console.error('Error parsing RPC payload:', error);
+      }
+    };
+
     room.on(RoomEvent.Disconnected, onDisconnected);
+    room.on(RoomEvent.RpcReceived, handleRPC);
 
     if (sessionStarted && room.state === 'disconnected' && connectionDetails) {
       Promise.all([
@@ -140,6 +211,7 @@ export function UnifiedChatAvatar() {
 
     return () => {
       room.off(RoomEvent.Disconnected, onDisconnected);
+      room.off(RoomEvent.RpcReceived, handleRPC);
       room.disconnect();
     };
   }, [room, sessionStarted, connectionDetails, refreshConnectionDetails]);

@@ -163,6 +163,67 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
     logEvent({ event_name: "page_view", step_name: "landing" })
   }, [])
   
+  // Listen for agent cart action events
+  useEffect(() => {
+    const handleAgentAddToCart = (event: CustomEvent) => {
+      const { product_id, product_name, quantity } = event.detail;
+      console.log(`Agent triggered add to cart: ${product_name} (${product_id}) x${quantity}`);
+      
+      // Find the product in our data
+      const allProducts = [...drinks, ...wellnessExperiences];
+      const product = allProducts.find(p => p.id === product_id);
+      
+      if (product) {
+        // Add to cart the specified number of times
+        for (let i = 0; i < quantity; i++) {
+          handleAddToCart(product);
+        }
+      } else {
+        console.error(`Product not found: ${product_id}`);
+      }
+    };
+    
+    const handleAgentRemoveFromCart = (event: CustomEvent) => {
+      const { product_id, product_name, quantity } = event.detail;
+      console.log(`Agent triggered remove from cart: ${product_name} (${product_id}) x${quantity}`);
+      
+      // Remove from cart the specified number of times
+      for (let i = 0; i < quantity; i++) {
+        handleRemoveFromCart(product_id);
+      }
+    };
+    
+    const handleAgentCheckout = (event: CustomEvent) => {
+      console.log('Agent triggered checkout');
+      // Scroll to cart summary to show checkout button
+      const cartSummary = document.querySelector('[data-cart-summary]');
+      if (cartSummary) {
+        cartSummary.scrollIntoView({ behavior: 'smooth' });
+      }
+    };
+    
+    const handleAgentApplyDiscount = (event: CustomEvent) => {
+      const { discount_code } = event.detail;
+      console.log(`Agent wants to apply discount code: ${discount_code}`);
+      // This would need to be implemented in the cart summary component
+      // For now, just log it
+    };
+    
+    // Add event listeners
+    window.addEventListener('agent-add-to-cart', handleAgentAddToCart as EventListener);
+    window.addEventListener('agent-remove-from-cart', handleAgentRemoveFromCart as EventListener);
+    window.addEventListener('agent-checkout', handleAgentCheckout as EventListener);
+    window.addEventListener('agent-apply-discount', handleAgentApplyDiscount as EventListener);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('agent-add-to-cart', handleAgentAddToCart as EventListener);
+      window.removeEventListener('agent-remove-from-cart', handleAgentRemoveFromCart as EventListener);
+      window.removeEventListener('agent-checkout', handleAgentCheckout as EventListener);
+      window.removeEventListener('agent-apply-discount', handleAgentApplyDiscount as EventListener);
+    };
+  }, [drinks, wellnessExperiences, handleAddToCart, handleRemoveFromCart]);
+  
   // Load cart items from Supabase database on page load
   useEffect(() => {
     const fetchCartItems = async () => {
@@ -396,7 +457,7 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
           </div>
         </details>
       </section>
-      <CartSummary cartItems={cartItems} total={total} onRemoveItemAction={handleRemoveFromCart} onClearCart={handleClearCart} />
+      <CartSummary cartItems={cartItems} total={total} onRemoveItemAction={handleRemoveFromCart} onClearCart={handleClearCart} data-cart-summary />
     </>
   )
 }
