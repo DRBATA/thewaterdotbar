@@ -265,7 +265,7 @@ export function UnifiedChatAvatar() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 w-96 h-[500px] bg-gradient-to-br from-teal-500/90 to-blue-600/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 overflow-hidden z-50">
+    <div className="fixed bottom-6 right-6 w-96 h-[500px] bg-gradient-to-br from-teal-500/90 to-blue-600/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 overflow-hidden z-50 flex flex-col">
       <RoomContext.Provider value={room}>
         <RoomAudioRenderer />
         <StartAudio label="Enable audio" />
