@@ -65,7 +65,10 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
 
       {/* Chat Messages */}
       <div className="flex-1 overflow-hidden">
-        <div className="h-full overflow-y-auto p-4 space-y-4 select-text">
+        <div 
+          className="h-full overflow-y-auto overscroll-contain p-4 space-y-4 select-text"
+          onWheel={(e) => e.stopPropagation()} // Prevent background scrolling
+        >
           {messages.map((message, index) => (
             <div key={`${message.id || 'msg'}-${index}-${message.timestamp || Date.now()}`} className={`flex ${message.from?.isLocal ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[75%] p-3 rounded-2xl shadow-sm ${
@@ -80,6 +83,38 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
         </div>
       </div>
       
+      {/* Chat Input */}
+      <div className="p-3 border-t border-white/20">
+        <div className="flex gap-2 mb-3">
+          <input
+            type="text"
+            placeholder="💬 Type your message here..."
+            className="flex-1 px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/60 focus:outline-none focus:border-teal-400 focus:bg-white/20"
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                const input = e.target as HTMLInputElement;
+                if (input.value.trim()) {
+                  handleSendMessage(input.value);
+                  input.value = '';
+                }
+              }
+            }}
+          />
+          <button
+            onClick={(e) => {
+              const input = (e.target as HTMLElement).previousElementSibling as HTMLInputElement;
+              if (input.value.trim()) {
+                handleSendMessage(input.value);
+                input.value = '';
+              }
+            }}
+            className="px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg font-medium transition-colors"
+          >
+            Send
+          </button>
+        </div>
+      </div>
+
       {/* Agent Controls */}
       <div className="p-4 border-t border-white/20">
         <div className="flex justify-center space-x-2">
@@ -113,11 +148,12 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
 
 // Define the interface for cart action RPC payloads
 interface CartActionPayload {
-  action: 'add' | 'remove' | 'checkout' | 'apply_discount';
+  action: 'add' | 'remove' | 'checkout' | 'apply_discount' | 'view_cart' | 'close_cart' | 'clear_cart' | 'copy_discount';
   product_id?: string;
   product_name?: string;
   quantity?: number;
   discount_code?: string;
+  scroll_to_item?: boolean;
 }
 
 export function UnifiedChatAvatar() {
