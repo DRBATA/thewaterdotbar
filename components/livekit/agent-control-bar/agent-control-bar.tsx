@@ -39,7 +39,7 @@ export function AgentControlBar({
   ...props
 }: AgentControlBarProps) {
   const participants = useRemoteParticipants();
-  const [chatOpen, setChatOpen] = React.useState(false);
+  const [chatOpen, setChatOpen] = React.useState(true); // Always show chat for debugging
   const [isSendingMessage, setIsSendingMessage] = React.useState(false);
 
   const isAgentAvailable = participants.some((p) => p.isAgent);
@@ -105,16 +105,15 @@ export function AgentControlBar({
     >
       {capabilities.supportsChatInput && (
         <div
-          inert={!chatOpen}
-          className={cn(
-            'overflow-hidden transition-[height] duration-300 ease-out',
-            chatOpen ? 'h-[57px]' : 'h-0'
-          )}
+          className="min-h-[60px] max-h-[200px] overflow-y-auto overscroll-contain bg-black/10 rounded-lg p-2 mb-3"
+          onWheel={(e) => e.stopPropagation()} // Prevent background scrolling
         >
-          <div className="flex h-8 w-full">
+          <div className="flex w-full mb-2">
             <ChatInput onSend={handleSendMessage} disabled={isInputDisabled} className="w-full" />
           </div>
-          <hr className="border-bg2 my-3" />
+          <div className="text-xs text-white/60 select-text">
+            💬 Chat history will appear here (scrollable & copy-pasteable)
+          </div>
         </div>
       )}
 
