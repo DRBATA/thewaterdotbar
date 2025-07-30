@@ -38,9 +38,9 @@ export function ChatInput({ onSend, className, disabled, ...props }: ChatInputPr
         type="text"
         value={message}
         disabled={disabled}
-        placeholder="Type something..."
+        placeholder="💬 Type your message here (great for debugging!)..."
         onChange={(e) => setMessage(e.target.value)}
-        className="flex-1 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex-1 px-3 py-2 text-base bg-white/10 border-2 border-teal-400/50 rounded-lg text-white placeholder-white/70 focus:outline-none focus:border-teal-300 focus:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200"
       />
       <Button
         size="sm"
