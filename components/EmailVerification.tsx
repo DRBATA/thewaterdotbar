@@ -100,7 +100,7 @@ export default function EmailVerification({ pin, options, onVerified, onError }:
             
             <button
               onClick={() => handleVerifyEmail(optionIndex)}
-              disabled={isVerifying || !inputValues[`${optionIndex}`]?.every(char => char.trim() !== '')}
+              disabled={isVerifying || !inputValues[`${optionIndex}`] || inputValues[`${optionIndex}`].length !== option.missingChars.length || !inputValues[`${optionIndex}`].every(char => char && char.trim() !== '')}
               className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
               {isVerifying ? 'Verifying...' : 'Verify Email'}
