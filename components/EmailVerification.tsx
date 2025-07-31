@@ -26,6 +26,14 @@ export default function EmailVerification({ pin, options, onVerified, onError }:
       ...inputValues,
       [key]: currentValues
     });
+    
+    // Auto-focus next input if value is entered and not the last input
+    if (value && charIndex < options[optionIndex].missingChars.length - 1) {
+      const nextInput = document.querySelector(`input[data-option="${optionIndex}"][data-char="${charIndex + 1}"]`) as HTMLInputElement;
+      if (nextInput) {
+        nextInput.focus();
+      }
+    }
   };
 
   const handleVerifyEmail = async (optionIndex: number) => {
@@ -94,6 +102,8 @@ export default function EmailVerification({ pin, options, onVerified, onError }:
                   value={inputValues[`${optionIndex}`]?.[charIndex] || ''}
                   onChange={(e) => handleInputChange(optionIndex, charIndex, e.target.value)}
                   placeholder="?"
+                  data-option={optionIndex}
+                  data-char={charIndex}
                 />
               ))}
             </div>
