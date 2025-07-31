@@ -360,7 +360,7 @@ export default function ClaimPage() {
       )}
 
       {/* Generic Error */}
-      {status && !["loading", "confirm", "saving", "done", "Already claimed", "PIN not found"].includes(status) && (
+      {status && !["loading", "confirm", "saving", "done", "Already claimed", "PIN not found", "email_verification"].includes(status) && (
         <div className="space-y-4 max-w-md">
           <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md">
             <div className="flex">
