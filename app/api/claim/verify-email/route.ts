@@ -38,9 +38,18 @@ export async function POST(req: NextRequest) {
   
   // Verify the provided characters match the email
   const email = order.email;
+  console.log('Email verification debug:');
+  console.log('Email:', email);
+  console.log('Provided chars:', providedChars);
+  
   const isValid = providedChars.every(({ position, char }: { position: number, char: string }) => {
-    return email[position] && email[position].toLowerCase() === char.toLowerCase();
+    const emailChar = email[position];
+    const matches = emailChar && emailChar.toLowerCase() === char.toLowerCase();
+    console.log(`Position ${position}: email[${position}]='${emailChar}' vs provided='${char}' -> ${matches}`);
+    return matches;
   });
+  
+  console.log('Overall validation result:', isValid);
   
   if (!isValid) {
     return NextResponse.json({ error: "Email verification failed" }, { status: 400 });
