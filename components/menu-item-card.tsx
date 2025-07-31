@@ -5,6 +5,8 @@ import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Minus, ChevronDown, ChevronUp, MapPin } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import GlowEffect from "./GlowEffect"
 
 interface MenuItem {
@@ -13,6 +15,15 @@ interface MenuItem {
   description: string
   price: number
   image: string
+  faqs?: {
+    sections: {
+      title: string
+      questions: {
+        q: string
+        a: string
+      }[]
+    }[]
+  }
   venues?: {
     id: string
     name: string
@@ -152,10 +163,41 @@ export function MenuItemCard({ item, onAddToCartAction, onRemoveFromCartAction, 
         />
       </div>
       <CardHeader className="p-5 pb-3">
-        <CardTitle className={`text-xl font-semibold tracking-tight ${isMorningParty ? "text-amber-800" : "text-stone-700"}`}>
-          {item.name}
-          {(isMorningParty && isFree) && <span className="block text-sm font-bold text-green-600 mt-1">NO CREDIT CARD REQUIRED</span>}
-        </CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle className={`text-xl font-semibold tracking-tight ${isMorningParty ? "text-amber-800" : "text-stone-700"}`}>
+            {item.name}
+            {(isMorningParty && isFree) && <span className="block text-sm font-bold text-green-600 mt-1">NO CREDIT CARD REQUIRED</span>}
+          </CardTitle>
+          {item.faqs && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-600 rounded cursor-pointer hover:bg-blue-200 transition-colors">
+                  FAQ
+                </span>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>{item.name} - Frequently Asked Questions</DialogTitle>
+                </DialogHeader>
+                <div className="mt-4">
+                  {item.faqs.sections.map((section, sectionIdx) => (
+                    <div key={sectionIdx} className="mb-6">
+                      <h3 className="text-lg font-semibold mb-3 text-stone-700">{section.title}</h3>
+                      <Accordion type="single" collapsible className="w-full">
+                        {section.questions.map((faq, qIdx) => (
+                          <AccordionItem key={qIdx} value={`${sectionIdx}-${qIdx}`}>
+                            <AccordionTrigger className="text-left">{faq.q}</AccordionTrigger>
+                            <AccordionContent className="text-stone-600">{faq.a}</AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
+                    </div>
+                  ))}
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
         <CardDescription className="text-sm text-stone-500 mt-1">{item.description}</CardDescription>
       </CardHeader>
       <CardContent className="flex items-center justify-between p-5 pt-0 pb-16">

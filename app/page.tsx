@@ -34,6 +34,7 @@ export interface MenuItem {
   description: string
   price: number
   image: string
+  faqs?: any // FAQ data from Supabase JSONB column
   // Venue availability information
   venues?: {
     id: string
@@ -114,6 +115,7 @@ export default async function HomePage() {
       description: d.description || "No description available.",
       price: d.price || 0,
       image: d.image_url || "/refreshing-summer-drink.png",
+      faqs: d.faqs, // Include FAQ data from Supabase
       venues: venues
     };
   })
@@ -149,6 +151,7 @@ export default async function HomePage() {
       description: w.description || "No description available.",
       price: w.price || 0,
       image: w.image_url || "/holistic-wellness.png",
+      faqs: w.faqs, // Include FAQ data from Supabase
       venues: venues
     };
   })

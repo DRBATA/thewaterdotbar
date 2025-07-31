@@ -14,6 +14,7 @@ async function fetchProducts() {
       price, 
       tags, 
       pairings, 
+      faqs,
       venue_stock(
         qty_on_hand, 
         venue:venue_id(id, name, from_date, to_date)

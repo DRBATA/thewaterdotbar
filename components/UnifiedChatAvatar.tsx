@@ -159,6 +159,7 @@ interface CartActionPayload {
 export function UnifiedChatAvatar() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [sessionStarted, setSessionStarted] = useState(false);
+  const [connectionError, setConnectionError] = useState(false);
 
   const room = useMemo(() => new Room(), []);
   const { connectionDetails, refreshConnectionDetails } = useConnectionDetails();
@@ -167,7 +168,17 @@ export function UnifiedChatAvatar() {
   useEffect(() => {
     const onDisconnected = () => {
       setSessionStarted(false);
+      setConnectionError(true);
       refreshConnectionDetails();
+    };
+
+    const onConnected = () => {
+      setConnectionError(false);
+    };
+
+    const onConnectionFailed = () => {
+      setConnectionError(true);
+      setSessionStarted(false);
     };
 
     // Handle RPC calls from the agent for cart actions
@@ -280,6 +291,7 @@ export function UnifiedChatAvatar() {
 
     return () => {
       room.off(RoomEvent.Disconnected, onDisconnected);
+      room.off(RoomEvent.Connected, onConnected);
       // Unregister RPC method when component unmounts
       room.localParticipant.unregisterRpcMethod("client.cart_action");
       room.disconnect();
@@ -330,7 +342,23 @@ export function UnifiedChatAvatar() {
 
         {/* Main Content - Use LiveKit Components when connected */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {sessionStarted ? (
+          {connectionError ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+              <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
+                <PhoneOff className="w-8 h-8 text-red-300" />
+              </div>
+              <h3 className="text-white font-semibold mb-2">Connection Issue</h3>
+              <p className="text-white/80 text-sm mb-4">The voice connection seems to have dropped out.</p>
+              <p className="text-white/60 text-xs mb-6">Try refreshing the page to reconnect with your hydration coach.</p>
+              <Button 
+                onClick={() => window.location.reload()}
+                className="bg-white/20 hover:bg-white/30 text-white border border-white/30"
+              >
+                <Phone className="w-4 h-4 mr-2" />
+                Refresh Page
+              </Button>
+            </div>
+          ) : sessionStarted ? (
             <UnifiedChatAvatarContent room={room} />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">

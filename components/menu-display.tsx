@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator"
 import { useFilters } from "@/context/filter-context"
 import { logEvent } from "@/lib/analytics"
 import { WelcomePopup } from "@/components/WelcomePopup"
+import { GeneralFAQ } from "@/components/GeneralFAQ"
 import type { MenuItem } from "@/app/page" // Import the MenuItem type
 import { LocationProvider, useLocation } from "@/components/location-provider"
 
