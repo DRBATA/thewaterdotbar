@@ -7,8 +7,11 @@ const supabaseAdmin = createClient(
 );
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const { itemId, providedChars } = body;
+  try {
+    console.log('Verify email API called');
+    const body = await req.json();
+    console.log('Request body:', body);
+    const { itemId, providedChars } = body;
   
   if (!itemId || !providedChars) {
     return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
@@ -63,4 +66,12 @@ export async function POST(req: NextRequest) {
       order: order
     }
   });
+  
+  } catch (error) {
+    console.error('Email verification error:', error);
+    return NextResponse.json({ 
+      error: "Internal server error during email verification",
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
+  }
 }
