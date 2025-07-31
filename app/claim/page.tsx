@@ -2,7 +2,7 @@
 import { useState, useEffect, Fragment } from "react";
 import { Dialog, Transition } from '@headlessui/react'
 import { createClient } from "@supabase/supabase-js";
-import EmailVerification from "../components/EmailVerification";
+import EmailVerification from "../../components/EmailVerification";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
