@@ -7,36 +7,78 @@ const supabaseAdmin = createSupabaseClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// Helper function to mask email addresses
+function maskEmail(email: string): { masked: string, missing: { position: number, char: string }[] } {
+  const chars = email.split('');
+  const missing: { position: number, char: string }[] = [];
+  
+  // Find positions to mask (avoid @ and . for readability)
+  const maskablePositions = chars
+    .map((char, index) => ({ char, index }))
+    .filter(({ char, index }) => char !== '@' && char !== '.' && index > 0 && index < chars.length - 1)
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 3);
+  
+  maskablePositions.forEach(({ char, index }) => {
+    missing.push({ position: index, char });
+    chars[index] = '□';
+  });
+  
+  return { masked: chars.join(''), missing };
+}
+
 export async function GET(_req: NextRequest, { params }: { params: { pin: string } }) {
   const { pin } = params;
   if (!pin || pin.length !== 4) {
     return NextResponse.json({ error: "PIN must be 4 digits" }, { status: 400 });
   }
 
-  const { data, error } = await supabaseAdmin
+  // Find ALL unclaimed items with this PIN
+  const { data: orderItems, error } = await supabaseAdmin
     .from("order_items")
     .select('id,pin_code,claimed_at,qty,name,item_id,order_id')
     .eq("pin_code", pin)
-    .maybeSingle();
+    .is("claimed_at", null);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  if (!data) {
-    return NextResponse.json({ error: "PIN not found" }, { status: 404 });
-  }
-  if (!data) {
-    return NextResponse.json({ error: "PIN not found" }, { status: 404 });
+  
+  if (!orderItems || orderItems.length === 0) {
+    return NextResponse.json({ error: "PIN not found or already claimed" }, { status: 404 });
   }
 
-  // fetch order for email
-  const { data: order } = await supabaseAdmin.from('orders').select('email,created_at,total').eq('id', data.order_id).maybeSingle();
-  const result = { ...data, order };
+  // Get order details for all items
+  const orderIds = orderItems.map(item => item.order_id);
+  const { data: orders } = await supabaseAdmin
+    .from('orders')
+    .select('id,email,created_at,total')
+    .in('id', orderIds);
 
-  if (data.claimed_at) {
-    return NextResponse.json({ error: "Already claimed", claimed_at: data.claimed_at }, { status: 410 });
+  if (!orders) {
+    return NextResponse.json({ error: "Order details not found" }, { status: 500 });
   }
-  return NextResponse.json(result);
+
+  // Create masked email verification data
+  const verificationOptions = orderItems.map(item => {
+    const order = orders.find(o => o.id === item.order_id);
+    if (!order) return null;
+    
+    const { masked, missing } = maskEmail(order.email);
+    
+    return {
+      itemId: item.id,
+      orderId: item.order_id,
+      maskedEmail: masked,
+      missingChars: missing
+    };
+  }).filter(Boolean);
+
+  return NextResponse.json({
+    type: 'email_verification',
+    pin: pin,
+    options: verificationOptions
+  });
 }
 
 export async function POST(req: NextRequest, { params }: { params: { pin: string } }) {

@@ -2,6 +2,7 @@
 import { useState, useEffect, Fragment } from "react";
 import { Dialog, Transition } from '@headlessui/react'
 import { createClient } from "@supabase/supabase-js";
+import EmailVerification from "../components/EmailVerification";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -63,13 +64,29 @@ export default function ClaimPage() {
     const res = await fetch(`/api/claim/${pin}`);
     const json = await res.json();
     if (res.ok) {
-      setDetails(json);
-      setStatus("confirm");
-      setEmailOk(false);
-      setTokenOk(false);
+      if (json.type === 'email_verification') {
+        setDetails(json);
+        setStatus("email_verification");
+      } else {
+        setDetails(json);
+        setStatus("confirm");
+        setEmailOk(false);
+        setTokenOk(false);
+      }
     } else {
       setStatus(json.error || "error");
     }
+  };
+
+  const handleEmailVerified = (orderItem: any) => {
+    setDetails(orderItem);
+    setStatus("confirm");
+    setEmailOk(false);
+    setTokenOk(false);
+  };
+
+  const handleEmailError = (error: string) => {
+    setStatus(error);
   };
 
   const completeClaim = async () => {
@@ -181,6 +198,15 @@ export default function ClaimPage() {
 
       {status === "loading" && <p>Loading...</p>}
 
+      {status === "email_verification" && details && (
+        <EmailVerification
+          pin={details.pin}
+          options={details.options}
+          onVerified={handleEmailVerified}
+          onError={handleEmailError}
+        />
+      )}
+
       {status === "confirm" && details && (
         <div className="space-y-4 max-w-sm text-left">
           <p className="text-green-700 text-xl font-semibold text-center">PIN {details.pin_code} accepted</p>
@@ -280,10 +306,80 @@ export default function ClaimPage() {
         </div>
       )}
 
-      {status && ["error", "Invalid or already claimed"].includes(status) && (
-        <div className="space-y-4">
-          <p className="text-red-700">{status}</p>
-          <button onClick={reset} className="underline text-blue-600">Try again</button>
+      {/* Already Claimed Error */}
+      {status === "Already claimed" && (
+        <div className="space-y-4 max-w-md">
+          <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4 rounded-md">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-orange-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-orange-800">PIN Already Claimed</h3>
+                <div className="mt-2 text-sm text-orange-700">
+                  <p>This PIN has already been redeemed. If you believe this is an error, please contact venue staff for assistance.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button onClick={reset} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">
+            Try Another PIN
+          </button>
+        </div>
+      )}
+
+      {/* PIN Not Found Error */}
+      {status === "PIN not found" && (
+        <div className="space-y-4 max-w-md">
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">PIN Not Found</h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>The PIN you entered was not found. Please check your PIN and try again.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button onClick={reset} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">
+            Try Again
+          </button>
+          <div className="text-center">
+            <button onClick={() => setIsResendModalOpen(true)} className="text-sm text-blue-600 hover:underline">
+              Lost your PINs? Resend to your email
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Generic Error */}
+      {status && !["loading", "confirm", "saving", "done", "Already claimed", "PIN not found"].includes(status) && (
+        <div className="space-y-4 max-w-md">
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">Error</h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>{status}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button onClick={reset} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">
+            Try Again
+          </button>
         </div>
       )}
     </main>
