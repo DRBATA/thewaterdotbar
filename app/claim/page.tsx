@@ -3,6 +3,7 @@ import { useState, useEffect, Fragment } from "react";
 import { Dialog, Transition } from '@headlessui/react'
 import { createClient } from "@supabase/supabase-js";
 import EmailVerification from "../../components/EmailVerification";
+import EmailSelection from "../../components/EmailSelection";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -64,12 +65,20 @@ export default function ClaimPage() {
     const res = await fetch(`/api/claim/${pin}`);
     const json = await res.json();
     if (res.ok) {
-      if (json.type === 'email_verification') {
-        setDetails(json);
-        setStatus("email_verification");
-      } else {
+      if (json.type === 'single_claim') {
+        // Single email - go straight to confirmation
         setDetails(json);
         setStatus("confirm");
+        setEmailOk(false);
+        setTokenOk(false);
+      } else if (json.type === 'email_selection') {
+        // Multiple emails - show clickable selection
+        setDetails(json);
+        setStatus("email_selection");
+      } else {
+        // Legacy email_verification or other types
+        setDetails(json);
+        setStatus(json.type || "confirm");
         setEmailOk(false);
         setTokenOk(false);
       }
@@ -204,6 +213,15 @@ export default function ClaimPage() {
           options={details.options}
           onVerified={handleEmailVerified}
           onError={handleEmailError}
+        />
+      )}
+
+      {status === "email_selection" && details && (
+        <EmailSelection
+          pin={details.pin}
+          options={details.options}
+          onSelectedAction={handleEmailVerified}
+          onErrorAction={handleEmailError}
         />
       )}
 

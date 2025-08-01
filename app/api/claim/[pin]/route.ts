@@ -27,8 +27,8 @@ function maskEmail(email: string): { masked: string, missing: { position: number
   return { masked: chars.join(''), missing };
 }
 
-export async function GET(_req: NextRequest, { params }: { params: { pin: string } }) {
-  const { pin } = params;
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ pin: string }> }) {
+  const { pin } = await params;
   if (!pin || pin.length !== 4) {
     return NextResponse.json({ error: "PIN must be 4 digits" }, { status: 400 });
   }
@@ -59,30 +59,53 @@ export async function GET(_req: NextRequest, { params }: { params: { pin: string
     return NextResponse.json({ error: "Order details not found" }, { status: 500 });
   }
 
-  // Create masked email verification data
-  const verificationOptions = orderItems.map(item => {
+  // Get unique emails for this PIN
+  const uniqueEmails = [...new Set(orders.map(o => o.email))];
+  
+  // If only one unique email, skip verification and go straight to claim
+  if (uniqueEmails.length === 1) {
+    const singleOrder = orders[0];
+    const singleItem = orderItems[0];
+    
+    return NextResponse.json({
+      type: 'single_claim',
+      pin_code: pin,
+      name: singleItem.name,
+      qty: singleItem.qty,
+      order: {
+        id: singleOrder.id,
+        email: singleOrder.email,
+        created_at: singleOrder.created_at,
+        total: singleOrder.total
+      },
+      item_id: singleItem.item_id,
+      order_item_id: singleItem.id
+    });
+  }
+  
+  // If multiple emails, show clickable options (no masking needed)
+  const emailOptions = orderItems.map(item => {
     const order = orders.find(o => o.id === item.order_id);
     if (!order) return null;
-    
-    const { masked, missing } = maskEmail(order.email);
     
     return {
       itemId: item.id,
       orderId: item.order_id,
-      maskedEmail: masked,
-      missingChars: missing
+      email: order.email, // Full email, no masking
+      itemName: item.name,
+      quantity: item.qty
     };
   }).filter(Boolean);
 
   return NextResponse.json({
-    type: 'email_verification',
+    type: 'email_selection',
     pin: pin,
-    options: verificationOptions
+    options: emailOptions
   });
 }
 
-export async function POST(req: NextRequest, { params }: { params: { pin: string } }) {
-  const { pin } = params;
+export async function POST(req: NextRequest, { params }: { params: Promise<{ pin: string }> }) {
+  const { pin } = await params;
   const body = await req.json();
   const { venue_id, redemption_choice } = body;
   
