@@ -17,8 +17,8 @@ export default function ClaimPage() {
   const [pin, setPin] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [details, setDetails] = useState<any>(null);
-  const [emailOk, setEmailOk] = useState(false);
-  const [tokenOk, setTokenOk] = useState(false);
+  const [emailOk, setEmailOk] = useState(true);  // Auto-checked for streamlined UX
+  const [tokenOk, setTokenOk] = useState(true);   // Auto-checked for streamlined UX
   const [redemptionChoice, setRedemptionChoice] = useState<string>("");
   const [isResendModalOpen, setIsResendModalOpen] = useState(false);
   const [resendEmail, setResendEmail] = useState("");
@@ -69,8 +69,7 @@ export default function ClaimPage() {
         // Single email - go straight to confirmation
         setDetails(json);
         setStatus("confirm");
-        setEmailOk(false);
-        setTokenOk(false);
+        // Keep emailOk and tokenOk as auto-checked (true)
       } else if (json.type === 'email_selection') {
         // Multiple emails - show clickable selection
         setDetails(json);
@@ -79,8 +78,7 @@ export default function ClaimPage() {
         // Legacy email_verification or other types
         setDetails(json);
         setStatus(json.type || "confirm");
-        setEmailOk(false);
-        setTokenOk(false);
+        // Keep emailOk and tokenOk as auto-checked (true)
       }
     } else {
       setStatus(json.error || "error");
