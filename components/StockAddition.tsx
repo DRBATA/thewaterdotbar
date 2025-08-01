@@ -50,8 +50,8 @@ export default function StockAddition() {
 
   const loadData = async () => {
     try {
-      // Load products
-      const productsRes = await fetch('/api/products')
+      // Load products - use products-all to get ALL products, not just ones with existing stock
+      const productsRes = await fetch('/api/products-all')
       if (productsRes.ok) {
         const productsData = await productsRes.json()
         setProducts(productsData)
