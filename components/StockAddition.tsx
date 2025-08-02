@@ -106,7 +106,7 @@ export default function StockAddition() {
     const requestBody = {
       product_id: selectedProduct, // Send the UUID string directly
       venue_id: selectedVenue,   // Send the UUID string directly
-      quantity_added: parseInt(quantity),
+      quantity_added: parseInt(quantity), // Can be positive or negative
       added_by: addedBy,
       notes: notes || null
     }
@@ -123,7 +123,8 @@ export default function StockAddition() {
       })
 
       if (res.ok) {
-        toast.success('Stock added successfully!')
+        const isNegative = parseInt(quantity) < 0
+        toast.success(isNegative ? 'Stock adjustment completed!' : 'Stock added successfully!')
         
         // Reset form
         setSelectedProduct('')
@@ -157,10 +158,10 @@ export default function StockAddition() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Plus className="w-5 h-5" />
-            Add Stock
+            Stock Management
           </CardTitle>
           <CardDescription>
-            Record new stock deliveries or additions to venues
+            Add stock (positive numbers) or remove stock (negative numbers) for corrections
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -202,15 +203,17 @@ export default function StockAddition() {
 
               {/* Quantity */}
               <div className="space-y-2">
-                <Label htmlFor="quantity">Quantity Added *</Label>
+                <Label htmlFor="quantity">Quantity *</Label>
                 <Input
                   id="quantity"
                   type="number"
-                  min="1"
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
-                  placeholder="e.g. 50"
+                  placeholder="e.g. 50 (or -5 to remove)"
                 />
+                <p className="text-xs text-gray-500">
+                  Positive numbers add stock, negative numbers remove stock
+                </p>
               </div>
 
               {/* Added By */}
