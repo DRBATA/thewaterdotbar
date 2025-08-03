@@ -42,10 +42,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate quantity is positive
-    if (quantity_added <= 0) {
+    // Quantity can be positive (add) or negative (remove)
+    // No validation on sign - UI handles this distinction
+    // Just ensure it's not zero
+    if (quantity_added === 0) {
       return NextResponse.json(
-        { error: 'Quantity must be greater than 0' },
+        { error: 'Quantity cannot be zero' },
         { status: 400 }
       )
     }

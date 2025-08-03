@@ -103,10 +103,13 @@ export default function StockAddition() {
       notes
     })
     
+    const parsedQuantity = parseInt(quantity)
+    console.log('DEBUG - Parsed quantity:', parsedQuantity, 'Type:', typeof parsedQuantity)
+    
     const requestBody = {
       product_id: selectedProduct, // Send the UUID string directly
       venue_id: selectedVenue,   // Send the UUID string directly
-      quantity_added: parseInt(quantity), // Can be positive or negative
+      quantity_added: parsedQuantity, // Can be positive or negative
       added_by: addedBy,
       notes: notes || null
     }
@@ -210,6 +213,8 @@ export default function StockAddition() {
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
                   placeholder="e.g. 50 (or -5 to remove)"
+                  step="1"
+                  min={undefined}
                 />
                 <p className="text-xs text-gray-500">
                   Positive numbers add stock, negative numbers remove stock
