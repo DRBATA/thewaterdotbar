@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
-import OrderConfirmationEmail from '@/emails/order-confirmation';
+import { WaterBarOrderConfirmationEmail } from '@/emails/water-bar-order-confirmation';
 
 export async function POST(request: Request) {
   const { email } = await request.json();
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   // Create clients inside the function to avoid build-time issues
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
   
   const resend = new Resend(process.env.RESEND_API_KEY);
@@ -21,10 +21,10 @@ export async function POST(request: Request) {
   try {
     // 1. Find all unclaimed order_items for the given email
     const { data: unclaimedItems, error: itemsError } = await supabase
-      .from('order_item')
+      .from('order_items')
       .select(`
         *,
-        order:order!inner(email)
+        order:orders!inner(email)
       `)
       .eq('order.email', email)
       .is('claimed_at', null);
@@ -48,10 +48,10 @@ export async function POST(request: Request) {
     // 3. For each order, fetch full details and resend the email
     for (const orderId in ordersToResend) {
       const { data: orderData, error: orderError } = await supabase
-        .from('order')
+        .from('orders')
         .select(`
           *,
-          order_item (*)
+          order_items (*)
         `)
         .eq('id', orderId)
         .single();
@@ -65,17 +65,10 @@ export async function POST(request: Request) {
         from: 'The Water Bar <noreply@receipt.thewater.bar>',
         to: orderData.email,
         subject: `Your Water Bar Receipt (Order #${orderData.id})`,
-        react: OrderConfirmationEmail({
-        orderId: orderData.id,
-        orderItems: orderData.order_item.map((item: { name: string; qty: number; pin_code: string; image_url?: string; price?: number }) => ({
-          name: item.name,
-          quantity: item.qty,
-          pin_code: item.pin_code,
-          image_url: item.image_url,
-          price: item.price
-        })),
-        total: orderData.total
-      }),
+        react: WaterBarOrderConfirmationEmail({
+          order: orderData,
+          userEmail: orderData.email
+        }),
       });
     }
 
