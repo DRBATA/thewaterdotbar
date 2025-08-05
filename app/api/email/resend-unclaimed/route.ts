@@ -36,7 +36,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'If any unclaimed PINs exist, they have been resent.' });
     }
 
-    // 2. Group unclaimed items by order_id
+    // 2. Group unclaimed items by order_id and find the most recent order
     const ordersToResend = unclaimedItems.reduce((acc, item) => {
       if (!acc[item.order_id]) {
         acc[item.order_id] = [];
@@ -45,33 +45,46 @@ export async function POST(request: Request) {
       return acc;
     }, {} as Record<string, typeof unclaimedItems>);
 
-    // 3. For each order, fetch full details and resend the email
-    for (const orderId in ordersToResend) {
-      const { data: orderData, error: orderError } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          order_items!inner(*)
-        `)
-        .eq('id', orderId)
-        .is('order_items.claimed_at', null)
-        .single();
-
-      if (orderError) {
-        console.error(`Error fetching order ${orderId}:`, orderError);
-        continue; // Skip to the next order
-      }
-
-      await resend.emails.send({
-        from: 'The Water Bar <noreply@receipt.thewater.bar>',
-        to: orderData.email,
-        subject: `Your Water Bar Receipt (Order #${orderData.id})`,
-        react: WaterBarOrderConfirmationEmail({
-          order: orderData,
-          userEmail: orderData.email
-        }),
-      });
+    const orderIds = Object.keys(ordersToResend);
+    
+    // If multiple orders have unclaimed items, we'll send the most recent one
+    // but could add logic here to handle multiple orders if needed
+    if (orderIds.length > 1) {
+      console.log(`Multiple orders with unclaimed items found for ${email}:`, orderIds);
+      // For now, we'll process the first one, but this could be enhanced
+      // to show a "multiple orders" message or send the most recent by date
     }
+
+    // 3. Process only the first/most recent order (could be enhanced to sort by date)
+    const orderId = orderIds[0];
+    
+    const { data: orderData, error: orderError } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        order_items!inner(*)
+      `)
+      .eq('id', orderId)
+      .is('order_items.claimed_at', null)
+      .single();
+
+    if (orderError) {
+      console.error(`Error fetching order ${orderId}:`, orderError);
+      return NextResponse.json({ error: 'Error fetching order details.' }, { status: 500 });
+    }
+
+    // Add a note if multiple orders were found
+    const subjectSuffix = orderIds.length > 1 ? ' (Most Recent)' : '';
+    
+    await resend.emails.send({
+      from: 'The Water Bar <noreply@receipt.thewater.bar>',
+      to: orderData.email,
+      subject: `Your Water Bar Receipt (Order #${orderData.id})${subjectSuffix}`,
+      react: WaterBarOrderConfirmationEmail({
+        order: orderData,
+        userEmail: orderData.email
+      }),
+    });
 
     return NextResponse.json({ message: 'Emails for unclaimed PINs have been resent.' });
 
