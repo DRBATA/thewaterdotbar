@@ -51,9 +51,10 @@ export async function POST(request: Request) {
         .from('orders')
         .select(`
           *,
-          order_items (*)
+          order_items!inner(*)
         `)
         .eq('id', orderId)
+        .is('order_items.claimed_at', null)
         .single();
 
       if (orderError) {
