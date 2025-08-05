@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
-import { WaterBarOrderConfirmationEmail } from '@/emails/water-bar-order-confirmation';
+import { OrderConfirmationEmail } from '@/emails/order-confirmation';
 
 export async function POST(request: Request) {
   const { email } = await request.json();
@@ -77,12 +77,18 @@ export async function POST(request: Request) {
     const subjectSuffix = orderIds.length > 1 ? ' (Most Recent)' : '';
     
     await resend.emails.send({
-      from: 'The Water Bar <noreply@receipt.thewater.bar>',
-      to: orderData.email,
-      subject: `Your Water Bar Receipt (Order #${orderData.id})${subjectSuffix}`,
-      react: WaterBarOrderConfirmationEmail({
-        order: orderData,
-        userEmail: orderData.email
+      from: 'The Water Bar <hello@thewater.bar>',
+      to: [orderData.email],
+      subject: `Your Water Bar Order Confirmation #${orderData.id.substring(0, 8)}${subjectSuffix}`,
+      react: OrderConfirmationEmail({
+        orderId: orderData.id,
+        userFirstName: 'Valued Customer',
+        orderItems: orderData.order_items.map((item: { name: string; qty: number; pin_code: string; }) => ({ 
+          name: item.name, 
+          quantity: item.qty, 
+          pin_code: item.pin_code 
+        })),
+        total: orderData.total,
       }),
     });
 
