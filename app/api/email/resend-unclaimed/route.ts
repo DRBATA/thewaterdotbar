@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
-import { OrderConfirmationEmail } from '@/emails/order-confirmation';
+import { CleanOrderConfirmationEmail } from '@/emails/clean-order-confirmation';
 
 export async function POST(request: Request) {
   const { email } = await request.json();
@@ -76,9 +76,10 @@ export async function POST(request: Request) {
     // Add a note if multiple orders were found
     const subjectSuffix = orderIds.length > 1 ? ' (Most Recent)' : '';
     
+    // Use the EXACT same email logic as the working stripe webhook
     await resend.emails.send({
       from: 'The Water Bar <hello@thewater.bar>',
-      to: [orderData.email],
+      to: [orderData.email!],
       subject: `Your Water Bar Order Confirmation #${orderData.id.substring(0, 8)}${subjectSuffix}`,
       react: OrderConfirmationEmail({
         orderId: orderData.id,
