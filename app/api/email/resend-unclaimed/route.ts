@@ -35,22 +35,15 @@ export async function POST(request: Request) {
 
     // Get the order data from RPC result
     const orderData = orderResult[0];
-    const orderItems = orderData.order_items;
+    
+    // Parse the JSON order_items (it comes as JSON from the RPC function)
+    const orderItems = Array.isArray(orderData.order_items) 
+      ? orderData.order_items 
+      : JSON.parse(orderData.order_items || '[]');
 
-    // Check if there might be multiple orders (for suffix)
-    const { data: allUnclaimedOrders, error: countError } = await supabase
-      .from('orders')
-      .select('id')
-      .eq('email', email)
-      .in('id', 
-        supabase
-          .from('order_items')
-          .select('order_id')
-          .is('claimed_at', null)
-      );
-
-    const hasMultipleOrders = allUnclaimedOrders && allUnclaimedOrders.length > 1;
-    const subjectSuffix = hasMultipleOrders ? ' (Most Recent)' : '';
+    // For now, just add (Most Recent) if we suspect multiple orders
+    // (We can simplify this since the RPC already gets the most recent)
+    const subjectSuffix = ' (Most Recent)';
     
     // Use the EXACT same email logic as the working stripe webhook
     await resend.emails.send({

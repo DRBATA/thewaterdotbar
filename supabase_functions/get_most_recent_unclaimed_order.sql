@@ -24,8 +24,7 @@ BEGIN
         'name', oi.name,
         'qty', oi.qty,
         'pin_code', oi.pin_code,
-        'price', oi.price,
-        'image_url', oi.image_url
+        'price', oi.price
       )
     ) as order_items
   FROM orders o
