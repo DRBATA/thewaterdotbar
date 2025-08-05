@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
-import { CleanOrderConfirmationEmail } from '@/emails/clean-order-confirmation';
+import { OrderConfirmationEmail } from '@/emails/order-confirmation';
 
 export async function POST(request: Request) {
   const { email } = await request.json();
