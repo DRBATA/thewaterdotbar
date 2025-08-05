@@ -177,7 +177,7 @@ export default function StockAddition() {
                   <SelectTrigger>
                     <SelectValue placeholder="Select product" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[200px] overflow-y-auto">
                     {products.map((product) => (
                       <SelectItem key={product.id} value={product.id}>
                         {product.name}
