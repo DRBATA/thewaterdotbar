@@ -19,77 +19,53 @@ export async function POST(request: Request) {
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   try {
-    // 1. Find all unclaimed order_items for the given email
-    const { data: unclaimedItems, error: itemsError } = await supabase
-      .from('order_items')
-      .select(`
-        *,
-        order:orders!inner(email)
-      `)
-      .eq('order.email', email)
-      .is('claimed_at', null);
+    // Use Supabase RPC function to get the most recent unclaimed order
+    const { data: orderResult, error: rpcError } = await supabase
+      .rpc('get_most_recent_unclaimed_order', { user_email: email });
 
-    if (itemsError) throw itemsError;
+    if (rpcError) {
+      console.error('Supabase RPC Error:', rpcError);
+      throw rpcError;
+    }
 
-    if (!unclaimedItems || unclaimedItems.length === 0) {
+    if (!orderResult || orderResult.length === 0) {
       // Still return success to prevent email enumeration
       return NextResponse.json({ message: 'If any unclaimed PINs exist, they have been resent.' });
     }
 
-    // 2. Group unclaimed items by order_id and find the most recent order
-    const ordersToResend = unclaimedItems.reduce((acc, item) => {
-      if (!acc[item.order_id]) {
-        acc[item.order_id] = [];
-      }
-      acc[item.order_id].push(item);
-      return acc;
-    }, {} as Record<string, typeof unclaimedItems>);
+    // Get the order data from RPC result
+    const orderData = orderResult[0];
+    const orderItems = orderData.order_items;
 
-    const orderIds = Object.keys(ordersToResend);
-    
-    // If multiple orders have unclaimed items, we'll send the most recent one
-    // but could add logic here to handle multiple orders if needed
-    if (orderIds.length > 1) {
-      console.log(`Multiple orders with unclaimed items found for ${email}:`, orderIds);
-      // For now, we'll process the first one, but this could be enhanced
-      // to show a "multiple orders" message or send the most recent by date
-    }
-
-    // 3. Process only the first/most recent order (could be enhanced to sort by date)
-    const orderId = orderIds[0];
-    
-    const { data: orderData, error: orderError } = await supabase
+    // Check if there might be multiple orders (for suffix)
+    const { data: allUnclaimedOrders, error: countError } = await supabase
       .from('orders')
-      .select(`
-        *,
-        order_items!inner(*)
-      `)
-      .eq('id', orderId)
-      .is('order_items.claimed_at', null)
-      .single();
+      .select('id')
+      .eq('email', email)
+      .in('id', 
+        supabase
+          .from('order_items')
+          .select('order_id')
+          .is('claimed_at', null)
+      );
 
-    if (orderError) {
-      console.error(`Error fetching order ${orderId}:`, orderError);
-      return NextResponse.json({ error: 'Error fetching order details.' }, { status: 500 });
-    }
-
-    // Add a note if multiple orders were found
-    const subjectSuffix = orderIds.length > 1 ? ' (Most Recent)' : '';
+    const hasMultipleOrders = allUnclaimedOrders && allUnclaimedOrders.length > 1;
+    const subjectSuffix = hasMultipleOrders ? ' (Most Recent)' : '';
     
     // Use the EXACT same email logic as the working stripe webhook
     await resend.emails.send({
       from: 'The Water Bar <hello@thewater.bar>',
-      to: [orderData.email!],
-      subject: `Your Water Bar Order Confirmation #${orderData.id.substring(0, 8)}${subjectSuffix}`,
+      to: [orderData.order_email],
+      subject: `Your Water Bar Order Confirmation #${orderData.order_id.toString().substring(0, 8)}${subjectSuffix}`,
       react: OrderConfirmationEmail({
-        orderId: orderData.id,
+        orderId: orderData.order_id,
         userFirstName: 'Valued Customer',
-        orderItems: orderData.order_items.map((item: { name: string; qty: number; pin_code: string; }) => ({ 
+        orderItems: orderItems.map((item: { name: string; qty: number; pin_code: string; }) => ({ 
           name: item.name, 
           quantity: item.qty, 
           pin_code: item.pin_code 
         })),
-        total: orderData.total,
+        total: orderData.order_total,
       }),
     });
 
