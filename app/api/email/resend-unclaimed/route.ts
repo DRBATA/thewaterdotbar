@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     
     // Use the EXACT same email logic as the working stripe webhook
     await resend.emails.send({
-      from: 'The Water Bar <hello@thewater.bar>',
+      from: 'The Water Bar <hello@receipt.thewater.bar>',
       to: [email],
       subject: `Your Water Bar Order Confirmation #${orderData.order_id.toString().substring(0, 8)}${subjectSuffix}`,
       react: OrderConfirmationEmail({
