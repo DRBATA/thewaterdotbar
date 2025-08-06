@@ -269,8 +269,8 @@ export default function StockAddition() {
               No recent stock additions
             </p>
           ) : (
-            <div className="space-y-3">
-              {recentAdditions.slice(0, 10).map((addition) => (
+            <div className="max-h-96 overflow-y-auto space-y-3">
+              {recentAdditions.map((addition) => (
                 <div key={addition.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <Package className="w-4 h-4 text-gray-400" />
@@ -295,8 +295,10 @@ export default function StockAddition() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-semibold text-green-600">
-                      +{addition.quantity_added}
+                    <p className={`text-lg font-semibold ${
+                      addition.quantity_added >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {addition.quantity_added >= 0 ? '+' : ''}{addition.quantity_added}
                     </p>
                   </div>
                 </div>
