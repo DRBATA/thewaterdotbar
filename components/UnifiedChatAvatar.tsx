@@ -17,7 +17,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { MessageSquare, X, Phone, PhoneOff, Mic, MicOff } from "lucide-react"
+import { MessageSquare, X, Phone, PhoneOff, Mic, MicOff, Sparkles, Wand2 } from "lucide-react"
 import useChatAndTranscription from "@/hooks/useChatAndTranscription"
 import { cn } from "@/lib/utils"
 import { AvatarTile } from '@/components/livekit/avatar-tile';
@@ -301,13 +301,54 @@ export function UnifiedChatAvatar() {
   if (!isExpanded) {
     return (
       <div className="fixed bottom-6 right-6 z-50">
+        {/* Magical sparkle cloud background */}
+        <div className="absolute inset-0 -m-8 pointer-events-none">
+          {/* Animated sparkles */}
+          <div className="absolute w-2 h-2 bg-yellow-300 rounded-full animate-pulse" style={{top: '10%', left: '15%', animationDelay: '0s'}} />
+          <div className="absolute w-1 h-1 bg-purple-400 rounded-full animate-ping" style={{top: '25%', right: '20%', animationDelay: '0.5s'}} />
+          <div className="absolute w-3 h-3 bg-teal-300 rounded-full animate-pulse" style={{bottom: '30%', left: '10%', animationDelay: '1s'}} />
+          <div className="absolute w-1.5 h-1.5 bg-yellow-400 rounded-full animate-ping" style={{top: '60%', right: '15%', animationDelay: '1.5s'}} />
+          <div className="absolute w-2 h-2 bg-purple-300 rounded-full animate-pulse" style={{bottom: '15%', right: '25%', animationDelay: '2s'}} />
+          <div className="absolute w-1 h-1 bg-teal-400 rounded-full animate-ping" style={{top: '40%', left: '5%', animationDelay: '2.5s'}} />
+          
+          {/* Glowing aura */}
+          <div className="absolute inset-0 bg-gradient-radial from-teal-400/20 via-purple-400/10 to-transparent blur-xl animate-pulse" />
+          <div className="absolute inset-0 bg-gradient-radial from-yellow-400/15 via-teal-400/10 to-transparent blur-2xl animate-pulse" style={{animationDelay: '1s'}} />
+        </div>
+        
+        {/* Main button with gradient animation */}
         <Button
           onClick={() => setIsExpanded(true)}
-          className="w-16 h-16 rounded-full bg-gradient-to-br from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg flex items-center justify-center"
+          className="relative px-6 py-4 rounded-full shadow-2xl flex items-center justify-center gap-3 whitespace-nowrap overflow-hidden group
+                     bg-gradient-to-r from-teal-500 via-purple-500 to-yellow-500 
+                     hover:from-yellow-500 hover:via-teal-500 hover:to-purple-500
+                     transition-all duration-1000 ease-in-out
+                     animate-gradient-x bg-[length:200%_200%]
+                     border-2 border-white/30 backdrop-blur-sm"
           size="lg"
+          style={{
+            background: 'linear-gradient(-45deg, #14b8a6, #a855f7, #eab308, #06b6d4)',
+            backgroundSize: '400% 400%',
+            animation: 'gradientShift 3s ease infinite'
+          }}
         >
-          <MessageSquare className="w-6 h-6 text-white" />
+          {/* Inner glow effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          
+          <Sparkles className="w-5 h-5 text-white flex-shrink-0 animate-pulse" />
+          <span className="text-white font-semibold text-sm uppercase tracking-wide drop-shadow-lg">
+            CHAT FOR PERSONAL FREE WELLNESS PLAN
+          </span>
         </Button>
+        
+        {/* CSS animations */}
+        <style jsx>{`
+          @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+        `}</style>
       </div>
     )
   }
@@ -363,17 +404,17 @@ export function UnifiedChatAvatar() {
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4">
-                <Phone className="w-8 h-8 text-white" />
+                <Wand2 className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-white font-semibold mb-2">Ready to optimize your hydration?</h3>
-              <p className="text-white/80 text-sm mb-6">I'll calculate your exact fluid needs and recommend the perfect products for your goals.</p>
+              <h3 className="text-white font-semibold mb-2">Discover your perfect metabolic & hydration optimization!</h3>
+              <p className="text-white/80 text-sm mb-6">Find out how kombucha vs electrolytes can benefit you. Our coach can help you plan out how to use these for a custom plan to meet your goals based on what you have eaten, drunk or done.</p>
               <Button 
                 onClick={() => setSessionStarted(true)} 
                 disabled={sessionStarted || !connectionDetails}
                 className="bg-white/20 hover:bg-white/30 text-white border border-white/30"
               >
-                <Phone className="w-4 h-4 mr-2" />
-                {room.state === 'connecting' ? 'Connecting...' : 'Talk to Coach'}
+                <Sparkles className="w-4 h-4 mr-2" />
+                {room.state === 'connecting' ? 'Connecting...' : 'Chat to Free AI Coach'}
               </Button>
             </div>
           )}
