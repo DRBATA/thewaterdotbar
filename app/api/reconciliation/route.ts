@@ -16,7 +16,6 @@ export async function GET() {
     const { data: stockMovements, error: stockError } = await supabase
       .from('stock_addition_history')
       .select('*')
-      .gte('created_at', cutoffDate)
       .limit(100)
 
     if (stockError) {
