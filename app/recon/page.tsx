@@ -50,8 +50,9 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { AlertTriangle, TrendingUp, TrendingDown, CheckCircle, BarChart3, RefreshCw } from 'lucide-react'
+import { AlertTriangle, TrendingUp, TrendingDown, CheckCircle, BarChart3, RefreshCw, Filter, X } from 'lucide-react'
 import { toast } from "sonner"
+import { Label } from "@/components/ui/label"
 
 /**
  * CORE DATA INTERFACES FOR BUSINESS INTELLIGENCE
@@ -111,6 +112,17 @@ export default function ReconciliationPage() {
   const [data, setData] = useState<ReconciliationData | null>(null)
   const [loading, setLoading] = useState(true)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  
+  // Filter state
+  const [productFilter, setProductFilter] = useState<string>('')
+  const [venueFilter, setVenueFilter] = useState<string>('')
+  const [typeFilter, setTypeFilter] = useState<string>('') // 'product', 'experience', or ''
+  const [varianceFilter, setVarianceFilter] = useState<string>('') // 'all', 'variance-only', 'critical'
+  
+  // Detail view state
+  const [selectedItem, setSelectedItem] = useState<ReconciliationItem | null>(null)
+  const [itemTransactions, setItemTransactions] = useState<any[]>([])
+  const [loadingTransactions, setLoadingTransactions] = useState(false)
 
   useEffect(() => {
     loadReconciliationData()
@@ -200,6 +212,102 @@ export default function ReconciliationPage() {
     return 'text-red-600'
   }
 
+  // Filter reconciliation data based on current filters
+  const getFilteredData = () => {
+    if (!data) return []
+    
+    return data.reconciliation.filter(item => {
+      // Product name filter
+      if (productFilter && !item.product_name.toLowerCase().includes(productFilter.toLowerCase())) {
+        return false
+      }
+      
+      // Venue filter
+      if (venueFilter && !item.venue_name.toLowerCase().includes(venueFilter.toLowerCase())) {
+        return false
+      }
+      
+      // Type filter (product vs experience)
+      if (typeFilter && item.type !== typeFilter) {
+        return false
+      }
+      
+      // Variance filter
+      if (varianceFilter === 'variance-only' && item.variance === 0) {
+        return false
+      }
+      if (varianceFilter === 'critical' && Math.abs(item.variance) < 5) {
+        return false
+      }
+      
+      return true
+    })
+  }
+
+  // Get unique values for filter dropdowns
+  const getUniqueProducts = () => {
+    if (!data) return []
+    return [...new Set(data.reconciliation.map(item => item.product_name))].sort()
+  }
+
+  const getUniqueVenues = () => {
+    if (!data) return []
+    return [...new Set(data.reconciliation.map(item => item.venue_name))].sort()
+  }
+
+  // Clear all filters
+  const clearFilters = () => {
+    setProductFilter('')
+    setVenueFilter('')
+    setTypeFilter('')
+    setVarianceFilter('')
+  }
+
+  // Fetch transaction details for a specific item
+  const loadItemTransactions = async (item: ReconciliationItem) => {
+    setSelectedItem(item)
+    setLoadingTransactions(true)
+    
+    try {
+      // For now, skip the API call since schema has issues
+      console.log('Clicked item:', item.product_name, 'at', item.venue_name)
+      console.log('Product ID:', item.product_id, 'Venue ID:', item.venue_id)
+      setItemTransactions([])
+      setLoadingTransactions(false)
+      return
+      
+      const response = await fetch(`/api/reconciliation/transactions?product_id=${item.product_id}&venue_id=${item.venue_id}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch transaction details')
+      }
+      const transactions = await response.json()
+      setItemTransactions(transactions)
+    } catch (error) {
+      console.error('Error loading transaction details:', error)
+      toast.error('Failed to load transaction details')
+      setItemTransactions([])
+    } finally {
+      setLoadingTransactions(false)
+    }
+  }
+
+  // Close transaction detail modal
+  const closeTransactionModal = () => {
+    setSelectedItem(null)
+    setItemTransactions([])
+  }
+
+  // Obfuscate email for privacy (show 60% of characters)
+  const obfuscateEmail = (email: string) => {
+    if (!email) return 'Unknown'
+    const [local, domain] = email.split('@')
+    if (!domain) return email
+    
+    const visibleChars = Math.ceil(local.length * 0.6)
+    const obfuscatedLocal = local.substring(0, visibleChars) + '*'.repeat(local.length - visibleChars)
+    return `${obfuscatedLocal}@${domain}`
+  }
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto p-6">
@@ -227,8 +335,10 @@ export default function ReconciliationPage() {
     )
   }
 
-  const itemsWithVariance = data.reconciliation.filter(item => item.variance !== 0)
-  const criticalVariance = data.reconciliation.filter(item => Math.abs(item.variance) >= 5)
+  // Get filtered data
+  const filteredData = getFilteredData()
+  const itemsWithVariance = filteredData.filter(item => item.variance !== 0)
+  const criticalVariance = filteredData.filter(item => Math.abs(item.variance) >= 5)
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
@@ -250,6 +360,97 @@ export default function ReconciliationPage() {
           </Button>
         </div>
       </div>
+
+      {/* Filter Controls */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="w-5 h-5" />
+            Filters
+          </CardTitle>
+          <CardDescription>
+            Filter reconciliation data by product, venue, type, or variance level
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Product Filter */}
+            <div>
+              <Label htmlFor="product-filter">Product/Experience</Label>
+              <select
+                id="product-filter"
+                value={productFilter}
+                onChange={(e) => setProductFilter(e.target.value)}
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+              >
+                <option value="">All Products/Experiences</option>
+                {getUniqueProducts().map(product => (
+                  <option key={product} value={product}>{product}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Venue Filter */}
+            <div>
+              <Label htmlFor="venue-filter">Venue</Label>
+              <select
+                id="venue-filter"
+                value={venueFilter}
+                onChange={(e) => setVenueFilter(e.target.value)}
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+              >
+                <option value="">All Venues</option>
+                {getUniqueVenues().map(venue => (
+                  <option key={venue} value={venue}>{venue}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Type Filter */}
+            <div>
+              <Label htmlFor="type-filter">Type</Label>
+              <select
+                id="type-filter"
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+              >
+                <option value="">All Types</option>
+                <option value="product">Products Only</option>
+                <option value="experience">Experiences Only</option>
+              </select>
+            </div>
+
+            {/* Variance Filter */}
+            <div>
+              <Label htmlFor="variance-filter">Variance</Label>
+              <select
+                id="variance-filter"
+                value={varianceFilter}
+                onChange={(e) => setVarianceFilter(e.target.value)}
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+              >
+                <option value="">All Items</option>
+                <option value="variance-only">With Variance Only</option>
+                <option value="critical">Critical Variance (±5+)</option>
+              </select>
+            </div>
+
+            {/* Clear Filters Button */}
+            <div className="flex items-end">
+              <Button 
+                onClick={clearFilters} 
+                variant="outline" 
+                size="sm"
+                className="w-full"
+              >
+                <X className="w-4 h-4 mr-2" />
+                Clear
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* BUSINESS INTELLIGENCE SUMMARY CARDS */}
       {/* 
@@ -362,9 +563,19 @@ export default function ReconciliationPage() {
       {/* Detailed Reconciliation Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Detailed Reconciliation</CardTitle>
+          <CardTitle className="flex items-center justify-between">
+            <span>Detailed Reconciliation</span>
+            <Badge variant="outline" className="ml-2">
+              {filteredData.length} of {data.reconciliation.length} items
+            </Badge>
+          </CardTitle>
           <CardDescription>
             Stock movements vs PIN claims analysis. Variance = Current Stock - Expected Stock
+            {(productFilter || venueFilter || typeFilter || varianceFilter) && (
+              <span className="block mt-1 text-teal-600">
+                Filters active: {[productFilter && 'Product', venueFilter && 'Venue', typeFilter && 'Type', varianceFilter && 'Variance'].filter(Boolean).join(', ')}
+              </span>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -383,9 +594,21 @@ export default function ReconciliationPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.reconciliation.map((item, index) => (
-                  <tr key={index} className={`border-b hover:bg-gray-50 ${Math.abs(item.variance) >= 5 ? 'bg-red-50' : ''}`}>
-                    <td className="p-2 font-medium">{item.product_name}</td>
+                {filteredData.map((item, index) => (
+                  <tr 
+                    key={index} 
+                    className={`border-b hover:bg-gray-50 cursor-pointer transition-colors ${Math.abs(item.variance) >= 5 ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-blue-50'}`}
+                    onClick={() => loadItemTransactions(item)}
+                    title="Click to view transaction details"
+                  >
+                    <td className="p-2 font-medium">
+                      {item.product_name}
+                      {item.type && (
+                        <Badge variant="outline" className="ml-2 text-xs">
+                          {item.type === 'product' ? 'Product' : 'Experience'}
+                        </Badge>
+                      )}
+                    </td>
                     <td className="p-2 text-gray-600">{item.venue_name}</td>
                     <td className="p-2 text-right text-green-600">+{item.stock_added}</td>
                     <td className="p-2 text-right text-red-600">{item.stock_removed > 0 ? `-${item.stock_removed}` : '0'}</td>
@@ -508,6 +731,115 @@ export default function ReconciliationPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Transaction Detail Modal */}
+      {selectedItem && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-6 border-b">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold">{selectedItem.product_name}</h2>
+                  <p className="text-gray-600">{selectedItem.venue_name}</p>
+                </div>
+                <Button onClick={closeTransactionModal} variant="outline" size="sm">
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            
+            <div className="p-6 overflow-y-auto max-h-[70vh]">
+              {loadingTransactions ? (
+                <div className="flex items-center justify-center h-32">
+                  <RefreshCw className="w-6 h-6 animate-spin text-teal-600" />
+                  <span className="ml-2">Loading transaction details...</span>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <div className="text-green-600 font-medium">Stock Added</div>
+                      <div className="text-2xl font-bold text-green-700">+{selectedItem.stock_added}</div>
+                    </div>
+                    <div className="bg-red-50 p-4 rounded-lg">
+                      <div className="text-red-600 font-medium">Stock Removed</div>
+                      <div className="text-2xl font-bold text-red-700">-{selectedItem.stock_removed}</div>
+                    </div>
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <div className="text-blue-600 font-medium">Items Claimed</div>
+                      <div className="text-2xl font-bold text-blue-700">{selectedItem.items_claimed}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="text-sm text-gray-600">Current Variance</div>
+                        <div className={`text-lg font-bold ${getVarianceColor(selectedItem.variance)}`}>
+                          {selectedItem.variance > 0 ? '+' : ''}{selectedItem.variance}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-gray-600">Expected: {selectedItem.calculated_stock}</div>
+                        <div className="text-sm text-gray-600">Current: {selectedItem.current_stock}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">Transaction History</h3>
+                    {itemTransactions.length === 0 ? (
+                      <p className="text-gray-500 text-center py-8">No transaction details available</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {itemTransactions.map((transaction, index) => (
+                          <div key={index} className="border rounded-lg p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-3 h-3 rounded-full ${
+                                  transaction.type === 'stock_addition' ? 'bg-green-500' :
+                                  transaction.type === 'stock_removal' ? 'bg-red-500' :
+                                  transaction.type === 'purchase' ? 'bg-blue-500' :
+                                  transaction.type === 'claim' ? 'bg-purple-500' :
+                                  'bg-gray-500'
+                                }`}></div>
+                                <div>
+                                  <div className="font-medium capitalize">
+                                    {transaction.type?.replace('_', ' ') || 'Unknown'}
+                                  </div>
+                                  <div className="text-sm text-gray-600">
+                                    {transaction.created_at ? new Date(transaction.created_at).toLocaleString() : 'Unknown time'}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className={`font-bold ${
+                                  transaction.quantity > 0 ? 'text-green-600' : 'text-red-600'
+                                }`}>
+                                  {transaction.quantity > 0 ? '+' : ''}{transaction.quantity}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  {transaction.user_name || 
+                                   (transaction.email ? obfuscateEmail(transaction.email) : 'Unknown user')}
+                                </div>
+                              </div>
+                            </div>
+                            {transaction.notes && (
+                              <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                                {transaction.notes}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

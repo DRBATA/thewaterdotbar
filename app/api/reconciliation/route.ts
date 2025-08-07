@@ -8,136 +8,207 @@ const supabase = createClient(
 
 export async function GET() {
   try {
-    // Get stock movements (additions and adjustments)
+    console.log('Starting simple reconciliation API...')
+    
+    // Only include stock movements from July 28th onward (when proper stock management started)
+    const cutoffDate = '2024-07-28T00:00:00.000Z'
+    
     const { data: stockMovements, error: stockError } = await supabase
       .from('stock_addition_history')
       .select('*')
+      .gte('created_at', cutoffDate)
+      .limit(100)
 
     if (stockError) {
       console.error('Error fetching stock movements:', stockError)
-      return NextResponse.json({ error: stockError.message }, { status: 500 })
+      return NextResponse.json({ error: 'Stock error: ' + stockError.message }, { status: 500 })
     }
 
-    // Get PIN claims (items that were claimed)
+    // Only include claimed items for physical products (exclude drinks/mocktails)
     const { data: claimedItems, error: claimsError } = await supabase
       .from('order_items')
       .select(`
-        product_id,
-        venue_id,
-        qty,
-        claimed_at,
-        products(name),
-        venues(name)
+        item_id, 
+        venue_id, 
+        qty, 
+        claimed_at, 
+        name,
+        products!inner(
+          category
+        )
       `)
-      .not('claimed_at', 'is', null) // Only claimed items
+      .not('claimed_at', 'is', null)
+      .neq('products.category', 'drink')
+      .gte('created_at', cutoffDate)
+      .limit(100)
 
     if (claimsError) {
       console.error('Error fetching claimed items:', claimsError)
-      return NextResponse.json({ error: claimsError.message }, { status: 500 })
+      return NextResponse.json({ error: 'Claims error: ' + claimsError.message }, { status: 500 })
     }
 
-    // Get current stock levels
     const { data: currentStock, error: stockLevelError } = await supabase
       .from('venue_stock')
-      .select(`
-        product_id,
-        venue_id,
-        qty_on_hand,
-        products(name),
-        venues(name)
-      `)
+      .select('product_id, venue_id, qty_on_hand, products(name), venue(name)')
+      .limit(100)
 
     if (stockLevelError) {
       console.error('Error fetching current stock:', stockLevelError)
-      return NextResponse.json({ error: stockLevelError.message }, { status: 500 })
+      return NextResponse.json({ error: 'Stock levels error: ' + stockLevelError.message }, { status: 500 })
     }
 
-    // Process reconciliation by product/venue
-    const reconciliation = new Map()
-
-    // Add stock movements
-    stockMovements?.forEach(movement => {
-      const key = `${movement.product_id}-${movement.venue_id}`
-      if (!reconciliation.has(key)) {
-        reconciliation.set(key, {
-          product_id: movement.product_id,
-          venue_id: movement.venue_id,
-          product_name: movement.product_name,
-          venue_name: movement.venue_name,
-          stock_added: 0,
-          stock_removed: 0,
-          items_claimed: 0,
-          current_stock: 0,
-          calculated_stock: 0,
-          variance: 0
-        })
-      }
-      
-      const record = reconciliation.get(key)
-      if (movement.quantity_added > 0) {
-        record.stock_added += movement.quantity_added
-      } else {
-        record.stock_removed += Math.abs(movement.quantity_added)
-      }
-    })
-
-    // Add claimed items
-    claimedItems?.forEach(claim => {
-      const key = `${claim.product_id}-${claim.venue_id}`
-      if (!reconciliation.has(key)) {
-        reconciliation.set(key, {
-          product_id: claim.product_id,
-          venue_id: claim.venue_id,
-          product_name: claim.products?.[0]?.name || 'Unknown',
-          venue_name: claim.venue?.[0]?.name || 'Unknown',
-          stock_added: 0,
-          stock_removed: 0,
-          items_claimed: 0,
-          current_stock: 0,
-          calculated_stock: 0,
-          variance: 0
-        })
-      }
-      
-      const record = reconciliation.get(key)
-      record.items_claimed += claim.qty
-    })
-
-    // Add current stock levels
+    // DEBUG: Log what we found in venue_stock
+    console.log('=== VENUE STOCK DEBUG ===')
+    console.log('Current stock records found:', currentStock?.length || 0)
     currentStock?.forEach(stock => {
-      const key = `${stock.product_id}-${stock.venue_id}`
-      if (reconciliation.has(key)) {
-        const record = reconciliation.get(key)
-        record.current_stock = stock.qty_on_hand
-        record.product_name = stock.products?.[0]?.name || record.product_name
-        record.venue_name = stock.venue?.[0]?.name || record.venue_name
+      console.log(`Stock: ${stock.products?.name || 'Unknown'} at ${stock.venue?.name || 'Unknown'} = ${stock.qty_on_hand} (product_id: ${stock.product_id}, venue_id: ${stock.venue_id})`)
+    })
+
+    // Calculate simple totals
+    const totalStockAdded = stockMovements?.reduce((sum, item) => {
+      const qty = item.quantity_added || 0
+      return sum + (qty > 0 ? qty : 0)
+    }, 0) || 0
+
+    const totalStockRemoved = stockMovements?.reduce((sum, item) => {
+      const qty = item.quantity_added || 0
+      return sum + (qty < 0 ? Math.abs(qty) : 0)
+    }, 0) || 0
+
+    const totalItemsClaimed = claimedItems?.reduce((sum, item) => sum + (item.qty || 0), 0) || 0
+    const totalCurrentStock = currentStock?.reduce((sum, item) => sum + (item.qty_on_hand || 0), 0) || 0
+
+    // Create reconciliation map - group by product/venue for stock movements
+    const reconciliationMap = new Map()
+
+    // Process stock movements (these are always products with product_id)
+    stockMovements?.forEach(movement => {
+      const productName = movement.product_name || 'Unknown Product'
+      const venueName = movement.venue_name || 'Unknown Venue'
+      const key = `${productName}-${venueName}`
+      
+      if (!reconciliationMap.has(key)) {
+        reconciliationMap.set(key, {
+          product_name: productName,
+          venue_name: venueName,
+          stock_added: 0,
+          stock_removed: 0,
+          items_claimed: 0,
+          current_stock: 0,
+          calculated_stock: 0,
+          variance: 0,
+          type: 'product' // This is a physical product with stock
+        })
+      }
+      
+      const record = reconciliationMap.get(key)
+      const qty = movement.quantity_added || 0
+      if (qty > 0) {
+        record.stock_added += qty
+      } else {
+        record.stock_removed += Math.abs(qty)
       }
     })
 
-    // Calculate expected stock and variance
-    const results = Array.from(reconciliation.values()).map(record => {
-      // Expected stock = Stock Added - Stock Removed - Items Claimed
+    // Process claimed items (these can be products OR experiences)
+    // For now, we'll create separate tracking for experiences vs products
+    const experienceClaimsMap = new Map()
+    
+    claimedItems?.forEach(claim => {
+      const itemName = claim.name || 'Unknown Item'
+      const venueName = 'Various' // Experiences might not have specific venue stock
+      
+      // Check if this matches a product in our reconciliation (by name matching)
+      let foundInProducts = false
+      for (const [key, record] of reconciliationMap.entries()) {
+        if (record.product_name === itemName) {
+          record.items_claimed += claim.qty || 0
+          foundInProducts = true
+          break
+        }
+      }
+      
+      // If not found in products, it's likely an experience
+      if (!foundInProducts) {
+        const expKey = `${itemName}-${venueName}`
+        if (!experienceClaimsMap.has(expKey)) {
+          experienceClaimsMap.set(expKey, {
+            product_name: itemName,
+            venue_name: venueName,
+            stock_added: 0,
+            stock_removed: 0,
+            items_claimed: 0,
+            current_stock: 0,
+            calculated_stock: 0,
+            variance: 0,
+            type: 'experience' // This is an experience, no physical stock
+          })
+        }
+        experienceClaimsMap.get(expKey).items_claimed += claim.qty || 0
+      }
+    })
+
+    // Add current stock to products (experiences don't have stock)
+    currentStock?.forEach(stock => {
+      // Match by product_id and venue_id for accurate current stock
+      const key = `${stock.product_id}-${stock.venue_id}`
+      const record = reconciliationMap.get(key)
+      
+      if (record && record.type === 'product') {
+        record.current_stock = stock.qty_on_hand || 0
+        console.log(`Matched current stock: ${record.product_name} at ${record.venue_name} = ${record.current_stock}`)
+      } else {
+        console.log(`No matching record found for product_id: ${stock.product_id}, venue_id: ${stock.venue_id}`)
+      }
+    })
+
+    // Calculate variances for products
+    const productResults = Array.from(reconciliationMap.values()).map(record => {
       record.calculated_stock = record.stock_added - record.stock_removed - record.items_claimed
-      
-      // Variance = Current Stock - Expected Stock
       record.variance = record.current_stock - record.calculated_stock
-      
       return record
     })
 
-    // Sort by variance (largest discrepancies first)
-    results.sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance))
+    // Experience results (no stock variance, just tracking claims)
+    const experienceResults = Array.from(experienceClaimsMap.values()).map(record => {
+      record.calculated_stock = 0 // Experiences don't have calculated stock
+      record.variance = 0 // No variance for experiences
+      return record
+    })
+
+    // Combine all results
+    const allResults = [...productResults, ...experienceResults]
+
+    // Sort by variance (largest discrepancies first), then by type
+    allResults.sort((a, b) => {
+      const aVariance = Math.abs(a.variance)
+      const bVariance = Math.abs(b.variance)
+      if (aVariance !== bVariance) {
+        return bVariance - aVariance // Largest variance first
+      }
+      // If same variance, products first, then experiences
+      if (a.type !== b.type) {
+        return a.type === 'product' ? -1 : 1
+      }
+      return 0
+    })
 
     return NextResponse.json({
       summary: {
-        total_products: results.length,
-        items_with_variance: results.filter(r => r.variance !== 0).length,
-        total_stock_added: results.reduce((sum, r) => sum + r.stock_added, 0),
-        total_stock_removed: results.reduce((sum, r) => sum + r.stock_removed, 0),
-        total_items_claimed: results.reduce((sum, r) => sum + r.items_claimed, 0),
-        total_current_stock: results.reduce((sum, r) => sum + r.current_stock, 0)
+        total_items: allResults.length,
+        total_products: productResults.length,
+        total_experiences: experienceResults.length,
+        items_with_variance: productResults.filter(r => r.variance !== 0).length,
+        total_stock_added: totalStockAdded,
+        total_stock_removed: totalStockRemoved,
+        total_items_claimed: totalItemsClaimed,
+        total_current_stock: totalCurrentStock
       },
-      reconciliation: results
+      reconciliation: allResults,
+      breakdown: {
+        products: productResults,
+        experiences: experienceResults
+      }
     })
 
   } catch (error) {

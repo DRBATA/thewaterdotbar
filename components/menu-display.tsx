@@ -390,7 +390,7 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
       <WelcomePopup />
       <section className="container mx-auto px-4 pt-24 pb-2 text-center">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-2 text-stone-900">The Water Bar</h1>
-        <p className="text-xl md:text-2xl font-semibold text-blue-600 mb-3">Experience Highdrartion</p>
+        <p className="text-xl md:text-2xl font-semibold text-blue-600 mb-3">Experience Highdration</p>
         
         <div className="max-w-3xl mx-auto mb-4">
           <p className="text-lg text-stone-700">Get a precision-crafted hydration plan tailored to your body type, activity level, and wellness goals. Our AI Hydration Coach analyzes your unique needs for optimal performance, electrolyte balance, and recovery.</p>
