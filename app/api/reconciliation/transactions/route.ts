@@ -6,6 +6,20 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// Email obfuscation function for privacy
+function obfuscateEmail(email: string): string {
+  if (!email || !email.includes('@')) return 'Unknown'
+  
+  const [username, domain] = email.split('@')
+  if (username.length <= 2) {
+    return `${username[0]}***@${domain}`
+  }
+  
+  const visibleChars = Math.max(1, Math.floor(username.length * 0.3))
+  const hiddenChars = username.length - visibleChars
+  return `${username.substring(0, visibleChars)}${'*'.repeat(hiddenChars)}@${domain}`
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -22,7 +36,15 @@ export async function GET(request: NextRequest) {
     console.log(`Fetching transactions for product_id: ${product_id}, venue_id: ${venue_id}`)
 
     // Get all transactions for this product/venue combination
-    const transactions = []
+    const transactions: Array<{
+      type: string
+      quantity: number
+      created_at: string
+      user_name: string
+      notes: string
+      source: string
+      id: string
+    }> = []
 
     // 1. Stock additions (with staff member names)
     const { data: stockAdditions, error: stockError } = await supabase
@@ -32,100 +54,51 @@ export async function GET(request: NextRequest) {
         quantity,
         notes,
         created_at,
-        added_by,
-        profiles!stock_additions_added_by_fkey (
-          full_name
-        )
+        added_by
       `)
       .eq('product_id', product_id)
       .eq('venue_id', venue_id)
       .order('created_at', { ascending: false })
 
-    if (stockError) {
-      console.error('Error fetching stock additions:', stockError)
-    } else if (stockAdditions) {
+    if (!stockError && stockAdditions) {
       stockAdditions.forEach(addition => {
         transactions.push({
           type: addition.quantity > 0 ? 'stock_addition' : 'stock_removal',
           quantity: addition.quantity,
           created_at: addition.created_at,
-          user_name: addition.profiles?.full_name || 'Unknown Staff',
-          notes: addition.notes,
+          user_name: addition.added_by || 'Unknown Staff',
+          notes: addition.notes || '',
           source: 'stock_addition',
           id: addition.id
         })
       })
     }
 
-    // 2. PIN purchases (with obfuscated emails)
+    // 2. Order items with claims (with obfuscated emails)
     const { data: orderItems, error: orderError } = await supabase
       .from('order_items')
       .select(`
         id,
-        quantity,
-        created_at,
-        orders!inner (
-          id,
-          email,
-          created_at
-        )
-      `)
-      .eq('product_id', product_id)
-      .order('created_at', { ascending: false })
-
-    if (orderError) {
-      console.error('Error fetching order items:', orderError)
-    } else if (orderItems) {
-      orderItems.forEach(item => {
-        transactions.push({
-          type: 'purchase',
-          quantity: item.quantity,
-          created_at: item.created_at,
-          email: item.orders.email,
-          notes: `PIN purchase - Order #${item.orders.id}`,
-          source: 'order_item',
-          id: item.id
-        })
-      })
-    }
-
-    // 3. PIN claims (with staff member names who processed the claim)
-    const { data: pinClaims, error: claimError } = await supabase
-      .from('pin_claims')
-      .select(`
-        id,
-        quantity_claimed,
+        qty,
         claimed_at,
-        claimed_by,
-        profiles!pin_claims_claimed_by_fkey (
-          full_name
-        ),
-        order_items!inner (
-          product_id,
-          orders!inner (
-            email,
-            venue_id
-          )
-        )
+        email
       `)
-      .eq('order_items.product_id', product_id)
-      .eq('order_items.orders.venue_id', venue_id)
+      .eq('item_id', product_id)
       .not('claimed_at', 'is', null)
       .order('claimed_at', { ascending: false })
 
-    if (claimError) {
-      console.error('Error fetching pin claims:', claimError)
-    } else if (pinClaims) {
-      pinClaims.forEach(claim => {
+    if (!orderError && orderItems) {
+      orderItems.forEach(item => {
+        const obfuscatedEmail = obfuscateEmail(item.email)
+        
         transactions.push({
           type: 'claim',
-          quantity: -claim.quantity_claimed, // Negative because it reduces stock
-          created_at: claim.claimed_at,
-          user_name: claim.profiles?.full_name || 'Unknown Staff',
-          email: claim.order_items.orders.email,
-          notes: `PIN claimed by staff`,
-          source: 'pin_claim',
-          id: claim.id
+          quantity: -(item.qty || 1), // Negative because it reduces stock
+          created_at: item.claimed_at,
+          user_name: obfuscatedEmail,
+          notes: `Item claimed by ${obfuscatedEmail}`,
+          source: 'order_item',
+          id: item.id
         })
       })
     }

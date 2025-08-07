@@ -269,12 +269,8 @@ export default function ReconciliationPage() {
     setLoadingTransactions(true)
     
     try {
-      // For now, skip the API call since schema has issues
-      console.log('Clicked item:', item.product_name, 'at', item.venue_name)
+      console.log('Loading transactions for:', item.product_name, 'at', item.venue_name)
       console.log('Product ID:', item.product_id, 'Venue ID:', item.venue_id)
-      setItemTransactions([])
-      setLoadingTransactions(false)
-      return
       
       const response = await fetch(`/api/reconciliation/transactions?product_id=${item.product_id}&venue_id=${item.venue_id}`)
       if (!response.ok) {

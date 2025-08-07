@@ -92,6 +92,8 @@ export async function GET() {
       
       if (!reconciliationMap.has(key)) {
         reconciliationMap.set(key, {
+          product_id: movement.product_id, // Store for venue_stock matching
+          venue_id: movement.venue_id,     // Store for venue_stock matching
           product_name: productName,
           venue_name: venueName,
           stock_added: 0,
@@ -153,15 +155,26 @@ export async function GET() {
 
     // Add current stock to products (experiences don't have stock)
     currentStock?.forEach(stock => {
-      // Match by product_id and venue_id for accurate current stock
-      const key = `${stock.product_id}-${stock.venue_id}`
-      const record = reconciliationMap.get(key)
+      const product = Array.isArray(stock.products) ? stock.products[0] : stock.products
+      const venue = Array.isArray(stock.venue) ? stock.venue[0] : stock.venue
+      const productName = product?.name || 'Unknown'
+      const venueName = venue?.name || 'Unknown'
       
-      if (record && record.type === 'product') {
-        record.current_stock = stock.qty_on_hand || 0
-        console.log(`Matched current stock: ${record.product_name} at ${record.venue_name} = ${record.current_stock}`)
+      // Find matching reconciliation record by product_id and venue_id
+      let matchedRecord = null
+      for (const [key, record] of reconciliationMap.entries()) {
+        if (record.product_id === stock.product_id && record.venue_id === stock.venue_id) {
+          matchedRecord = record
+          break
+        }
+      }
+      
+      if (matchedRecord && matchedRecord.type === 'product') {
+        matchedRecord.current_stock = stock.qty_on_hand || 0
+        console.log(`✅ MATCHED: ${productName} at ${venueName} = ${matchedRecord.current_stock}`)
       } else {
-        console.log(`No matching record found for product_id: ${stock.product_id}, venue_id: ${stock.venue_id}`)
+        console.log(`❌ NO MATCH: ${productName} at ${venueName} = ${stock.qty_on_hand}`)
+        console.log(`Stock IDs: product_id=${stock.product_id}, venue_id=${stock.venue_id}`)
       }
     })
 
