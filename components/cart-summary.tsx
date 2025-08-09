@@ -47,6 +47,58 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
 
   // Add RPC event listeners for agent cart actions
   useEffect(() => {
+    const handleAgentAddToCart = async (event: any) => {
+      console.log('🛒 Agent triggered add to cart', event.detail);
+      const { product_id, product_name, quantity = 1, plan } = event.detail || {};
+      
+      if (!product_id) {
+        console.error('Missing product_id in agent add-to-cart event');
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/cart/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            itemId: product_id,
+            qty: quantity,
+            plan: plan || null
+          })
+        });
+        
+        if (response.ok) {
+          console.log(`✅ Added ${product_name || product_id} to cart with plan:`, plan);
+          // Optionally refresh cart display here if needed
+          window.location.reload(); // Simple refresh to show updated cart
+        } else {
+          console.error('Failed to add item to cart:', await response.text());
+        }
+      } catch (error) {
+        console.error('Error adding item to cart:', error);
+      }
+    };
+    
+    const handleAgentRemoveFromCart = async (event: any) => {
+      console.log('🛒 Agent triggered remove from cart', event.detail);
+      const { product_id, product_name } = event.detail || {};
+      
+      if (!product_id) {
+        console.error('Missing product_id in agent remove-from-cart event');
+        return;
+      }
+      
+      try {
+        // Call the remove handler passed as prop
+        if (onRemoveItemAction) {
+          onRemoveItemAction(product_id);
+          console.log(`✅ Removed ${product_name || product_id} from cart`);
+        }
+      } catch (error) {
+        console.error('Error removing item from cart:', error);
+      }
+    };
+    
     const handleAgentViewCart = () => {
       console.log('🛒 Agent triggered view cart - opening cart modal');
       setIsOpen(true);
@@ -87,6 +139,8 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
     };
     
     // Add event listeners
+    window.addEventListener('agent-add-to-cart', handleAgentAddToCart);
+    window.addEventListener('agent-remove-from-cart', handleAgentRemoveFromCart);
     window.addEventListener('agent-view-cart', handleAgentViewCart);
     window.addEventListener('agent-close-cart', handleAgentCloseCart);
     window.addEventListener('agent-clear-cart', handleAgentClearCart);
@@ -97,6 +151,8 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
     
     // Cleanup
     return () => {
+      window.removeEventListener('agent-add-to-cart', handleAgentAddToCart);
+      window.removeEventListener('agent-remove-from-cart', handleAgentRemoveFromCart);
       window.removeEventListener('agent-view-cart', handleAgentViewCart);
       window.removeEventListener('agent-close-cart', handleAgentCloseCart);
       window.removeEventListener('agent-clear-cart', handleAgentClearCart);

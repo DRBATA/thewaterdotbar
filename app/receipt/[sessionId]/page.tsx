@@ -30,7 +30,8 @@ export default async function TicketPage({ params }: TicketPageProps) {
         qty,
         price,
         pin_code,
-        claimed_at
+        claimed_at,
+        plan
       )
     `)
     .eq("stripe_session_id", sessionId)
@@ -155,6 +156,32 @@ export default async function TicketPage({ params }: TicketPageProps) {
                               </div>
                             )}
                             <div className="mt-2 text-blue-700 font-medium text-sm">You’ll need these PINs to claim your purchases at The Water Bar. Please have them ready.</div>
+                          </div>
+                        </div>
+                      )}
+                      {item.plan && (
+                        <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                          <h4 className="font-semibold text-blue-900 mb-2">💧 Hydration Plan</h4>
+                          <div className="text-sm text-blue-800">
+                            {item.plan.daily_target && (
+                              <p className="mb-2">Daily Target: {item.plan.daily_target}ml</p>
+                            )}
+                            {item.plan.schedule && item.plan.schedule.length > 0 && (
+                              <div className="mb-2">
+                                <p className="font-medium mb-1">Schedule:</p>
+                                <ul className="space-y-1 ml-4">
+                                  {item.plan.schedule.map((step: any, idx: number) => (
+                                    <li key={idx} className="flex justify-between">
+                                      <span>{step.time} - {step.amount}ml</span>
+                                      {step.product && <span className="text-blue-600">{step.product}</span>}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {item.plan.notes && (
+                              <p className="italic mt-2">{item.plan.notes}</p>
+                            )}
                           </div>
                         </div>
                       )}
