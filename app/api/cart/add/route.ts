@@ -4,7 +4,7 @@ import { cookies } from "next/headers"
 import { getSessionId } from "@/lib/session"
 
 export async function POST(req: Request) {
-  const { itemId, qty = 1, bundle_components, plan } = await req.json()
+  const { itemId, qty = 1, bundle_components } = await req.json()
   if (!itemId) {
     return NextResponse.json({ error: "Missing itemId" }, { status: 400 })
   }
@@ -61,11 +61,8 @@ export async function POST(req: Request) {
     }
     
     if (existingItem) {
-      // Update quantity and plan if item already exists
+      // Update quantity if item already exists
       const updateData: any = { qty: existingItem.qty + qty };
-      if (plan !== undefined) {
-        updateData.plan = plan;
-      }
       const { error: updateError } = await supabase
         .from("cart_items")
         .update(updateData)
@@ -82,8 +79,7 @@ export async function POST(req: Request) {
           cart_id: cartId,
           item_id: itemId,
           qty,
-          bundle_components,
-          plan
+          bundle_components
         });
         
       if (insertError) {

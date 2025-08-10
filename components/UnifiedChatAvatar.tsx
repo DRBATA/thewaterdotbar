@@ -273,10 +273,12 @@ export function UnifiedChatAvatar() {
     room.on(RoomEvent.Disconnected, onDisconnected);
     
     // Register RPC method to receive cart actions (following education demo pattern)
+    console.log('🔧 Registering RPC method client.cart_action');
     room.localParticipant.registerRpcMethod(
       "client.cart_action",
       handleCartAction
     );
+    console.log('✅ RPC method client.cart_action registered successfully');
 
     if (sessionStarted && room.state === 'disconnected' && connectionDetails) {
       Promise.all([

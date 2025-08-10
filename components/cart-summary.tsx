@@ -49,7 +49,8 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
   useEffect(() => {
     const handleAgentAddToCart = async (event: any) => {
       console.log('🛒 Agent triggered add to cart', event.detail);
-      const { product_id, product_name, quantity = 1, plan } = event.detail || {};
+      console.log('🔧 Cart Summary received agent add-to-cart event');
+      const { product_id, product_name, quantity = 1 } = event.detail || {};
       
       if (!product_id) {
         console.error('Missing product_id in agent add-to-cart event');
@@ -62,13 +63,12 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             itemId: product_id,
-            qty: quantity,
-            plan: plan || null
+            qty: quantity
           })
         });
         
         if (response.ok) {
-          console.log(`✅ Added ${product_name || product_id} to cart with plan:`, plan);
+          console.log(`✅ Added ${product_name || product_id} to cart`);
           // Optionally refresh cart display here if needed
           window.location.reload(); // Simple refresh to show updated cart
         } else {
