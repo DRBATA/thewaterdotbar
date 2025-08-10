@@ -69,8 +69,11 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
         
         if (response.ok) {
           console.log(`✅ Added ${product_name || product_id} to cart`);
-          // Optionally refresh cart display here if needed
-          window.location.reload(); // Simple refresh to show updated cart
+          // Call the refresh function if available, or trigger a cart update
+          if (typeof window !== 'undefined' && window.dispatchEvent) {
+            // Dispatch a custom event to signal cart update
+            window.dispatchEvent(new Event('cart-updated'));
+          }
         } else {
           console.error('Failed to add item to cart:', await response.text());
         }
