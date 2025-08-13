@@ -71,9 +71,9 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
   });
 
   return (
-    <div className="flex flex-col h-full relative z-40">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-white/20">
+    <div className="flex flex-col h-full">
+      {/* Header - Fixed at top */}
+      <div className="flex items-center justify-between p-4 border-b border-white/20 flex-shrink-0">
         <div className="flex items-center space-x-3">
           <Avatar className="w-8 h-8">
             <AvatarImage src="/coach-avatar.png" />
@@ -138,38 +138,41 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
         </div>
       </div>
 
-      {/* Video Background */}
-      <div className="absolute inset-0 z-0" style={{ top: '72px' }}>
-        {agentVideoTrack ? (
-          <AvatarTile 
-            videoTrack={agentVideoTrack}
-            className="w-full h-full object-cover rounded-lg"
-          />
-        ) : (
-          <div className="text-center">
-            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
-              <Phone className="w-8 h-8 text-white" />
+      {/* Main Content Area - Flex container for messages and input */}
+      <div className="flex-1 flex flex-col overflow-hidden relative">
+        {/* Video Background - Behind everything */}
+        <div className="absolute inset-0 z-0">
+          {agentVideoTrack ? (
+            <AvatarTile 
+              videoTrack={agentVideoTrack}
+              className="w-full h-full object-cover opacity-20"
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <Phone className="w-8 h-8 text-white" />
+                </div>
+                <p className="text-white/80 text-sm">
+                  {agentState === 'speaking' ? 'Coach is speaking...' : 
+                   agentState === 'listening' ? 'Listening...' : 
+                   agentState === 'thinking' ? 'Thinking...' : 'Connecting to video...'}
+                </p>
+              </div>
             </div>
-            <p className="text-white/80 text-sm">
-              {agentState === 'speaking' ? 'Coach is speaking...' : 
-               agentState === 'listening' ? 'Listening...' : 
-               agentState === 'thinking' ? 'Thinking...' : 'Connecting to video...'}
-            </p>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
 
-      {/* Chat Messages */}
-      <div className="flex-1 overflow-hidden relative z-40 bg-black/10 rounded-lg mx-2 my-2">
+        {/* Chat Messages - Takes remaining space */}
+        <div className="flex-1 overflow-hidden relative z-10 bg-black/10 backdrop-blur-sm rounded-lg mx-2 my-2">
         <div 
-          className="h-full overflow-y-auto overscroll-contain p-4 space-y-4 select-text relative z-40 pointer-events-auto scroll-smooth"
-          style={{ maxHeight: '300px' }}
+          className="h-full overflow-y-auto overscroll-contain p-4 space-y-4 select-text scroll-smooth"
           onWheel={(e) => e.stopPropagation()} // Prevent background scrolling
         >
           {/* Debug: Show message count */}
           {messages.length === 0 && (
             <div className="text-center text-white/60 text-sm p-4">
-              💬 No messages yet... (Debug: {messages.length} messages)
+              💬 Start chatting with your hydration coach...
             </div>
           )}
           
@@ -183,7 +186,6 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
                     : 'bg-white/95 text-gray-800 rounded-bl-lg border-white/50'
                 }`}>
                   <p className="text-sm whitespace-pre-wrap font-medium">{message.message}</p>
-                  <p className="text-xs opacity-70 mt-1">Debug: {message.from?.isLocal ? 'You' : 'Agent'}</p>
                 </div>
               </div>
             );
@@ -191,13 +193,13 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
         </div>
       </div>
       
-      {/* Chat Input */}
-      <div className="p-3 border-t border-white/20 relative z-50">
-        <div className="flex gap-2 mb-3 relative z-50">
+      {/* Chat Input - Fixed at bottom */}
+      <div className="p-3 border-t border-white/20 bg-black/20 backdrop-blur-sm flex-shrink-0 relative z-20">
+        <div className="flex gap-2">
           <input
             type="text"
             placeholder="💬 Type your message here..."
-            className="flex-1 px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/60 focus:outline-none focus:border-teal-400 focus:bg-white/20 relative z-50 pointer-events-auto"
+            className="flex-1 px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/60 focus:outline-none focus:border-teal-400 focus:bg-white/20"
             onKeyPress={(e) => {
               console.log('⌨️ CHAT INPUT KEY PRESSED:', e.key);
               if (e.key === 'Enter') {
@@ -220,12 +222,13 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
                 input.value = '';
               }
             }}
-            className="px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg font-medium transition-colors relative z-50 pointer-events-auto"
+            className="px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg font-medium transition-colors"
           >
             Send
           </button>
         </div>
       </div>
+      </div> {/* Close main content area */}
     </div>
   );
 }
@@ -452,9 +455,9 @@ export function UnifiedChatAvatar() {
               <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
                 <PhoneOff className="w-8 h-8 text-red-300" />
               </div>
-              <h3 className="text-white font-semibold mb-2">Connection Issue</h3>
-              <p className="text-white/80 text-sm mb-4">The voice connection seems to have dropped out.</p>
-              <p className="text-white/60 text-xs mb-6">Try refreshing the page to reconnect with your hydration coach.</p>
+              <h3 className="text-white font-semibold mb-2">Session Ended</h3>
+              <p className="text-white/80 text-sm mb-4">Your coaching session has been disconnected.</p>
+              <p className="text-white/60 text-xs mb-6">Refresh to start a new session with your hydration coach.</p>
               <Button 
                 onClick={() => window.location.reload()}
                 className="bg-white/20 hover:bg-white/30 text-white border border-white/30"
