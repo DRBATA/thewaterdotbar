@@ -163,17 +163,17 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
           )}
         </div>
 
-        {/* Chat Messages - Half coverage with gradient fade */}
-        <div className="flex-1 overflow-hidden relative z-10 w-1/2 ml-auto mr-2 my-2">
-          {/* Gradient overlay for fade effect */}
-          <div className="absolute inset-0 bg-gradient-to-l from-black/75 via-black/50 to-transparent rounded-lg" />
+        {/* Chat Messages - Cinematic bottom overlay */}
+        <div className="absolute bottom-0 left-0 right-0 h-2/3 overflow-hidden z-10">
+          {/* Gradient overlay for cinematic fade */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
         <div 
-          className="h-full overflow-y-auto overscroll-contain p-4 space-y-4 select-text scroll-smooth relative z-10"
+          className="absolute bottom-0 left-0 right-0 max-h-[60%] overflow-y-auto overscroll-contain p-6 pb-20 space-y-3 select-text scroll-smooth"
           onWheel={(e) => e.stopPropagation()} // Prevent background scrolling
         >
           {/* Debug: Show message count */}
           {messages.length === 0 && (
-            <div className="text-center text-white/60 text-sm p-4">
+            <div className="text-center text-white/80 text-sm p-4 backdrop-blur-sm rounded-lg">
               💬 Start chatting with your hydration coach...
             </div>
           )}
@@ -182,12 +182,12 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
             console.log('🎨 Rendering message:', message);
             const isLatest = index === messages.length - 1;
             return (
-              <div key={`${message.id || 'msg'}-${index}-${message.timestamp || Date.now()}`} className={`flex ${message.from?.isLocal ? 'justify-end' : 'justify-start'} transition-opacity duration-300 ${isLatest ? 'opacity-100' : 'opacity-60'}`}>
-                <div className={`max-w-[75%] p-3 rounded-2xl shadow-lg border ${
+              <div key={`${message.id || 'msg'}-${index}-${message.timestamp || Date.now()}`} className={`flex ${message.from?.isLocal ? 'justify-end' : 'justify-start'} transition-all duration-500 ${isLatest ? 'opacity-100 scale-100' : 'opacity-70 scale-95'}`}>
+                <div className={`max-w-[60%] p-3 rounded-2xl shadow-2xl backdrop-blur-md ${
                   message.from?.isLocal 
-                    ? 'bg-teal-500/90 text-white rounded-br-lg border-teal-400/50'
-                    : 'bg-white/90 text-gray-800 rounded-bl-lg border-white/40'
-                } ${isLatest ? 'ring-2 ring-white/30' : ''}`}>
+                    ? 'bg-teal-500/70 text-white rounded-br-lg border border-teal-300/30'
+                    : 'bg-white/70 text-gray-900 rounded-bl-lg border border-white/30'
+                } ${isLatest ? 'ring-2 ring-white/40 animate-pulse-once' : ''}`}>
                   <p className="text-sm whitespace-pre-wrap font-medium">{message.message}</p>
                 </div>
               </div>
@@ -196,13 +196,13 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
         </div>
       </div>
       
-      {/* Chat Input - Fixed at bottom, half width aligned right */}
-      <div className="p-3 border-t border-white/20 bg-gradient-to-r from-transparent via-black/30 to-black/50 backdrop-blur-sm flex-shrink-0 relative z-20">
-        <div className="flex gap-2 w-1/2 ml-auto">
+      {/* Chat Input - Floating at bottom with cinematic blur */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent backdrop-blur-md z-20">
+        <div className="flex gap-2 max-w-2xl mx-auto">
           <input
             type="text"
-            placeholder="💬 Type your message here..."
-            className="flex-1 px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/60 focus:outline-none focus:border-teal-400 focus:bg-white/20"
+            placeholder="Type your message..."
+            className="flex-1 px-5 py-3 bg-black/40 backdrop-blur-lg text-white placeholder-white/60 rounded-full border border-white/20 focus:outline-none focus:border-teal-400 focus:bg-black/50 transition-all duration-300 shadow-lg"
             onKeyPress={(e) => {
               console.log('⌨️ CHAT INPUT KEY PRESSED:', e.key);
               if (e.key === 'Enter') {
