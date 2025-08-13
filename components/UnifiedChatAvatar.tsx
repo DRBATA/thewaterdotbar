@@ -87,9 +87,9 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
       </div>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden relative z-40">
         <div 
-          className="h-full overflow-y-auto overscroll-contain p-4 space-y-4 select-text"
+          className="h-full overflow-y-auto overscroll-contain p-4 space-y-4 select-text relative z-40 pointer-events-auto"
           onWheel={(e) => e.stopPropagation()} // Prevent background scrolling
         >
           {messages.map((message, index) => (
@@ -107,12 +107,12 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
       </div>
       
       {/* Chat Input */}
-      <div className="p-3 border-t border-white/20">
-        <div className="flex gap-2 mb-3">
+      <div className="p-3 border-t border-white/20 relative z-50">
+        <div className="flex gap-2 mb-3 relative z-50">
           <input
             type="text"
             placeholder="💬 Type your message here..."
-            className="flex-1 px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/60 focus:outline-none focus:border-teal-400 focus:bg-white/20"
+            className="flex-1 px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/60 focus:outline-none focus:border-teal-400 focus:bg-white/20 relative z-50 pointer-events-auto"
             onKeyPress={(e) => {
               console.log('⌨️ CHAT INPUT KEY PRESSED:', e.key);
               if (e.key === 'Enter') {
@@ -127,13 +127,15 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
           />
           <button
             onClick={(e) => {
+              console.log('📤 SEND BUTTON CLICKED!');
               const input = (e.target as HTMLElement).previousElementSibling as HTMLInputElement;
               if (input.value.trim()) {
+                console.log('💬 SENDING MESSAGE via button:', input.value);
                 handleSendMessage(input.value);
                 input.value = '';
               }
             }}
-            className="px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg font-medium transition-colors"
+            className="px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg font-medium transition-colors relative z-50 pointer-events-auto"
           >
             Send
           </button>
@@ -141,7 +143,7 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
       </div>
 
       {/* Agent Controls */}
-      <div className="p-4 border-t border-white/20 relative z-50">
+      <div className="p-2 border-t border-white/20 relative z-50">
         <div className="flex justify-center space-x-2 relative z-50">
           <Button
             variant="outline"
