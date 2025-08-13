@@ -17,7 +17,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { MessageSquare, X, Phone, PhoneOff, Mic, MicOff, Sparkles, Wand2 } from "lucide-react"
+import { MessageSquare, X, Phone, PhoneOff, Mic, MicOff, Sparkles, Wand2, UserCircle, Crosshair } from "lucide-react"
 import useChatAndTranscription from "@/hooks/useChatAndTranscription"
 import { cn } from "@/lib/utils"
 import { AvatarTile } from '@/components/livekit/avatar-tile';
@@ -77,11 +77,36 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
         <div className="flex items-center space-x-3">
           <Avatar className="w-8 h-8">
             <AvatarImage src="/coach-avatar.png" />
-            <AvatarFallback className="bg-white/20 text-white text-xs">HC</AvatarFallback>
+            <AvatarFallback className="bg-white/20 text-white text-xs"></AvatarFallback>
           </Avatar>
-          <div>
-            <h3 className="text-white font-semibold text-sm">Your Personal Hydration Coach</h3>
-            <p className="text-white/70 text-xs">I'm here to help with science-backed advice and custom combos.</p>
+          
+          {/* Action Icons */}
+          <div className="flex items-center space-x-2">
+            {/* Profile/Quiz Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-8 h-8 p-0 hover:bg-white/20 text-white"
+              onClick={() => {
+                console.log('👤 Profile/Quiz clicked');
+                // TODO: Open profile/quiz popup
+              }}
+            >
+              <UserCircle className="w-4 h-4" />
+            </Button>
+            
+            {/* Flash Cards/Targets Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-8 h-8 p-0 hover:bg-white/20 text-white"
+              onClick={() => {
+                console.log('🎯 Flash Cards/Targets clicked');
+                // TODO: Open flash cards popup
+              }}
+            >
+              <Crosshair className="w-4 h-4" />
+            </Button>
           </div>
         </div>
         
@@ -163,18 +188,18 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
           )}
         </div>
 
-        {/* Chat Messages - Cinematic bottom overlay */}
-        <div className="absolute bottom-0 left-0 right-0 h-2/3 overflow-hidden z-10">
+        {/* Chat Messages - Cinematic bottom overlay - more compact */}
+        <div className="absolute bottom-0 left-0 right-0 h-1/2 overflow-hidden z-10">
           {/* Gradient overlay for cinematic fade */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
         <div 
-          className="absolute bottom-0 left-0 right-0 max-h-[60%] overflow-y-auto overscroll-contain p-6 pb-20 space-y-3 select-text scroll-smooth"
+          className="absolute bottom-0 left-0 right-0 max-h-[50%] overflow-y-auto overscroll-contain p-4 pb-16 space-y-2 select-text scroll-smooth"
           onWheel={(e) => e.stopPropagation()} // Prevent background scrolling
         >
           {/* Debug: Show message count */}
           {messages.length === 0 && (
-            <div className="text-center text-white/80 text-sm p-4 backdrop-blur-sm rounded-lg">
-              💬 Start chatting with your hydration coach...
+            <div className="text-center text-white/70 text-xs p-3 backdrop-blur-sm rounded-lg">
+              💬 Start chatting...
             </div>
           )}
           
@@ -183,12 +208,12 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
             const isLatest = index === messages.length - 1;
             return (
               <div key={`${message.id || 'msg'}-${index}-${message.timestamp || Date.now()}`} className={`flex ${message.from?.isLocal ? 'justify-end' : 'justify-start'} transition-all duration-500 ${isLatest ? 'opacity-100 scale-100' : 'opacity-70 scale-95'}`}>
-                <div className={`max-w-[60%] p-3 rounded-2xl shadow-2xl backdrop-blur-md ${
+                <div className={`max-w-[55%] p-2 rounded-xl shadow-2xl backdrop-blur-md ${
                   message.from?.isLocal 
                     ? 'bg-teal-500/70 text-white rounded-br-lg border border-teal-300/30'
                     : 'bg-white/70 text-gray-900 rounded-bl-lg border border-white/30'
-                } ${isLatest ? 'ring-2 ring-white/40 animate-pulse-once' : ''}`}>
-                  <p className="text-sm whitespace-pre-wrap font-medium">{message.message}</p>
+                } ${isLatest ? 'ring-1 ring-white/30' : ''}`}>
+                  <p className="text-xs whitespace-pre-wrap font-medium">{message.message}</p>
                 </div>
               </div>
             );
@@ -196,13 +221,13 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
         </div>
       </div>
       
-      {/* Chat Input - Floating at bottom with cinematic blur */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent backdrop-blur-md z-20">
-        <div className="flex gap-2 max-w-2xl mx-auto">
+      {/* Chat Input - Floating at bottom with cinematic blur - more compact */}
+      <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/50 to-transparent backdrop-blur-md z-20">
+        <div className="flex gap-2 max-w-xl mx-auto">
           <input
             type="text"
             placeholder="Type your message..."
-            className="flex-1 px-5 py-3 bg-black/40 backdrop-blur-lg text-white placeholder-white/60 rounded-full border border-white/20 focus:outline-none focus:border-teal-400 focus:bg-black/50 transition-all duration-300 shadow-lg"
+            className="flex-1 px-4 py-2 bg-black/40 backdrop-blur-lg text-white placeholder-white/60 rounded-full border border-white/20 focus:outline-none focus:border-teal-400 focus:bg-black/50 transition-all duration-300 shadow-lg text-sm"
             onKeyPress={(e) => {
               console.log('⌨️ CHAT INPUT KEY PRESSED:', e.key);
               if (e.key === 'Enter') {
