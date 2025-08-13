@@ -94,9 +94,10 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
       </div>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-hidden relative z-40">
+      <div className="flex-1 overflow-hidden relative z-40 bg-black/20 min-h-[200px]">
         <div 
           className="h-full overflow-y-auto overscroll-contain p-4 space-y-4 select-text relative z-40 pointer-events-auto"
+          style={{ maxHeight: '400px' }}
           onWheel={(e) => e.stopPropagation()} // Prevent background scrolling
         >
           {/* Debug: Show message count */}
@@ -110,13 +111,13 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
             console.log('🎨 Rendering message:', message);
             return (
               <div key={`${message.id || 'msg'}-${index}-${message.timestamp || Date.now()}`} className={`flex ${message.from?.isLocal ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[75%] p-3 rounded-2xl shadow-sm ${
+                <div className={`max-w-[75%] p-3 rounded-2xl shadow-lg border ${
                   message.from?.isLocal 
-                    ? 'bg-teal-500/80 text-white rounded-br-lg'
-                    : 'bg-white/10 text-white/90 rounded-bl-lg'
+                    ? 'bg-teal-500 text-white rounded-br-lg border-teal-400'
+                    : 'bg-white/95 text-gray-800 rounded-bl-lg border-white/50'
                 }`}>
-                  <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-                  <p className="text-xs opacity-50 mt-1">Debug: {message.from?.isLocal ? 'You' : 'Agent'}</p>
+                  <p className="text-sm whitespace-pre-wrap font-medium">{message.message}</p>
+                  <p className="text-xs opacity-70 mt-1">Debug: {message.from?.isLocal ? 'You' : 'Agent'}</p>
                 </div>
               </div>
             );
