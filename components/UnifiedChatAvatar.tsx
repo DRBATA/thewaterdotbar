@@ -140,12 +140,12 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
 
       {/* Main Content Area - Flex container for messages and input */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        {/* Video Background - Behind everything */}
+        {/* Video Background - Full visibility */}
         <div className="absolute inset-0 z-0">
           {agentVideoTrack ? (
             <AvatarTile 
               videoTrack={agentVideoTrack}
-              className="w-full h-full object-cover opacity-20"
+              className="w-full h-full object-cover"
             />
           ) : (
             <div className="flex items-center justify-center h-full">
@@ -163,10 +163,12 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
           )}
         </div>
 
-        {/* Chat Messages - Takes remaining space */}
-        <div className="flex-1 overflow-hidden relative z-10 bg-black/10 backdrop-blur-sm rounded-lg mx-2 my-2">
+        {/* Chat Messages - Half coverage with gradient fade */}
+        <div className="flex-1 overflow-hidden relative z-10 w-1/2 ml-auto mr-2 my-2">
+          {/* Gradient overlay for fade effect */}
+          <div className="absolute inset-0 bg-gradient-to-l from-black/75 via-black/50 to-transparent rounded-lg" />
         <div 
-          className="h-full overflow-y-auto overscroll-contain p-4 space-y-4 select-text scroll-smooth"
+          className="h-full overflow-y-auto overscroll-contain p-4 space-y-4 select-text scroll-smooth relative z-10"
           onWheel={(e) => e.stopPropagation()} // Prevent background scrolling
         >
           {/* Debug: Show message count */}
@@ -178,13 +180,14 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
           
           {messages.map((message, index) => {
             console.log('🎨 Rendering message:', message);
+            const isLatest = index === messages.length - 1;
             return (
-              <div key={`${message.id || 'msg'}-${index}-${message.timestamp || Date.now()}`} className={`flex ${message.from?.isLocal ? 'justify-end' : 'justify-start'}`}>
+              <div key={`${message.id || 'msg'}-${index}-${message.timestamp || Date.now()}`} className={`flex ${message.from?.isLocal ? 'justify-end' : 'justify-start'} transition-opacity duration-300 ${isLatest ? 'opacity-100' : 'opacity-60'}`}>
                 <div className={`max-w-[75%] p-3 rounded-2xl shadow-lg border ${
                   message.from?.isLocal 
-                    ? 'bg-teal-500 text-white rounded-br-lg border-teal-400'
-                    : 'bg-white/95 text-gray-800 rounded-bl-lg border-white/50'
-                }`}>
+                    ? 'bg-teal-500/90 text-white rounded-br-lg border-teal-400/50'
+                    : 'bg-white/90 text-gray-800 rounded-bl-lg border-white/40'
+                } ${isLatest ? 'ring-2 ring-white/30' : ''}`}>
                   <p className="text-sm whitespace-pre-wrap font-medium">{message.message}</p>
                 </div>
               </div>
@@ -193,9 +196,9 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
         </div>
       </div>
       
-      {/* Chat Input - Fixed at bottom */}
-      <div className="p-3 border-t border-white/20 bg-black/20 backdrop-blur-sm flex-shrink-0 relative z-20">
-        <div className="flex gap-2">
+      {/* Chat Input - Fixed at bottom, half width aligned right */}
+      <div className="p-3 border-t border-white/20 bg-gradient-to-r from-transparent via-black/30 to-black/50 backdrop-blur-sm flex-shrink-0 relative z-20">
+        <div className="flex gap-2 w-1/2 ml-auto">
           <input
             type="text"
             placeholder="💬 Type your message here..."
