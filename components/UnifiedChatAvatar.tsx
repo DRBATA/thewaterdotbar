@@ -28,7 +28,7 @@ function isAgentAvailable(agentState: AgentState) {
   return agentState == 'listening' || agentState == 'thinking' || agentState == 'speaking';
 }
 
-function UnifiedChatAvatarContent({ room }: { room: Room }) {
+function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsExpanded: (value: boolean) => void }) {
   const { state: agentState, audioTrack: agentAudioTrack } = useVoiceAssistant();
   const [chatOpen, setChatOpen] = useState(true); // Always show chat in our unified view
   const { messages, send } = useChatAndTranscription();
@@ -71,9 +71,75 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
   });
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Avatar Video Section */}
-      <div className="h-48 bg-black/20 border-b border-white/20 flex items-center justify-center">
+    <div className="flex flex-col h-full relative z-40">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-white/20">
+        <div className="flex items-center space-x-3">
+          <Avatar className="w-8 h-8">
+            <AvatarImage src="/coach-avatar.png" />
+            <AvatarFallback className="bg-white/20 text-white text-xs">HC</AvatarFallback>
+          </Avatar>
+          <div>
+            <h3 className="text-white font-semibold text-sm">Your Personal Hydration Coach</h3>
+            <p className="text-white/70 text-xs">I'm here to help with science-backed advice and custom combos.</p>
+          </div>
+        </div>
+        
+        {/* Control Buttons */}
+        <div className="flex items-center space-x-2">
+          {/* Microphone Mute Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              console.log('🎤 HEADER MUTE CLICKED!', { 
+                microphoneEnabled: microphoneToggle.enabled,
+                pending: microphoneToggle.pending
+              });
+              microphoneToggle.toggle();
+            }}
+            disabled={microphoneToggle.pending}
+            className={`text-white/70 hover:text-white hover:bg-white/10 ${
+              !microphoneToggle.enabled ? 'bg-red-500/20 text-red-300' : ''
+            }`}
+            title={microphoneToggle.enabled ? 'Mute microphone' : 'Unmute microphone'}
+          >
+            {microphoneToggle.enabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+          </Button>
+          
+          {/* Disconnect Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              console.log('🔴 HEADER DISCONNECT CLICKED!', { 
+                roomState: room?.state,
+                agentState 
+              });
+              handleDisconnect();
+            }}
+            disabled={agentState === 'disconnected'}
+            className="text-white/70 hover:text-white hover:bg-red-500/20 hover:text-red-300"
+            title="Disconnect from coach"
+          >
+            <PhoneOff className="w-4 h-4" />
+          </Button>
+          
+          {/* Close Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsExpanded(false)}
+            className="text-white/70 hover:text-white hover:bg-white/10"
+            title="Close chat"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Video Background */}
+      <div className="absolute inset-0 z-0" style={{ top: '72px' }}>
         {agentVideoTrack ? (
           <AvatarTile 
             videoTrack={agentVideoTrack}
@@ -160,8 +226,6 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
           </button>
         </div>
       </div>
-
-
     </div>
   );
 }
@@ -381,72 +445,6 @@ export function UnifiedChatAvatar() {
         <RoomAudioRenderer />
         <StartAudio label="Enable audio" />
         
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/20">
-          <div className="flex items-center space-x-3">
-            <Avatar className="w-8 h-8">
-              <AvatarImage src="/coach-avatar.png" />
-              <AvatarFallback className="bg-white/20 text-white text-xs">HC</AvatarFallback>
-            </Avatar>
-            <div>
-              <h3 className="text-white font-semibold text-sm">Your Personal Hydration Coach</h3>
-              <p className="text-white/70 text-xs">I'm here to help with science-backed advice and custom combos.</p>
-            </div>
-          </div>
-          
-          {/* Control Buttons */}
-          <div className="flex items-center space-x-2">
-            {/* Microphone Mute Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                console.log('🎤 HEADER MUTE CLICKED!', { 
-                  microphoneEnabled: microphoneToggle.enabled,
-                  pending: microphoneToggle.pending
-                });
-                microphoneToggle.toggle();
-              }}
-              disabled={microphoneToggle.pending}
-              className={`text-white/70 hover:text-white hover:bg-white/10 ${
-                !microphoneToggle.enabled ? 'bg-red-500/20 text-red-300' : ''
-              }`}
-              title={microphoneToggle.enabled ? 'Mute microphone' : 'Unmute microphone'}
-            >
-              {microphoneToggle.enabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-            </Button>
-            
-            {/* Disconnect Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                console.log('🔴 HEADER DISCONNECT CLICKED!', { 
-                  roomState: room?.state,
-                  agentState 
-                });
-                handleDisconnect();
-              }}
-              disabled={agentState === 'disconnected'}
-              className="text-white/70 hover:text-white hover:bg-red-500/20 hover:text-red-300"
-              title="Disconnect from coach"
-            >
-              <PhoneOff className="w-4 h-4" />
-            </Button>
-            
-            {/* Close Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsExpanded(false)}
-              className="text-white/70 hover:text-white hover:bg-white/10"
-              title="Close chat"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-
         {/* Main Content - Use LiveKit Components when connected */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {connectionError ? (
@@ -466,7 +464,7 @@ export function UnifiedChatAvatar() {
               </Button>
             </div>
           ) : sessionStarted ? (
-            <UnifiedChatAvatarContent room={room} />
+            <UnifiedChatAvatarContent room={room} setIsExpanded={setIsExpanded} />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4">
