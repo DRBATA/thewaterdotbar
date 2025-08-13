@@ -35,9 +35,11 @@ import {
   Target,
   ShoppingCart,
   X,
-  ChevronDown
+  ChevronDown,
+  Sparkles
 } from 'lucide-react';
 import QuizPopup from './QuizPopup';
+import FlashCards from './FlashCards';
 import { db, profileHelpers, settingsHelpers } from '@/lib/dexie-db';
 import type { UserProfile, UserSettings } from '@/lib/dexie-db';
 import useChatAndTranscription from "@/hooks/useChatAndTranscription"
@@ -57,6 +59,7 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
   
   // Quiz and profile state
   const [showQuiz, setShowQuiz] = useState(false);
+  const [showFlashCards, setShowFlashCards] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
   
@@ -145,10 +148,10 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
               className="w-8 h-8 p-0 hover:bg-white/20 text-white"
               onClick={() => {
                 console.log('🎯 Flash Cards/Targets clicked');
-                // TODO: Open flash cards popup
+                setShowFlashCards(true);
               }}
             >
-              <Crosshair className="w-4 h-4" />
+              <Target className="w-4 h-4" />
             </Button>
           </div>
         </div>
@@ -316,6 +319,14 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
         isOpen={showQuiz}
         onClose={() => setShowQuiz(false)}
         onComplete={handleQuizComplete}
+      />
+      
+      {/* Flash Cards */}
+      <FlashCards 
+        isOpen={showFlashCards}
+        onClose={() => setShowFlashCards(false)}
+        userProfile={userProfile}
+        userSettings={userSettings}
       />
     </div>
   );
