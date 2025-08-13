@@ -94,10 +94,10 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
       </div>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-hidden relative z-40 bg-black/20 min-h-[200px]">
+      <div className="flex-1 overflow-hidden relative z-40">
         <div 
           className="h-full overflow-y-auto overscroll-contain p-4 space-y-4 select-text relative z-40 pointer-events-auto"
-          style={{ maxHeight: '400px' }}
+          style={{ maxHeight: '300px' }}
           onWheel={(e) => e.stopPropagation()} // Prevent background scrolling
         >
           {/* Debug: Show message count */}
