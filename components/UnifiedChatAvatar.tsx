@@ -14,10 +14,32 @@ import {
   useTracks,
   type AgentState
 } from '@livekit/components-react';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { MessageSquare, X, Phone, PhoneOff, Mic, MicOff, Sparkles, Wand2, UserCircle, Crosshair } from "lucide-react"
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { 
+  Mic, 
+  MicOff, 
+  Video, 
+  VideoOff, 
+  PhoneOff, 
+  Send, 
+  Settings,
+  MessageSquare,
+  Volume2,
+  VolumeX,
+  Maximize2,
+  Minimize2,
+  User,
+  Target,
+  ShoppingCart,
+  X,
+  ChevronDown
+} from 'lucide-react';
+import QuizPopup from './QuizPopup';
+import { db, profileHelpers, settingsHelpers } from '@/lib/dexie-db';
+import type { UserProfile, UserSettings } from '@/lib/dexie-db';
 import useChatAndTranscription from "@/hooks/useChatAndTranscription"
 import { cn } from "@/lib/utils"
 import { AvatarTile } from '@/components/livekit/avatar-tile';
@@ -32,6 +54,11 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
   const { state: agentState, audioTrack: agentAudioTrack } = useVoiceAssistant();
   const [chatOpen, setChatOpen] = useState(true); // Always show chat in our unified view
   const { messages, send } = useChatAndTranscription();
+  
+  // Quiz and profile state
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
   
   // Use the AgentControlBar hook for reliable mute/disconnect functionality
   const {
@@ -70,6 +97,18 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
     sendFunction: typeof send
   });
 
+  // Handle quiz completion
+  const handleQuizComplete = (profile: UserProfile, settings: UserSettings) => {
+    console.log('✅ Quiz completed:', { profile, settings });
+    setUserProfile(profile);
+    setUserSettings(settings);
+    setShowQuiz(false);
+    
+    // Trigger AI greeting with profile info
+    const greeting = `New user connected: ${profile.nickname}, Weight: ${profile.weight}lbs, LBM: ${profile.lbm}lbs`;
+    send(greeting);
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Header - Fixed at top */}
@@ -93,10 +132,10 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
               className="w-8 h-8 p-0 hover:bg-white/20 text-white"
               onClick={() => {
                 console.log('👤 Profile/Quiz clicked');
-                // TODO: Open profile/quiz popup
+                setShowQuiz(true);
               }}
             >
-              <UserCircle className="w-4 h-4" />
+              <User className="w-4 h-4" />
             </Button>
             
             {/* Flash Cards/Targets Button */}
@@ -271,6 +310,13 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
         </div>
       </div>
       </div> {/* Close main content area */}
+      
+      {/* Quiz Popup */}
+      <QuizPopup 
+        isOpen={showQuiz}
+        onClose={() => setShowQuiz(false)}
+        onComplete={handleQuizComplete}
+      />
     </div>
   );
 }
