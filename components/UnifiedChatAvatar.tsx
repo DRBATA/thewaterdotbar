@@ -114,8 +114,10 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
             placeholder="💬 Type your message here..."
             className="flex-1 px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/60 focus:outline-none focus:border-teal-400 focus:bg-white/20"
             onKeyPress={(e) => {
+              console.log('⌨️ CHAT INPUT KEY PRESSED:', e.key);
               if (e.key === 'Enter') {
                 const input = e.target as HTMLInputElement;
+                console.log('💬 SENDING MESSAGE:', input.value);
                 if (input.value.trim()) {
                   handleSendMessage(input.value);
                   input.value = '';
@@ -139,15 +141,22 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
       </div>
 
       {/* Agent Controls */}
-      <div className="p-4 border-t border-white/20">
-        <div className="flex justify-center space-x-2">
+      <div className="p-4 border-t border-white/20 relative z-50">
+        <div className="flex justify-center space-x-2 relative z-50">
           <Button
             variant="outline"
             size="sm"
-            onClick={microphoneToggle.toggle}
+            onClick={(e) => {
+              console.log('🎤 MUTE BUTTON CLICKED!', { 
+                microphoneEnabled: microphoneToggle.enabled,
+                pending: microphoneToggle.pending,
+                event: e 
+              });
+              microphoneToggle.toggle();
+            }}
             disabled={microphoneToggle.pending}
             className={cn(
-              "bg-white/20 border-white/30 text-white hover:bg-white/30",
+              "bg-white/20 border-white/30 text-white hover:bg-white/30 relative z-50 pointer-events-auto",
               microphoneToggle.pending && "opacity-50 cursor-not-allowed"
             )}
           >
@@ -161,8 +170,14 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
           <Button
             variant="destructive"
             size="sm"
-            onClick={handleDisconnect}
-            className="bg-red-500/20 border-red-400/50 text-red-100 hover:bg-red-500/30"
+            onClick={(e) => {
+              console.log('🔴 DISCONNECT BUTTON CLICKED!', { 
+                roomState: room?.state,
+                event: e 
+              });
+              handleDisconnect();
+            }}
+            className="bg-red-500/20 border-red-400/50 text-red-100 hover:bg-red-500/30 relative z-50 pointer-events-auto"
           >
             <PhoneOff className="w-4 h-4 mr-2" />
             Disconnect
