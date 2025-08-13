@@ -75,10 +75,14 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
       {/* Header - Fixed at top */}
       <div className="flex items-center justify-between p-4 border-b border-white/20 flex-shrink-0">
         <div className="flex items-center space-x-3">
-          <Avatar className="w-8 h-8">
-            <AvatarImage src="/coach-avatar.png" />
-            <AvatarFallback className="bg-white/20 text-white text-xs"></AvatarFallback>
-          </Avatar>
+          {/* Water Bar Logo */}
+          <div className="w-8 h-8 rounded-full overflow-hidden bg-white/10 p-1">
+            <img 
+              src="/Artboard1.png" 
+              alt="Water Bar" 
+              className="w-full h-full object-contain"
+            />
+          </div>
           
           {/* Action Icons */}
           <div className="flex items-center space-x-2">
@@ -224,22 +228,32 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
       {/* Chat Input - Floating at bottom with cinematic blur */}
       <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent backdrop-blur-md z-20">
         <div className="flex gap-2 max-w-xl mx-auto">
-          <input
-            type="text"
-            placeholder="💬 Message your coach..."
-            className="flex-1 px-5 py-3 bg-black/40 backdrop-blur-lg text-white placeholder-white/70 rounded-full border border-white/20 focus:outline-none focus:border-teal-400 focus:bg-black/50 transition-all duration-300 shadow-lg text-base"
-            onKeyPress={(e) => {
-              console.log('⌨️ CHAT INPUT KEY PRESSED:', e.key);
-              if (e.key === 'Enter') {
-                const input = e.target as HTMLInputElement;
-                console.log('💬 SENDING MESSAGE:', input.value);
-                if (input.value.trim()) {
-                  handleSendMessage(input.value);
-                  input.value = '';
+          <div className="relative flex-1">
+            {/* Water Bar Logo Icon */}
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
+              <img 
+                src="/Artboard1.png" 
+                alt="Water Bar" 
+                className="w-5 h-5 opacity-70"
+              />
+            </div>
+            <input
+              type="text"
+              placeholder="Message your coach..."
+              className="w-full pl-12 pr-5 py-3 bg-black/40 backdrop-blur-lg text-white placeholder-white/70 rounded-full border border-white/20 focus:outline-none focus:border-teal-400 focus:bg-black/50 transition-all duration-300 shadow-lg text-base"
+              onKeyPress={(e) => {
+                console.log('⌨️ CHAT INPUT KEY PRESSED:', e.key);
+                if (e.key === 'Enter') {
+                  const input = e.target as HTMLInputElement;
+                  console.log('💬 SENDING MESSAGE:', input.value);
+                  if (input.value.trim()) {
+                    handleSendMessage(input.value);
+                    input.value = '';
+                  }
                 }
-              }
-            }}
-          />
+              }}
+            />
+          </div>
           <button
             onClick={(e) => {
               console.log('📤 SEND BUTTON CLICKED!');
