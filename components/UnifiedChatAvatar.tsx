@@ -404,16 +404,16 @@ export function UnifiedChatAvatar() {
           ) : sessionStarted ? (
             <UnifiedChatAvatarContent room={room} />
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+            <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4">
                 <Wand2 className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-white font-semibold mb-2">Discover your perfect metabolic & hydration optimization!</h3>
-              <p className="text-white/80 text-sm mb-6">Find out how kombucha vs electrolytes can benefit you. Our coach can help you plan out how to use these for a custom plan to meet your goals based on what you have eaten, drunk or done.</p>
+              <p className="text-white/80 text-sm mb-4">Find out how kombucha vs electrolytes can benefit you. Our coach can help you plan out how to use these for a custom plan to meet your goals based on what you have eaten, drunk or done.</p>
               <Button 
                 onClick={() => setSessionStarted(true)} 
                 disabled={sessionStarted || !connectionDetails}
-                className="bg-white/20 hover:bg-white/30 text-white border border-white/30"
+                className="bg-white/20 hover:bg-white/30 text-white border border-white/30 mt-2"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 {room.state === 'connecting' ? 'Connecting...' : 'Chat to Free AI Coach'}
