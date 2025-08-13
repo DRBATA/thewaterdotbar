@@ -408,8 +408,8 @@ export function UnifiedChatAvatar() {
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4">
                 <Wand2 className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-white font-semibold mb-2">Discover your perfect metabolic & hydration optimization!</h3>
-              <p className="text-white/80 text-sm mb-4">Find out how kombucha vs electrolytes can benefit you. Our coach can help you plan out how to use these for a custom plan to meet your goals based on what you have eaten, drunk or done.</p>
+              <h3 className="text-white font-semibold mb-2">Build your perfect hydration plan!</h3>
+              <p className="text-white/80 text-sm mb-4">Get a personalized plan with the right amounts of everything to keep you optimally hydrated throughout your day.</p>
               <Button 
                 onClick={() => setSessionStarted(true)} 
                 disabled={sessionStarted || !connectionDetails}
