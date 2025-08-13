@@ -94,9 +94,9 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
       </div>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-hidden relative z-40">
+      <div className="flex-1 overflow-hidden relative z-40 bg-black/10 rounded-lg mx-2 my-2">
         <div 
-          className="h-full overflow-y-auto overscroll-contain p-4 space-y-4 select-text relative z-40 pointer-events-auto"
+          className="h-full overflow-y-auto overscroll-contain p-4 space-y-4 select-text relative z-40 pointer-events-auto scroll-smooth"
           style={{ maxHeight: '300px' }}
           onWheel={(e) => e.stopPropagation()} // Prevent background scrolling
         >
@@ -161,50 +161,7 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
         </div>
       </div>
 
-      {/* Agent Controls */}
-      <div className="p-2 border-t border-white/20 relative z-50">
-        <div className="flex justify-center space-x-2 relative z-50">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(e) => {
-              console.log('🎤 MUTE BUTTON CLICKED!', { 
-                microphoneEnabled: microphoneToggle.enabled,
-                pending: microphoneToggle.pending,
-                event: e 
-              });
-              microphoneToggle.toggle();
-            }}
-            disabled={microphoneToggle.pending}
-            className={cn(
-              "bg-white/20 border-white/30 text-white hover:bg-white/30 relative z-50 pointer-events-auto",
-              microphoneToggle.pending && "opacity-50 cursor-not-allowed"
-            )}
-          >
-            {microphoneToggle.enabled ? (
-              <Mic className="w-4 h-4 mr-2" />
-            ) : (
-              <MicOff className="w-4 h-4 mr-2" />
-            )}
-            {microphoneToggle.enabled ? 'Mute' : 'Unmute'}
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={(e) => {
-              console.log('🔴 DISCONNECT BUTTON CLICKED!', { 
-                roomState: room?.state,
-                event: e 
-              });
-              handleDisconnect();
-            }}
-            className="bg-red-500/20 border-red-400/50 text-red-100 hover:bg-red-500/30 relative z-50 pointer-events-auto"
-          >
-            <PhoneOff className="w-4 h-4 mr-2" />
-            Disconnect
-          </Button>
-        </div>
-      </div>
+
     </div>
   );
 }
@@ -436,14 +393,58 @@ export function UnifiedChatAvatar() {
               <p className="text-white/70 text-xs">I'm here to help with science-backed advice and custom combos.</p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsExpanded(false)}
-            className="text-white/70 hover:text-white hover:bg-white/10"
-          >
-            <X className="w-4 h-4" />
-          </Button>
+          
+          {/* Control Buttons */}
+          <div className="flex items-center space-x-2">
+            {/* Microphone Mute Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                console.log('🎤 HEADER MUTE CLICKED!', { 
+                  microphoneEnabled: microphoneToggle.enabled,
+                  pending: microphoneToggle.pending
+                });
+                microphoneToggle.toggle();
+              }}
+              disabled={microphoneToggle.pending}
+              className={`text-white/70 hover:text-white hover:bg-white/10 ${
+                !microphoneToggle.enabled ? 'bg-red-500/20 text-red-300' : ''
+              }`}
+              title={microphoneToggle.enabled ? 'Mute microphone' : 'Unmute microphone'}
+            >
+              {microphoneToggle.enabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+            </Button>
+            
+            {/* Disconnect Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                console.log('🔴 HEADER DISCONNECT CLICKED!', { 
+                  roomState: room?.state,
+                  agentState 
+                });
+                handleDisconnect();
+              }}
+              disabled={agentState === 'disconnected'}
+              className="text-white/70 hover:text-white hover:bg-red-500/20 hover:text-red-300"
+              title="Disconnect from coach"
+            >
+              <PhoneOff className="w-4 h-4" />
+            </Button>
+            
+            {/* Close Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsExpanded(false)}
+              className="text-white/70 hover:text-white hover:bg-white/10"
+              title="Close chat"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Main Content - Use LiveKit Components when connected */}
