@@ -22,6 +22,7 @@ import useChatAndTranscription from "@/hooks/useChatAndTranscription"
 import { cn } from "@/lib/utils"
 import { AvatarTile } from '@/components/livekit/avatar-tile';
 import { AgentTile } from '@/components/livekit/agent-tile';
+import { useAgentControlBar } from '@/components/livekit/agent-control-bar/hooks/use-agent-control-bar';
 
 function isAgentAvailable(agentState: AgentState) {
   return agentState == 'listening' || agentState == 'thinking' || agentState == 'speaking';
@@ -31,6 +32,18 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
   const { state: agentState, audioTrack: agentAudioTrack } = useVoiceAssistant();
   const [chatOpen, setChatOpen] = useState(true); // Always show chat in our unified view
   const { messages, send } = useChatAndTranscription();
+  
+  // Use the AgentControlBar hook for reliable mute/disconnect functionality
+  const {
+    microphoneToggle,
+    handleDisconnect,
+  } = useAgentControlBar({
+    controls: {
+      microphone: true,
+      leave: true,
+    },
+    saveUserChoices: true,
+  });
   
   // Use education frontend's track management instead of manual participant finding
   const videoTracks = useTracks([Track.Source.Camera], { onlySubscribed: false });
@@ -121,20 +134,21 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => room.localParticipant.setMicrophoneEnabled(!room.localParticipant.isMicrophoneEnabled)}
+            onClick={microphoneToggle.toggle}
+            disabled={microphoneToggle.pending}
             className="bg-white/20 border-white/30 text-white hover:bg-white/30"
           >
-            {room.localParticipant.isMicrophoneEnabled ? (
+            {microphoneToggle.enabled ? (
               <Mic className="w-4 h-4 mr-2" />
             ) : (
               <MicOff className="w-4 h-4 mr-2" />
             )}
-            {room.localParticipant.isMicrophoneEnabled ? 'Mute' : 'Unmute'}
+            {microphoneToggle.enabled ? 'Mute' : 'Unmute'}
           </Button>
           <Button
             variant="destructive"
             size="sm"
-            onClick={() => room.disconnect()}
+            onClick={handleDisconnect}
             className="bg-red-500/20 border-red-400/50 text-red-100 hover:bg-red-500/30"
           >
             <PhoneOff className="w-4 h-4 mr-2" />
