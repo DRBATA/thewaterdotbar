@@ -302,7 +302,7 @@ export function UnifiedChatAvatar() {
 
   if (!isExpanded) {
     return (
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 md:left-6 md:transform-none z-50">
         {/* Magical sparkle cloud background */}
         <div className="absolute inset-0 -m-8 pointer-events-none">
           {/* Animated sparkles */}
@@ -339,7 +339,7 @@ export function UnifiedChatAvatar() {
           
           <Sparkles className="w-5 h-5 text-white flex-shrink-0 animate-pulse" />
           <span className="text-white font-semibold text-sm uppercase tracking-wide drop-shadow-lg">
-            CHAT FOR PERSONAL FREE WELLNESS PLAN
+            TAP FOR PERSONALISED HYDRATION PLAN
           </span>
         </Button>
         
@@ -356,7 +356,7 @@ export function UnifiedChatAvatar() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 w-80 h-[420px] bg-gradient-to-br from-teal-500/90 to-blue-600/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 overflow-hidden z-50 flex flex-col">
+    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 md:left-4 md:transform-none w-80 h-[420px] bg-gradient-to-br from-teal-500/90 to-blue-600/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 overflow-hidden z-50 flex flex-col">
       <RoomContext.Provider value={room}>
         <RoomAudioRenderer />
         <StartAudio label="Enable audio" />
