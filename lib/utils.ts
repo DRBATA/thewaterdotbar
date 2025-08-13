@@ -13,17 +13,18 @@ export function cn(...inputs: ClassValue[]) {
 
 // Convert transcription to chat message format for LiveKit
 export function transcriptionToChatMessage(
-  transcription: TextStreamData,
+  textStream: TextStreamData,
   room: Room
 ): ReceivedChatMessage {
   return {
-    id: `transcription-${transcription.id || Date.now()}`,
-    message: transcription.text,
-    timestamp: Date.now(),
-    from: {
-      identity: transcription.participant?.identity || 'agent',
-      name: transcription.participant?.name || 'Hydration Coach',
-      isLocal: false,
-    },
+    id: textStream.streamInfo.id,
+    timestamp: textStream.streamInfo.timestamp,
+    message: textStream.text,
+    from:
+      textStream.participantInfo.identity === room.localParticipant.identity
+        ? room.localParticipant
+        : Array.from(room.remoteParticipants.values()).find(
+            (p) => p.identity === textStream.participantInfo.identity
+          ),
   };
 }

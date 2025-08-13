@@ -53,6 +53,16 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
     await send(message);
   }
 
+  // Debug: Log agent state to understand why buttons are disabled
+  console.log('🔍 Agent State Debug:', {
+    agentState,
+    isAgentAvailable: isAgentAvailable(agentState),
+    hasVideoTrack: !!agentVideoTrack,
+    microphoneEnabled: microphoneToggle.enabled,
+    microphonePending: microphoneToggle.pending,
+    roomState: room?.state
+  });
+
   return (
     <div className="flex flex-col h-full">
       {/* Avatar Video Section */}
@@ -136,7 +146,10 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
             size="sm"
             onClick={microphoneToggle.toggle}
             disabled={microphoneToggle.pending}
-            className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+            className={cn(
+              "bg-white/20 border-white/30 text-white hover:bg-white/30",
+              microphoneToggle.pending && "opacity-50 cursor-not-allowed"
+            )}
           >
             {microphoneToggle.enabled ? (
               <Mic className="w-4 h-4 mr-2" />
