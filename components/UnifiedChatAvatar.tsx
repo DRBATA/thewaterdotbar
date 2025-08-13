@@ -36,7 +36,8 @@ import {
   ShoppingCart,
   X,
   ChevronDown,
-  Sparkles
+  Sparkles,
+  Wand2
 } from 'lucide-react';
 import QuizPopup from './QuizPopup';
 import FlashCards from './FlashCards';
