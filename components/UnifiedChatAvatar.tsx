@@ -63,6 +63,13 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
     roomState: room?.state
   });
 
+  // Debug: Log messages to see if they're being received
+  console.log('💬 Messages Debug:', {
+    messagesCount: messages.length,
+    messages: messages,
+    sendFunction: typeof send
+  });
+
   return (
     <div className="flex flex-col h-full">
       {/* Avatar Video Section */}
@@ -92,17 +99,28 @@ function UnifiedChatAvatarContent({ room }: { room: Room }) {
           className="h-full overflow-y-auto overscroll-contain p-4 space-y-4 select-text relative z-40 pointer-events-auto"
           onWheel={(e) => e.stopPropagation()} // Prevent background scrolling
         >
-          {messages.map((message, index) => (
-            <div key={`${message.id || 'msg'}-${index}-${message.timestamp || Date.now()}`} className={`flex ${message.from?.isLocal ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[75%] p-3 rounded-2xl shadow-sm ${
-                message.from?.isLocal 
-                  ? 'bg-teal-500/80 text-white rounded-br-lg'
-                  : 'bg-white/10 text-white/90 rounded-bl-lg'
-              }`}>
-                <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-              </div>
+          {/* Debug: Show message count */}
+          {messages.length === 0 && (
+            <div className="text-center text-white/60 text-sm p-4">
+              💬 No messages yet... (Debug: {messages.length} messages)
             </div>
-          ))}
+          )}
+          
+          {messages.map((message, index) => {
+            console.log('🎨 Rendering message:', message);
+            return (
+              <div key={`${message.id || 'msg'}-${index}-${message.timestamp || Date.now()}`} className={`flex ${message.from?.isLocal ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[75%] p-3 rounded-2xl shadow-sm ${
+                  message.from?.isLocal 
+                    ? 'bg-teal-500/80 text-white rounded-br-lg'
+                    : 'bg-white/10 text-white/90 rounded-bl-lg'
+                }`}>
+                  <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                  <p className="text-xs opacity-50 mt-1">Debug: {message.from?.isLocal ? 'You' : 'Agent'}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
       
