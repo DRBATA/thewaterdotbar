@@ -23,6 +23,7 @@ import {
   MicOff, 
   Video, 
   VideoOff, 
+  Phone,
   PhoneOff, 
   Send, 
   Settings,
