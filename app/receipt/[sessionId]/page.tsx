@@ -5,6 +5,8 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import PrintButton from './PrintButton.tsx';
 import SendEmailButton from './SendEmailButton';
+import OrderReceiptButton from '@/components/OrderReceiptButton';
+import ReceiptPageClient from './ReceiptPageClient';
 
 type TicketPageProps = {
   params: {
@@ -79,7 +81,17 @@ export default async function TicketPage({ params }: TicketPageProps) {
   const order = { ...orderData, order_items: orderItemsWithImages } as any;
 
   return (
-    <>
+    <ReceiptPageClient 
+      orderItems={order.order_items.map((item: any) => ({
+        id: item.item_id,
+        item_id: item.item_id,
+        name: item.name,
+        qty: item.qty,
+        price: item.price,
+        plan: item.plan
+      }))}
+      orderId={order.id}
+    >
     <div className="bg-gray-50 min-h-screen font-sans flex items-center justify-center p-4 sm:p-6 lg:p-8 print:bg-white print:p-0">
       <div className="max-w-4xl w-full bg-white shadow-lg rounded-lg p-8 print:shadow-none print:rounded-none">
         <div className="flex justify-center mb-8">
@@ -209,6 +221,26 @@ export default async function TicketPage({ params }: TicketPageProps) {
           </ul>
         </div>
 
+        {/* Personal Coach Integration */}
+        <div className="mt-8 print:hidden">
+          <OrderReceiptButton 
+            orderItems={order.order_items.map((item: any) => ({
+              id: item.item_id,
+              product_id: item.item_id,
+              name: item.name,
+              quantity: item.qty,
+              price: item.price,
+              timing: item.plan?.timing,
+              dosage: item.plan?.dosage,
+              frequency: item.plan?.frequency,
+              contraindications: item.plan?.contraindications || [],
+              venueIntegration: item.plan?.venueIntegration
+            }))}
+            orderId={order.id}
+            className="mb-6"
+          />
+        </div>
+
         <div className="mt-8 text-center print:hidden flex justify-center items-center space-x-4">
           <PrintButton />
           <SendEmailButton orderId={order.id} />
@@ -223,6 +255,6 @@ export default async function TicketPage({ params }: TicketPageProps) {
         </div>
       </div>
     </div>
-    </>
+    </ReceiptPageClient>
   );
 }

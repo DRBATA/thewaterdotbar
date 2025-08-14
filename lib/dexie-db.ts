@@ -44,21 +44,83 @@ export interface QuizResponse {
   createdAt: Date;
 }
 
+// Hydration plans from completed purchases
+export interface HydrationPlan {
+  id?: number;
+  planId: string; // Cart ID that became plan ID
+  orderId?: string; // Link to Supabase order
+  products: Array<{
+    productId: string;
+    name: string;
+    quantity: number;
+    timing?: string;
+    dosage?: string;
+    frequency?: string;
+  }>;
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD (typically 3 days later)
+  totalSodium: number; // mg planned
+  totalPotassium: number; // mg planned
+  totalFluid: number; // ml planned
+  userFeedback?: string; // Optional user comments
+  createdAt: Date;
+}
+
+// Consumption logs linked to plans
+export interface ConsumptionLog {
+  id?: number;
+  planId: string; // Links to HydrationPlan.planId
+  timestamp: string; // ISO datetime
+  foodItem: string;
+  sodiumMg: number;
+  potassiumMg: number;
+  proteinG: number;
+  fluidMl: number;
+  source: 'user_reported' | 'product_consumed';
+  createdAt: Date;
+}
+
+// Owned products from purchases (for coaching restrictions)
+export interface OwnedProduct {
+  id?: number;
+  productId: string;
+  name: string;
+  description?: string;
+  purchaseDate: Date;
+  orderId?: string;
+  standardInstructions: {
+    timing: string;
+    dosage: string;
+    frequency: string;
+    contraindications?: string[];
+    venueIntegration?: string; // How this fits with venue systems
+  };
+  isActive: boolean;
+  expiryDate?: Date; // Optional expiry for time-sensitive products
+  createdAt: Date;
+}
+
 // Define the database
 class WaterBarDB extends Dexie {
   profile!: Table<UserProfile>;
   settings!: Table<UserSettings>;
   targets!: Table<HydrationTarget>;
   quiz!: Table<QuizResponse>;
+  owned_products!: Table<OwnedProduct>;
+  hydration_plans!: Table<HydrationPlan>;
+  consumption_logs!: Table<ConsumptionLog>;
 
   constructor() {
     super('WaterBarDB');
     
-    this.version(1).stores({
+    this.version(2).stores({
       profile: '++id, nickname, createdAt',
       settings: '++id, createdAt',
       targets: '++id, date, createdAt',
-      quiz: '++id, category, createdAt'
+      quiz: '++id, category, createdAt',
+      owned_products: '++id, productId, purchaseDate, isActive, createdAt',
+      hydration_plans: '++id, planId, orderId, startDate, createdAt',
+      consumption_logs: '++id, planId, timestamp, source, createdAt'
     });
   }
 }
@@ -183,5 +245,132 @@ export const targetHelpers = {
         updatedAt: new Date()
       });
     }
+  }
+};
+
+export const ownedProductsHelpers = {
+  // Add products from a completed order
+  async addFromOrder(orderItems: any[], orderId?: string): Promise<void> {
+    for (const item of orderItems) {
+      // Get standard instructions from product data (would come from Supabase)
+      const standardInstructions = {
+        timing: item.timing || 'As needed',
+        dosage: item.dosage || 'Follow label instructions',
+        frequency: item.frequency || 'Daily',
+        contraindications: item.contraindications || [],
+        venueIntegration: item.venueIntegration || ''
+      };
+
+      await db.owned_products.add({
+        productId: item.product_id || item.id,
+        name: item.name,
+        description: item.description,
+        purchaseDate: new Date(),
+        orderId,
+        standardInstructions,
+        isActive: true,
+        createdAt: new Date()
+      });
+    }
+  },
+
+  // Get all active owned products
+  async getActiveProducts(): Promise<OwnedProduct[]> {
+    return await db.owned_products.where('isActive').equals(true).toArray();
+  },
+
+  // Check if user owns a specific product
+  async ownsProduct(productId: string): Promise<boolean> {
+    const products = await db.owned_products
+      .where('productId').equals(productId)
+      .and(product => product.isActive)
+      .toArray();
+    return products.length > 0;
+  },
+
+  // Get owned product with instructions
+  async getProductInstructions(productId: string): Promise<OwnedProduct | null> {
+    const products = await db.owned_products
+      .where('productId').equals(productId)
+      .and(product => product.isActive)
+      .toArray();
+    return products.length > 0 ? products[0] : null;
+  },
+
+  // Deactivate a product (mark as consumed/expired)
+  async deactivateProduct(productId: string): Promise<void> {
+    await db.owned_products.where('productId').equals(productId).modify({ isActive: false });
+  }
+};
+
+export const planHelpers = {
+  // Save a hydration plan from completed purchase
+  async savePlan(planData: Omit<HydrationPlan, 'id' | 'createdAt'>): Promise<void> {
+    await db.hydration_plans.add({
+      ...planData,
+      createdAt: new Date()
+    });
+  },
+
+  // Get all user's plans
+  async getAllPlans(): Promise<HydrationPlan[]> {
+    return await db.hydration_plans.orderBy('createdAt').reverse().toArray();
+  },
+
+  // Get recent plans for comparison
+  async getRecentPlans(limit: number = 3): Promise<HydrationPlan[]> {
+    return await db.hydration_plans.orderBy('createdAt').reverse().limit(limit).toArray();
+  },
+
+  // Add user feedback to a plan
+  async addPlanFeedback(planId: string, feedback: string): Promise<void> {
+    await db.hydration_plans.where('planId').equals(planId).modify({ userFeedback: feedback });
+  }
+};
+
+export const consumptionHelpers = {
+  // Log consumption event
+  async logConsumption(logData: Omit<ConsumptionLog, 'id' | 'createdAt'>): Promise<void> {
+    await db.consumption_logs.add({
+      ...logData,
+      createdAt: new Date()
+    });
+  },
+
+  // Get consumption logs for a specific plan
+  async getLogsForPlan(planId: string): Promise<ConsumptionLog[]> {
+    return await db.consumption_logs.where('planId').equals(planId).orderBy('timestamp').toArray();
+  },
+
+  // Get consumption logs for date range
+  async getLogsForDateRange(startDate: string, endDate: string): Promise<ConsumptionLog[]> {
+    return await db.consumption_logs
+      .where('timestamp')
+      .between(startDate, endDate, true, true)
+      .orderBy('timestamp')
+      .toArray();
+  },
+
+  // Get daily totals for a plan
+  async getDailyTotals(planId: string, date: string): Promise<{
+    sodium: number;
+    potassium: number;
+    protein: number;
+    fluid: number;
+  }> {
+    const startOfDay = `${date}T00:00:00`;
+    const endOfDay = `${date}T23:59:59`;
+    
+    const logs = await db.consumption_logs
+      .where('planId').equals(planId)
+      .and(log => log.timestamp >= startOfDay && log.timestamp <= endOfDay)
+      .toArray();
+
+    return logs.reduce((totals, log) => ({
+      sodium: totals.sodium + log.sodiumMg,
+      potassium: totals.potassium + log.potassiumMg,
+      protein: totals.protein + log.proteinG,
+      fluid: totals.fluid + log.fluidMl
+    }), { sodium: 0, potassium: 0, protein: 0, fluid: 0 });
   }
 };
