@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from 'react';
 import { Download, Check, Loader2 } from 'lucide-react';
 import { ownedProductsHelpers } from '@/lib/dexie-db';
