@@ -18,6 +18,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useQuiz } from "@/contexts/QuizContext";
 import { 
   Mic, 
   MicOff, 
@@ -40,14 +41,12 @@ import {
   Sparkles,
   Wand2
 } from 'lucide-react';
-import QuizPopup from './QuizPopup';
-import FlashCards from './FlashCards';
-import { db, profileHelpers, settingsHelpers } from '@/lib/dexie-db';
+import { profileHelpers, settingsHelpers } from '@/lib/dexie-db';
 import type { UserProfile, UserSettings } from '@/lib/dexie-db';
 import useChatAndTranscription from "@/hooks/useChatAndTranscription"
 import { cn } from "@/lib/utils"
-import { AvatarTile } from '@/components/livekit/avatar-tile';
 import { AgentTile } from '@/components/livekit/agent-tile';
+import { VideoTile } from '@/components/livekit/video-tile';
 import { useAgentControlBar } from '@/components/livekit/agent-control-bar/hooks/use-agent-control-bar';
 
 function isAgentAvailable(agentState: AgentState) {
@@ -59,11 +58,17 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
   const [chatOpen, setChatOpen] = useState(true); // Always show chat in our unified view
   const { messages, send } = useChatAndTranscription();
   
-  // Quiz and profile state
-  const [showQuiz, setShowQuiz] = useState(false);
-  const [showFlashCards, setShowFlashCards] = useState(false);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+  // Use quiz context instead of local state
+  const { 
+    showQuiz, 
+    setShowQuiz, 
+    showFlashCards, 
+    setShowFlashCards,
+    userProfile,
+    setUserProfile,
+    userSettings,
+    setUserSettings
+  } = useQuiz();
   
   // Use the AgentControlBar hook for reliable mute/disconnect functionality
   const {
@@ -85,22 +90,64 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
     await send(message);
   }
 
-  // Debug: Log agent state to understand why buttons are disabled
-  console.log('🔍 Agent State Debug:', {
-    agentState,
-    isAgentAvailable: isAgentAvailable(agentState),
-    hasVideoTrack: !!agentVideoTrack,
-    microphoneEnabled: microphoneToggle.enabled,
-    microphonePending: microphoneToggle.pending,
-    roomState: room?.state
-  });
+  // Load existing profile and trigger greeting on mount
+  useEffect(() => {
+    const initializeSession = async () => {
+      try {
+        // Check for existing profile
+        const existingProfile = await profileHelpers.getOrCreateProfile();
+        const existingSettings = await settingsHelpers.getOrCreateSettings();
+        
+        if (existingProfile && existingProfile.nickname) {
+          // User has a profile - send greeting with their info
+          setUserProfile(existingProfile);
+          setUserSettings(existingSettings);
+          
+          // Send initial greeting to trigger agent
+          const greeting = `Returning user connected: ${existingProfile.nickname}, Weight: ${existingProfile.weight}lbs, LBM: ${existingProfile.lbm}lbs`;
+          console.log('🎉 Sending automatic greeting for returning user:', greeting);
+          send(greeting);
+        } else {
+          // New user - show quiz and send basic connection signal
+          setShowQuiz(true);
+          
+          // Still send a connection signal to trigger agent greeting
+          const connectionSignal = "New user connected - awaiting profile";
+          console.log('🎉 Sending connection signal for new user');
+          send(connectionSignal);
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+        // Fallback: send basic greeting
+        send("User connected");
+      }
+    };
 
-  // Debug: Log messages to see if they're being received
-  console.log('💬 Messages Debug:', {
-    messagesCount: messages.length,
-    messages: messages,
-    sendFunction: typeof send
-  });
+    // Only initialize once when agent is available
+    if (isAgentAvailable(agentState) && messages.length === 0) {
+      initializeSession();
+    }
+  }, [agentState]); // Only depend on agentState to avoid re-runs
+
+  // Debug logs in useEffect to prevent re-render loops
+  useEffect(() => {
+    console.log('🔍 Agent State Debug:', {
+      agentState,
+      isAgentAvailable: isAgentAvailable(agentState),
+      hasVideoTrack: !!agentVideoTrack,
+      microphoneEnabled: microphoneToggle.enabled,
+      microphonePending: microphoneToggle.pending,
+      roomState: room?.state
+    });
+  }, [agentState, agentVideoTrack, microphoneToggle.enabled, microphoneToggle.pending, room?.state]);
+
+  useEffect(() => {
+    console.log('💬 Messages Debug:', {
+      messagesCount: messages.length,
+      messages: messages,
+      sendFunction: typeof send
+    });
+  }, [messages.length]);
 
   // Handle quiz completion
   const handleQuizComplete = (profile: UserProfile, settings: UserSettings) => {
@@ -109,9 +156,9 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
     setUserSettings(settings);
     setShowQuiz(false);
     
-    // Trigger AI greeting with profile info
-    const greeting = `New user connected: ${profile.nickname}, Weight: ${profile.weight}lbs, LBM: ${profile.lbm}lbs`;
-    send(greeting);
+    // Send updated profile info to agent (not a duplicate greeting)
+    const profileUpdate = `Profile updated: ${profile.nickname}, Weight: ${profile.weight}lbs, LBM: ${profile.lbm}lbs, ready to build hydration plan`;
+    send(profileUpdate);
   };
 
   return (
@@ -216,8 +263,8 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
         {/* Video Background - Full visibility */}
         <div className="absolute inset-0 z-0">
           {agentVideoTrack ? (
-            <AvatarTile 
-              videoTrack={agentVideoTrack}
+            <VideoTile 
+              trackRef={agentVideoTrack}
               className="w-full h-full object-cover"
             />
           ) : (
@@ -236,12 +283,12 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
           )}
         </div>
 
-        {/* Chat Messages - Cinematic bottom overlay - more compact */}
-        <div className="absolute bottom-0 left-0 right-0 h-1/2 overflow-hidden z-10">
+        {/* Chat Messages - Cinematic bottom overlay - fixed positioning */}
+        <div className="absolute bottom-16 left-0 right-0 h-1/2 overflow-hidden z-10">
           {/* Gradient overlay for cinematic fade */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
         <div 
-          className="absolute bottom-0 left-0 right-0 max-h-[50%] overflow-y-auto overscroll-contain p-4 pb-20 space-y-3 select-text scroll-smooth"
+          className="absolute bottom-0 left-0 right-0 max-h-full overflow-y-auto overscroll-contain p-4 pb-4 space-y-3 select-text scroll-smooth"
           onWheel={(e) => e.stopPropagation()} // Prevent background scrolling
         >
           {/* Debug: Show message count */}
@@ -252,7 +299,6 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
           )}
           
           {messages.map((message, index) => {
-            console.log('🎨 Rendering message:', message);
             const isLatest = index === messages.length - 1;
             return (
               <div key={`${message.id || 'msg'}-${index}-${message.timestamp || Date.now()}`} className={`flex ${message.from?.isLocal ? 'justify-end' : 'justify-start'} transition-all duration-500 ${isLatest ? 'opacity-100 scale-100' : 'opacity-70 scale-95'}`}>
@@ -315,21 +361,6 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
         </div>
       </div>
       </div> {/* Close main content area */}
-      
-      {/* Quiz Popup */}
-      <QuizPopup 
-        isOpen={showQuiz}
-        onClose={() => setShowQuiz(false)}
-        onComplete={handleQuizComplete}
-      />
-      
-      {/* Flash Cards */}
-      <FlashCards 
-        isOpen={showFlashCards}
-        onClose={() => setShowFlashCards(false)}
-        userProfile={userProfile}
-        userSettings={userSettings}
-      />
     </div>
   );
 }
@@ -362,6 +393,7 @@ export function UnifiedChatAvatar() {
 
     const onConnected = () => {
       setConnectionError(false);
+      console.log('✅ Connected to agent successfully');
     };
 
     const onConnectionFailed = () => {
@@ -508,7 +540,10 @@ export function UnifiedChatAvatar() {
         
         {/* Main button with gradient animation */}
         <Button
-          onClick={() => setIsExpanded(true)}
+          onClick={() => {
+            setIsExpanded(true);
+            setSessionStarted(true); // Auto-start session when expanding
+          }}
           className="relative px-6 py-4 rounded-full shadow-2xl flex items-center justify-center gap-3 whitespace-nowrap overflow-hidden group
                      bg-gradient-to-r from-teal-500 via-purple-500 to-yellow-500 
                      hover:from-yellow-500 hover:via-teal-500 hover:to-purple-500

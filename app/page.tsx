@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 
 import { MenuDisplay } from "@/components/menu-display" // We will create this next
 import { UnifiedChatAvatar } from "@/components/UnifiedChatAvatar"
+import PageClientWrapper from "@/components/PageClientWrapper"
 
 // Define types for fetched data
 interface Product {
@@ -163,12 +164,14 @@ export default async function HomePage() {
   const availableExperiences = wellnessExperiences.filter(item => item.venues && item.venues.length > 0);
   
   return (
-    <div className="min-h-screen text-stone-800">
-      <MenuDisplay 
-        initialDrinks={availableDrinks} 
-        initialWellnessExperiences={availableExperiences} 
-      />
-      <UnifiedChatAvatar />
-    </div>
+    <PageClientWrapper>
+      <div className="min-h-screen text-stone-800">
+        <MenuDisplay 
+          initialDrinks={availableDrinks} 
+          initialWellnessExperiences={availableExperiences} 
+        />
+        <UnifiedChatAvatar />
+      </div>
+    </PageClientWrapper>
   )
 }
