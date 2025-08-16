@@ -15,7 +15,7 @@ export default function QuizPopup({ isOpen, onClose, onComplete }: QuizPopupProp
   
   // Form data
   const [nickname, setNickname] = useState('');
-  const [weight, setWeight] = useState(150);
+  const [weight, setWeight] = useState(70);
   const [bodyType, setBodyType] = useState<'athletic' | 'average' | 'larger' | 'petite' | 'powerlifter' | 'runner' | 'swimmer' | 'dancer' | 'couch_potato'>('average');
   const [gpsConsent, setGpsConsent] = useState(false);
   const [dataConsent, setDataConsent] = useState(true);
@@ -240,7 +240,7 @@ export default function QuizPopup({ isOpen, onClose, onComplete }: QuizPopupProp
 
               {/* Weight */}
               <div>
-                <label className="block text-white/80 text-sm mb-2">Weight (lbs)</label>
+                <label className="block text-white/80 text-sm mb-2">Weight (kg)</label>
                 <input
                   type="number"
                   value={weight}

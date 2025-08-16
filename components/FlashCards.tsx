@@ -18,10 +18,10 @@ interface WeatherData {
 }
 
 interface DailyTargets {
-  water: number; // oz
+  water: number; // ml
   sodium: number; // mg
   potassium: number; // mg
-  currentIntake: number; // oz consumed so far
+  currentIntake: number; // ml consumed so far
 }
 
 export default function FlashCards({ isOpen, onClose, userProfile, userSettings }: FlashCardsProps) {
@@ -58,8 +58,8 @@ export default function FlashCards({ isOpen, onClose, userProfile, userSettings 
     if (!userProfile) return;
 
     // Base hydration calculation (LBM-based)
-    const lbm = userProfile.lbm || 120;
-    const baseWater = Math.round(lbm * 0.75); // 0.75oz per lb of LBM
+    const lbm = userProfile.lbm || 54; // kg
+    const baseWater = Math.round(lbm * 35); // 35ml per kg of LBM
     
     // Activity multiplier (can be enhanced later)
     const activityMultiplier = 1.2; // Assume moderate activity
@@ -70,8 +70,8 @@ export default function FlashCards({ isOpen, onClose, userProfile, userSettings 
     const totalWater = Math.round(baseWater * activityMultiplier * tempAdjustment);
     
     // Electrolyte targets based on water intake
-    const sodium = Math.round(totalWater * 15); // ~15mg per oz of water
-    const potassium = Math.round(totalWater * 25); // ~25mg per oz of water
+    const sodium = Math.round(totalWater * 0.5); // ~0.5mg per ml of water
+    const potassium = Math.round(totalWater * 0.8); // ~0.8mg per ml of water
     
     // Get current intake from Dexie
     const todayTarget = await targetHelpers.getTodayTarget();
@@ -262,14 +262,14 @@ export default function FlashCards({ isOpen, onClose, userProfile, userSettings 
                 </div>
                 <div className="flex items-end justify-between">
                   <div>
-                    <p className="text-3xl font-bold text-white">{targets.water}oz</p>
+                    <p className="text-3xl font-bold text-white">{targets.water}ml</p>
                     <p className="text-white/60 text-sm">Total daily goal</p>
                   </div>
                   <div className="text-right">
                     <p className="text-white/80">Consumed</p>
-                    <p className="text-xl font-bold text-teal-400">{targets.currentIntake}oz</p>
+                    <p className="text-xl font-bold text-teal-400">{targets.currentIntake}ml</p>
                     <p className="text-white/60 text-xs">
-                      {Math.max(0, targets.water - targets.currentIntake)}oz remaining
+                      {Math.max(0, targets.water - targets.currentIntake)}ml remaining
                     </p>
                   </div>
                 </div>
