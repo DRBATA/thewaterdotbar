@@ -16,7 +16,7 @@ export default function QuizPopup({ isOpen, onClose, onComplete }: QuizPopupProp
   // Form data
   const [nickname, setNickname] = useState('');
   const [weight, setWeight] = useState(150);
-  const [bodyType, setBodyType] = useState<'athletic' | 'average' | 'larger' | 'petite'>('average');
+  const [bodyType, setBodyType] = useState<'athletic' | 'average' | 'larger' | 'petite' | 'powerlifter' | 'runner' | 'swimmer' | 'dancer' | 'couch_potato'>('average');
   const [gpsConsent, setGpsConsent] = useState(false);
   const [dataConsent, setDataConsent] = useState(true);
   const [quickMode, setQuickMode] = useState(false);
@@ -255,12 +255,17 @@ export default function QuizPopup({ isOpen, onClose, onComplete }: QuizPopupProp
                 <select
                   value={bodyType}
                   onChange={(e) => setBodyType(e.target.value as any)}
-                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-teal-400"
+                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-teal-400 max-h-40 overflow-y-auto"
                 >
                   <option value="athletic">Athletic</option>
                   <option value="average">Average</option>
                   <option value="larger">Larger</option>
                   <option value="petite">Petite</option>
+                  <option value="powerlifter">Powerlifter 💪</option>
+                  <option value="runner">Runner 🏃</option>
+                  <option value="swimmer">Swimmer 🏊</option>
+                  <option value="dancer">Dancer 💃</option>
+                  <option value="couch_potato">Couch Potato 🛋️</option>
                 </select>
               </div>
 

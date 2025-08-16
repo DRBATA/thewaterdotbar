@@ -92,29 +92,31 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
 
   // Load existing profile and trigger greeting on mount
   useEffect(() => {
+    // 🧪 Add event listener for auto-injection tests
+    const handleAutoInject = (event: CustomEvent) => {
+      const { message } = event.detail;
+      console.log('🧪 Auto-injecting message:', message);
+      handleSendMessage(message);
+    };
+    
+    window.addEventListener('auto-inject-message', handleAutoInject as EventListener);
+    
     const initializeSession = async () => {
       try {
-        // Check for existing profile
+        // 🧪 DISABLE EXISTING AUTO-GREETING FOR TESTING
+        console.log('🧪 Existing auto-greeting disabled for injection testing');
+        
+        // Check for existing profile (but don't auto-send greeting)
         const existingProfile = await profileHelpers.getOrCreateProfile();
         const existingSettings = await settingsHelpers.getOrCreateSettings();
         
         if (existingProfile && existingProfile.nickname) {
-          // User has a profile - send greeting with their info
           setUserProfile(existingProfile);
           setUserSettings(existingSettings);
-          
-          // Send initial greeting to trigger agent
-          const greeting = `Returning user connected: ${existingProfile.nickname}, Weight: ${existingProfile.weight}lbs, LBM: ${existingProfile.lbm}lbs`;
-          console.log('🎉 Sending automatic greeting for returning user:', greeting);
-          send(greeting);
+          console.log('🧪 Profile loaded, waiting for injection test...');
         } else {
-          // New user - show quiz and send basic connection signal
           setShowQuiz(true);
-          
-          // Still send a connection signal to trigger agent greeting
-          const connectionSignal = "New user connected - awaiting profile";
-          console.log('🎉 Sending connection signal for new user');
-          send(connectionSignal);
+          console.log('🧪 New user detected, waiting for injection test...');
         }
       } catch (error) {
         console.error('Error loading profile:', error);
@@ -127,6 +129,11 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
     if (isAgentAvailable(agentState) && messages.length === 0) {
       initializeSession();
     }
+    
+    // Cleanup event listener
+    return () => {
+      window.removeEventListener('auto-inject-message', handleAutoInject as EventListener);
+    };
   }, [agentState]); // Only depend on agentState to avoid re-runs
 
   // Debug logs in useEffect to prevent re-render loops
@@ -394,6 +401,57 @@ export function UnifiedChatAvatar() {
     const onConnected = () => {
       setConnectionError(false);
       console.log('✅ Connected to agent successfully');
+      
+      // 🧪 BOLD INJECTION TEST: Multiple timing variations
+      console.log('🧪 Starting injection tests...');
+      
+      // Test 1: 0.5 second injection with full context
+      setTimeout(async () => {
+        try {
+          console.log('🧪 TEST 1: 0.5s injection with full context');
+          
+          // Gather all context
+          const cartItems = JSON.parse(localStorage.getItem('cart') || '[]');
+          let message = "Hi";
+          
+          if (cartItems.length > 0) {
+            message += `, I have ${cartItems.length} items in my cart from earlier`;
+          }
+          
+          console.log('🧪 Injecting 0.5s:', message);
+          // Find the content component and call handleSendMessage
+          const contentElement = document.querySelector('[data-testid="chat-content"]');
+          if (contentElement) {
+            // Trigger message send via the chat system
+            const event = new CustomEvent('auto-inject-message', { detail: { message } });
+            window.dispatchEvent(event);
+          }
+        } catch (e) {
+          console.error('🧪 TEST 1 Error:', e);
+        }
+      }, 500);
+      
+      // Test 2: 1 second injection with simple "Hi"
+      setTimeout(() => {
+        try {
+          console.log('🧪 TEST 2: 1s injection with simple Hi');
+          const event = new CustomEvent('auto-inject-message', { detail: { message: "Hi" } });
+          window.dispatchEvent(event);
+        } catch (e) {
+          console.error('🧪 TEST 2 Error:', e);
+        }
+      }, 1000);
+      
+      // Test 3: 5 second injection with simple "Hi"
+      setTimeout(() => {
+        try {
+          console.log('🧪 TEST 3: 5s injection with simple Hi');
+          const event = new CustomEvent('auto-inject-message', { detail: { message: "Hi" } });
+          window.dispatchEvent(event);
+        } catch (e) {
+          console.error('🧪 TEST 3 Error:', e);
+        }
+      }, 5000);
     };
 
     const onConnectionFailed = () => {

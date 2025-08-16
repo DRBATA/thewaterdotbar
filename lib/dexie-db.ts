@@ -5,7 +5,7 @@ export interface UserProfile {
   id?: number;
   nickname: string;
   weight: number; // in lbs
-  bodyType: 'athletic' | 'average' | 'larger' | 'petite';
+  bodyType: 'athletic' | 'average' | 'larger' | 'petite' | 'powerlifter' | 'runner' | 'swimmer' | 'dancer' | 'couch_potato';
   lbm?: number; // Lean Body Mass (calculated)
   createdAt: Date;
   updatedAt: Date;
@@ -136,7 +136,12 @@ export const profileHelpers = {
       athletic: 0.15,
       average: 0.25,
       larger: 0.35,
-      petite: 0.22
+      petite: 0.22,
+      powerlifter: 0.12,  // Very low body fat, high muscle mass
+      runner: 0.18,       // Low body fat, lean build
+      swimmer: 0.16,      // Low body fat, balanced muscle
+      dancer: 0.20,       // Lean and toned
+      couch_potato: 0.40  // Higher body fat percentage 🛋️
     };
     
     const bodyFat = bodyFatPercentages[bodyType as keyof typeof bodyFatPercentages] || 0.25;
