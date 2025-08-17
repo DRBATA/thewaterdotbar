@@ -92,6 +92,15 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
 
   // Load existing profile and trigger greeting on mount
   useEffect(() => {
+    if (!room) return;
+
+    // Unregister any existing handler first
+    try {
+      room.unregisterRpcMethod("client.dexie_request");
+    } catch (e) {
+      // Handler wasn't registered, that's fine
+    }
+
     // Register RPC handler for agent profile requests
     room.registerRpcMethod("client.dexie_request", async (data) => {
       console.log("Received dexie_request from agent:", data.payload);
