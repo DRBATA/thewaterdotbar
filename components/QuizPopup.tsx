@@ -255,7 +255,7 @@ export default function QuizPopup({ isOpen, onClose, onComplete }: QuizPopupProp
                 <select
                   value={bodyType}
                   onChange={(e) => setBodyType(e.target.value as any)}
-                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-teal-400 max-h-40 overflow-y-auto"
+                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-teal-400"
                 >
                   <option value="athletic">Athletic</option>
                   <option value="average">Average</option>
