@@ -273,7 +273,7 @@ export default function QuizPopup({ isOpen, onClose, onComplete }: QuizPopupProp
               <div className="bg-gradient-to-r from-teal-500/10 to-purple-500/10 rounded-lg p-4 border border-white/10">
                 <p className="text-white/60 text-sm">Estimated Lean Body Mass</p>
                 <p className="text-2xl font-bold text-white">
-                  {profileHelpers.calculateLBM(weight, bodyType)} lbs
+                  {profileHelpers.calculateLBM(weight, bodyType)} kg
                 </p>
                 <p className="text-white/40 text-xs mt-1">Used for hydration calculations</p>
               </div>
