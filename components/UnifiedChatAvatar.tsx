@@ -92,6 +92,89 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
 
   // Load existing profile and trigger greeting on mount
   useEffect(() => {
+    // Register RPC handler for agent profile requests
+    room.registerRpcMethod("client.dexie_request", async (data) => {
+      console.log("Received dexie_request from agent:", data.payload);
+      try {
+        const payload = JSON.parse(data.payload);
+        
+        // Handle different types of dexie requests from agent
+        if (payload.action === 'get_dexie_data') {
+          // Agent is requesting profile data - send it back
+          console.log("Agent requesting Dexie data, fetching from IndexedDB...");
+          
+          const responseData: any = {};
+          
+          // Get profile data if requested
+          if (payload.data_types?.includes('profile')) {
+            const profile = await profileHelpers.getOrCreateProfile();
+            if (profile) {
+              responseData.profile = {
+                weight: profile.weight,
+                bodyType: profile.bodyType,
+                lbm: profile.lbm,
+                nickname: profile.nickname
+              };
+            }
+          }
+          
+          // Get preferences/settings if requested
+          if (payload.data_types?.includes('preferences')) {
+            const settings = await settingsHelpers.getOrCreateSettings();
+            if (settings) {
+              responseData.preferences = {
+                gpsConsent: settings.gpsConsent,
+                dataStorageConsent: settings.dataStorageConsent,
+                quickMode: settings.quickMode
+              };
+            }
+          }
+          
+          
+          console.log("Sending profile data to agent:", responseData);
+          return JSON.stringify(responseData);
+          
+        } else if (payload.action === 'get_cart_data') {
+          // Agent is requesting cart data - send it back
+          console.log("Agent requesting cart data, fetching from API...");
+          
+          try {
+            const cartResponse = await fetch('/api/cart/get');
+            if (cartResponse.ok) {
+              const cartData = await cartResponse.json();
+              const responseData = {
+                cart: {
+                  items: cartData.items || [],
+                  total: cartData.total || 0,
+                  itemCount: cartData.items?.reduce((acc: number, item: any) => acc + item.quantity, 0) || 0
+                }
+              };
+              console.log("Sending cart data to agent:", responseData);
+              return JSON.stringify(responseData);
+            } else {
+              return JSON.stringify({ cart: { items: [], total: 0, itemCount: 0 } });
+            }
+          } catch (error) {
+            console.error("Error fetching cart data:", error);
+            return JSON.stringify({ cart: { items: [], total: 0, itemCount: 0 } });
+          }
+          
+        } else if (payload.type === 'store_hydration_targets') {
+          // Store calculated hydration targets in Dexie
+          console.log("Storing hydration targets:", payload.data);
+          
+          // TODO: Store the agent's calculated hydration plan in Dexie
+          
+          return JSON.stringify({ success: true });
+        }
+        
+        return JSON.stringify({ success: true });
+      } catch (error) {
+        console.error("Error handling dexie_request:", error);
+        return JSON.stringify({ success: false, error: (error as Error).message });
+      }
+    });
+
     // 🧪 Add event listener for auto-injection tests
     const handleAutoInject = (event: CustomEvent) => {
       const { message } = event.detail;
@@ -113,10 +196,12 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
         if (existingProfile && existingProfile.nickname) {
           setUserProfile(existingProfile);
           setUserSettings(existingSettings);
-          console.log('🧪 Profile loaded, waiting for injection test...');
+          console.log('🧪 Profile loaded, sending greeting to agent...');
+          // Trigger agent greeting with existing profile
+          send("Profile loaded, please greet me with my hydration context");
         } else {
           setShowQuiz(true);
-          console.log('🧪 New user detected, waiting for injection test...');
+          console.log('🧪 New user detected, showing quiz...');
         }
       } catch (error) {
         console.error('Error loading profile:', error);
@@ -135,6 +220,14 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
       window.removeEventListener('auto-inject-message', handleAutoInject as EventListener);
     };
   }, [agentState]); // Only depend on agentState to avoid re-runs
+
+  // Watch for quiz completion and trigger agent greeting
+  useEffect(() => {
+    if (userProfile && userProfile.nickname && isAgentAvailable(agentState)) {
+      console.log('🧪 Quiz completed, triggering agent greeting with profile data...');
+      send("Quiz completed! Please greet me with my personalized hydration context");
+    }
+  }, [userProfile, agentState]); // Trigger when profile is set or agent becomes available
 
   // Debug logs in useEffect to prevent re-render loops
   useEffect(() => {
