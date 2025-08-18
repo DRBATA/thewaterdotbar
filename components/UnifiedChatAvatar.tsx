@@ -533,27 +533,7 @@ export function UnifiedChatAvatar() {
         }
       }, 500);
       
-      // Test 2: 1 second injection with simple "Hi"
-      setTimeout(() => {
-        try {
-          console.log('🧪 TEST 2: 1s injection with simple Hi');
-          const event = new CustomEvent('auto-inject-message', { detail: { message: "Hi" } });
-          window.dispatchEvent(event);
-        } catch (e) {
-          console.error('🧪 TEST 2 Error:', e);
-        }
-      }, 1000);
-      
-      // Test 3: 5 second injection with simple "Hi"
-      setTimeout(() => {
-        try {
-          console.log('🧪 TEST 3: 5s injection with simple Hi');
-          const event = new CustomEvent('auto-inject-message', { detail: { message: "Hi" } });
-          window.dispatchEvent(event);
-        } catch (e) {
-          console.error('🧪 TEST 3 Error:', e);
-        }
-      }, 5000);
+      // Tests removed - only profile injection remains
     };
 
     const onConnectionFailed = () => {
