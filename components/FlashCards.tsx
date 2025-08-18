@@ -206,7 +206,7 @@ export default function FlashCards({ isOpen, onClose, userProfile, userSettings 
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/20">
-          <h2 className="text-xl font-bold text-white">Today's Targets</h2>
+          <h2 className="text-xl font-bold text-white">Today's Target</h2>
           <button
             onClick={onClose}
             className="text-white/60 hover:text-white transition-colors"
