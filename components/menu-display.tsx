@@ -278,55 +278,6 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
     return item ? item.quantity : 0
   }
 
-  // Listen for cart updates to refresh cart data
-  useEffect(() => {
-    const handleCartUpdated = async () => {
-      console.log('🔄 Cart updated - refreshing cart data');
-      try {
-        const response = await fetch("/api/cart/get", {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        })
-        
-        if (response.ok) {
-          const data = await response.json()
-          
-          // Process cart items from database
-          if (data.items && data.items.length > 0) {
-            // Create cart items by looking up product details
-            const dbCartItems: CartItem[] = data.items
-              .map((item: any) => {
-                // Find matching drink or experience
-                const product = [...drinks, ...wellnessExperiences].find(p => p.id === item.item_id)
-                if (!product) return null
-                
-                return {
-                  ...product,
-                  quantity: item.qty
-                }
-              })
-              .filter(Boolean) // Remove any nulls
-            
-            setCartItems(dbCartItems)
-            console.log("🔄 Refreshed cart: " + dbCartItems.length + " items")
-          } else {
-            setCartItems([])
-            console.log("🔄 Refreshed cart: empty")
-          }
-        }
-      } catch (error) {
-        console.error("Error refreshing cart:", error)
-      }
-    };
-    
-    // Listen for cart update events
-    window.addEventListener('cart-updated', handleCartUpdated);
-    
-    return () => {
-      window.removeEventListener('cart-updated', handleCartUpdated);
-    };
-  }, [drinks, wellnessExperiences]);
-
   // Listen for agent cart action events (placed after handler functions are defined)
   useEffect(() => {
     const handleAgentAddToCart = (event: CustomEvent) => {
