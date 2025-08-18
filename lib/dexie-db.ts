@@ -200,6 +200,39 @@ export const profileHelpers = {
       });
       console.log('🔧 CREATE result ID:', id);
     }
+    
+    // Sync to bridge API for agent access
+    await this.syncToAgent();
+  },
+
+  // Sync profile data to bridge API
+  async syncToAgent(): Promise<void> {
+    try {
+      const profile = await this.getOrCreateProfile();
+      if (!profile) return;
+
+      const response = await fetch('/api/bridge/profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nickname: profile.nickname,
+          weight: profile.weight,
+          gender: profile.gender,
+          bodyType: profile.bodyType,
+          lbm: profile.lbm
+        })
+      });
+
+      if (response.ok) {
+        console.log('✅ Profile synced to agent bridge');
+      } else {
+        console.error('❌ Failed to sync profile to bridge:', response.status);
+      }
+    } catch (error) {
+      console.error('❌ Profile bridge sync error:', error);
+    }
   }
 };
 

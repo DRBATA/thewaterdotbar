@@ -13,7 +13,7 @@ const consentStore = new Map<string, ConsentRecord>();
 function setCorsHeaders(req: NextRequest, res: NextResponse) {
   const origin = req.headers.get('origin') ?? '';
   const allowedOrigins = [
-    'https://thewaterbar.com',
+    'https://www.thewater.bar',
     'http://localhost:3000',
     'http://localhost:3001'
   ];
