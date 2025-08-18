@@ -16,7 +16,8 @@ export default function QuizPopup({ isOpen, onClose, onComplete }: QuizPopupProp
   // Form data
   const [nickname, setNickname] = useState('');
   const [weight, setWeight] = useState(70);
-  const [bodyType, setBodyType] = useState<'athletic' | 'average' | 'larger' | 'petite' | 'powerlifter' | 'runner' | 'swimmer' | 'dancer' | 'couch_potato'>('average');
+  const [gender, setGender] = useState<'male' | 'female' | 'prefer_not_to_say'>('prefer_not_to_say');
+  const [bodyType, setBodyType] = useState<'shredded' | 'athletic' | 'fit' | 'average' | 'dad_bod' | 'overweight' | 'obese' | 'stocky_muscular' | 'very_athletic' | 'healthy' | 'curvy_soft'>('average');
   const [gpsConsent, setGpsConsent] = useState(false);
   const [dataConsent, setDataConsent] = useState(true);
   const [quickMode, setQuickMode] = useState(false);
@@ -37,6 +38,7 @@ export default function QuizPopup({ isOpen, onClose, onComplete }: QuizPopupProp
         setExistingProfile(profile);
         setNickname(profile.nickname);
         setWeight(profile.weight);
+        setGender(profile.gender);
         setBodyType(profile.bodyType);
         setGpsConsent(settings.gpsConsent);
         setDataConsent(settings.dataStorageConsent);
@@ -62,6 +64,7 @@ export default function QuizPopup({ isOpen, onClose, onComplete }: QuizPopupProp
       await profileHelpers.saveProfile({
         nickname,
         weight,
+        gender,
         bodyType
       });
 
@@ -244,6 +247,20 @@ export default function QuizPopup({ isOpen, onClose, onComplete }: QuizPopupProp
                 />
               </div>
 
+              {/* Gender */}
+              <div>
+                <label className="block text-white/80 text-sm mb-2">Gender</label>
+                <select
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value as any)}
+                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-teal-400 [&>option]:bg-gray-800 [&>option]:text-white"
+                >
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+              </div>
+
               {/* Body Type */}
               <div>
                 <label className="block text-white/80 text-sm mb-2">Body Type</label>
@@ -252,15 +269,30 @@ export default function QuizPopup({ isOpen, onClose, onComplete }: QuizPopupProp
                   onChange={(e) => setBodyType(e.target.value as any)}
                   className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-teal-400 [&>option]:bg-gray-800 [&>option]:text-white"
                 >
-                  <option value="athletic">Athletic</option>
-                  <option value="average">Average</option>
-                  <option value="larger">Larger</option>
-                  <option value="petite">Petite</option>
-                  <option value="powerlifter">Powerlifter 💪</option>
-                  <option value="runner">Runner 🏃</option>
-                  <option value="swimmer">Swimmer 🏊</option>
-                  <option value="dancer">Dancer 💃</option>
-                  <option value="couch_potato">Couch Potato 🛋️</option>
+                  {/* Universal options */}
+                  <option value="athletic">Athletic/Lean</option>
+                  <option value="fit">Fit/In Shape</option>
+                  <option value="average">Average/Normal</option>
+                  <option value="overweight">Overweight</option>
+                  <option value="obese">Obese</option>
+                  
+                  {/* Male-specific options */}
+                  {gender === 'male' && (
+                    <>
+                      <option value="shredded">Shredded (6-10% BF)</option>
+                      <option value="dad_bod">Dad Bod (25-30% BF)</option>
+                      <option value="stocky_muscular">Stocky Muscular (18-23% BF)</option>
+                    </>
+                  )}
+                  
+                  {/* Female-specific options */}
+                  {gender === 'female' && (
+                    <>
+                      <option value="very_athletic">Very Athletic (15-20% BF)</option>
+                      <option value="healthy">Healthy/Curves (25-30% BF)</option>
+                      <option value="curvy_soft">Curvy/Soft (35-40% BF)</option>
+                    </>
+                  )}
                 </select>
               </div>
 
@@ -268,7 +300,7 @@ export default function QuizPopup({ isOpen, onClose, onComplete }: QuizPopupProp
               <div className="bg-gradient-to-r from-teal-500/10 to-purple-500/10 rounded-lg p-4 border border-white/10">
                 <p className="text-white/60 text-sm">Estimated Lean Body Mass</p>
                 <p className="text-2xl font-bold text-white">
-                  {profileHelpers.calculateLBM(weight, bodyType)} kg
+                  {profileHelpers.calculateLBM(weight, bodyType, gender)} kg
                 </p>
                 <p className="text-white/40 text-xs mt-1">Used for hydration calculations</p>
               </div>

@@ -5,7 +5,8 @@ export interface UserProfile {
   id?: number;
   nickname: string;
   weight: number; // in lbs
-  bodyType: 'athletic' | 'average' | 'larger' | 'petite' | 'powerlifter' | 'runner' | 'swimmer' | 'dancer' | 'couch_potato';
+  gender: 'male' | 'female' | 'prefer_not_to_say';
+  bodyType: 'shredded' | 'athletic' | 'fit' | 'average' | 'dad_bod' | 'overweight' | 'obese' | 'stocky_muscular' | 'very_athletic' | 'healthy' | 'curvy_soft';
   lbm?: number; // Lean Body Mass (calculated)
   createdAt: Date;
   updatedAt: Date;
@@ -130,21 +131,39 @@ export const db = new WaterBarDB();
 
 // Helper functions
 export const profileHelpers = {
-  // Calculate Lean Body Mass
-  calculateLBM(weight: number, bodyType: string): number {
-    const bodyFatPercentages = {
-      athletic: 0.15,
-      average: 0.25,
-      larger: 0.35,
-      petite: 0.22,
-      powerlifter: 0.12,  // Very low body fat, high muscle mass
-      runner: 0.18,       // Low body fat, lean build
-      swimmer: 0.16,      // Low body fat, balanced muscle
-      dancer: 0.20,       // Lean and toned
-      couch_potato: 0.40  // Higher body fat percentage 🛋️
+  // Calculate Lean Body Mass with gender-specific body fat percentages
+  calculateLBM(weight: number, bodyType: string, gender: string = 'average'): number {
+    // Male body fat percentages (from original reference)
+    const maleBodyFat = {
+      shredded: 0.08,        // 8% - six-pack, veiny
+      athletic: 0.125,       // 12.5% - lean
+      fit: 0.175,           // 17.5% - in shape
+      average: 0.225,       // 22.5% - normal
+      dad_bod: 0.27,        // 27% - carrying extra, bit of a belly
+      overweight: 0.33,     // 33% - heavyset, big guy
+      obese: 0.45,          // 45% - obese
+      stocky_muscular: 0.20 // 20% - rugby build, thick legs
     };
     
-    const bodyFat = bodyFatPercentages[bodyType as keyof typeof bodyFatPercentages] || 0.25;
+    // Female body fat percentages (from original reference)
+    const femaleBodyFat = {
+      very_athletic: 0.175, // 17.5% - very lean
+      fit: 0.225,           // 22.5% - toned
+      healthy: 0.275,       // 27.5% - curves
+      average: 0.325,       // 32.5% - normal
+      curvy_soft: 0.37,     // 37% - carrying extra
+      overweight: 0.45,     // 45% - overweight
+      // Map some male types for flexibility
+      athletic: 0.175,      // Same as very_athletic
+      shredded: 0.175,      // Same as very_athletic
+      dad_bod: 0.37,        // Same as curvy_soft
+      obese: 0.45,          // Same as overweight
+      stocky_muscular: 0.275 // Same as healthy
+    };
+    
+    const bodyFatMap = gender === 'male' ? maleBodyFat : femaleBodyFat;
+    const bodyFat = bodyFatMap[bodyType as keyof typeof bodyFatMap] || (gender === 'male' ? 0.225 : 0.325);
+    
     return Math.round(weight * (1 - bodyFat));
   },
 
@@ -167,10 +186,10 @@ export const profileHelpers = {
       hasExisting: !!existing
     });
     
-    // Calculate LBM if weight and bodyType provided
+    // Calculate LBM if weight, bodyType, and gender provided
     let lbm = data.lbm;
-    if (data.weight && data.bodyType && !lbm) {
-      lbm = this.calculateLBM(data.weight, data.bodyType);
+    if (data.weight && data.bodyType && data.gender && !lbm) {
+      lbm = this.calculateLBM(data.weight, data.bodyType, data.gender);
     }
     
     if (existing) {
@@ -198,6 +217,7 @@ export const profileHelpers = {
       const id = await db.profile.add({
         nickname: data.nickname || '',
         weight: data.weight || 150,
+        gender: data.gender || 'prefer_not_to_say',
         bodyType: data.bodyType || 'average',
         lbm,
         createdAt: new Date(),
