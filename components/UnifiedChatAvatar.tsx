@@ -377,7 +377,7 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
       {/* Main Content Area - Flex container for messages and input */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
         {/* Video Background - Full visibility */}
-        <div className="absolute inset-0 z-0">
+        <div className="absolute top-0 left-0 right-0 bottom-0 z-0">
           {agentVideoTrack ? (
             <VideoTile 
               trackRef={agentVideoTrack}
