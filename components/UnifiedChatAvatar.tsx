@@ -41,7 +41,7 @@ import {
   Sparkles,
   Wand2
 } from 'lucide-react';
-import { profileHelpers, settingsHelpers } from '@/lib/dexie-db';
+import { profileHelpers, settingsHelpers, db } from '@/lib/dexie-db';
 import type { UserProfile, UserSettings } from '@/lib/dexie-db';
 import useChatAndTranscription from "@/hooks/useChatAndTranscription"
 import { cn } from "@/lib/utils"
@@ -116,7 +116,13 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
           
           // Get profile data if requested
           if (payload.data_types?.includes('profile')) {
-            const profile = await profileHelpers.getOrCreateProfile();
+            // Force fresh read from Dexie - bypass any caching
+            console.log("🔄 FORCING FRESH DEXIE READ for agent request...");
+            const profiles = await db.profile.toArray();
+            const profile = profiles.length > 0 ? profiles[0] : null;
+            
+            console.log("🔍 FRESH PROFILE DATA:", profile);
+            
             if (profile) {
               responseData.profile = {
                 weight: profile.weight,
@@ -129,7 +135,13 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
           
           // Get preferences/settings if requested
           if (payload.data_types?.includes('preferences')) {
-            const settings = await settingsHelpers.getOrCreateSettings();
+            // Force fresh read from Dexie - bypass any caching
+            console.log("🔄 FORCING FRESH SETTINGS READ for agent request...");
+            const settingsArray = await db.settings.toArray();
+            const settings = settingsArray.length > 0 ? settingsArray[0] : null;
+            
+            console.log("🔍 FRESH SETTINGS DATA:", settings);
+            
             if (settings) {
               responseData.preferences = {
                 gpsConsent: settings.gpsConsent,
