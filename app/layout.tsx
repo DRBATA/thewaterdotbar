@@ -4,6 +4,7 @@ import Logo from "../components/Logo"
 import HalftoneBackground from "../components/HalftoneBackground";
 import { FilterProvider } from "../context/filter-context";
 import FilterBar from "../components/FilterBar";
+import GpsBridgeSync from "../components/GpsBridgeSync";
 
 export const metadata: Metadata = {
   title: 'The Water Bar | Functional Hydration Coach',
@@ -45,6 +46,7 @@ export default function RootLayout({
         <HalftoneBackground />
         {/* Main content */}
         <FilterProvider>
+          <GpsBridgeSync />
           <Logo />
           <FilterBar />
           <div className="relative z-10">
