@@ -161,6 +161,12 @@ export const profileHelpers = {
   async saveProfile(data: Partial<UserProfile>): Promise<void> {
     const existing = await this.getOrCreateProfile();
     
+    console.log('🔧 SAVE_PROFILE DEBUG:', {
+      existing: existing?.id,
+      data,
+      hasExisting: !!existing
+    });
+    
     // Calculate LBM if weight and bodyType provided
     let lbm = data.lbm;
     if (data.weight && data.bodyType && !lbm) {
@@ -169,14 +175,17 @@ export const profileHelpers = {
     
     if (existing) {
       // Update existing
-      await db.profile.update(existing.id!, {
+      console.log('🔧 UPDATING profile ID:', existing.id, 'with data:', { ...data, lbm });
+      const result = await db.profile.update(existing.id!, {
         ...data,
         lbm,
         updatedAt: new Date()
       });
+      console.log('🔧 UPDATE result:', result);
     } else {
       // Create new
-      await db.profile.add({
+      console.log('🔧 CREATING new profile with data:', { ...data, lbm });
+      const id = await db.profile.add({
         nickname: data.nickname || '',
         weight: data.weight || 150,
         bodyType: data.bodyType || 'average',
@@ -184,6 +193,7 @@ export const profileHelpers = {
         createdAt: new Date(),
         updatedAt: new Date()
       });
+      console.log('🔧 CREATE result ID:', id);
     }
   }
 };
@@ -281,7 +291,7 @@ export const ownedProductsHelpers = {
 
   // Get all active owned products
   async getActiveProducts(): Promise<OwnedProduct[]> {
-    return await db.owned_products.where('isActive').equals(true).toArray();
+    return await db.owned_products.where('isActive').equals(1).toArray();
   },
 
   // Check if user owns a specific product
@@ -344,7 +354,7 @@ export const consumptionHelpers = {
 
   // Get consumption logs for a specific plan
   async getLogsForPlan(planId: string): Promise<ConsumptionLog[]> {
-    return await db.consumption_logs.where('planId').equals(planId).orderBy('timestamp').toArray();
+    return await db.consumption_logs.where('planId').equals(planId).toArray();
   },
 
   // Get consumption logs for date range
@@ -352,7 +362,6 @@ export const consumptionHelpers = {
     return await db.consumption_logs
       .where('timestamp')
       .between(startDate, endDate, true, true)
-      .orderBy('timestamp')
       .toArray();
   },
 
