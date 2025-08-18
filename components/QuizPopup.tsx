@@ -89,16 +89,10 @@ export default function QuizPopup({ isOpen, onClose, onComplete }: QuizPopupProp
   };
 
   const handleSkip = async () => {
-    // Create minimal profile with defaults
-    await profileHelpers.saveProfile({
-      nickname: 'Hydration Seeker',
-      weight: 150,
-      bodyType: 'average'
-    });
-
+    // Don't create demo data - just get existing profile or null
     const profile = await profileHelpers.getOrCreateProfile();
     const settings = await settingsHelpers.getOrCreateSettings();
-    
+
     if (profile) {
       onComplete(profile, settings);
     }
@@ -256,7 +250,7 @@ export default function QuizPopup({ isOpen, onClose, onComplete }: QuizPopupProp
                 <select
                   value={bodyType}
                   onChange={(e) => setBodyType(e.target.value as any)}
-                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-teal-400"
+                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-teal-400 [&>option]:bg-gray-800 [&>option]:text-white"
                 >
                   <option value="athletic">Athletic</option>
                   <option value="average">Average</option>
