@@ -57,17 +57,14 @@ export default function FlashCards({ isOpen, onClose, userProfile, userSettings 
   const calculateDailyTargets = async () => {
     if (!userProfile) return;
 
-    // Base hydration calculation (LBM-based)
-    const lbm = userProfile.lbm || 54; // kg
-    const baseWater = Math.round(lbm * 35); // 35ml per kg of LBM
+    // Base hydration calculation using profileHelpers (same as QuizPopup)
+    const weight = userProfile.weight || 70;
+    const bodyType = userProfile.bodyType || 'average';
+    const gender = userProfile.gender || 'prefer_not_to_say';
     
-    // Activity multiplier (can be enhanced later)
-    const activityMultiplier = 1.2; // Assume moderate activity
-    
-    // Temperature adjustment (will be enhanced with real weather)
-    const tempAdjustment = 1.0; // Neutral for now
-    
-    const totalWater = Math.round(baseWater * activityMultiplier * tempAdjustment);
+    // Use the same LBM calculation as QuizPopup
+    const lbm = profileHelpers.calculateLBM(weight, bodyType, gender);
+    const totalWater = Math.round(lbm * 35); // 35ml per kg of LBM
     
     // Electrolyte targets based on water intake
     const sodium = Math.round(totalWater * 0.5); // ~0.5mg per ml of water
@@ -253,6 +250,36 @@ export default function FlashCards({ isOpen, onClose, userProfile, userSettings 
               </div>
             )}
 
+            {/* Profile Info */}
+            {userProfile && (
+              <div className="bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-lg p-4 border border-white/10">
+                <div className="flex items-center space-x-2 mb-3">
+                  <Activity className="w-5 h-5 text-indigo-400" />
+                  <span className="text-white font-medium">Your Profile</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-white/60 text-sm">Nickname</p>
+                    <p className="text-lg font-bold text-white">{userProfile.nickname || 'Not set'}</p>
+                  </div>
+                  <div>
+                    <p className="text-white/60 text-sm">Weight</p>
+                    <p className="text-lg font-bold text-white">{userProfile.weight || 'Not set'} kg</p>
+                  </div>
+                  <div>
+                    <p className="text-white/60 text-sm">Body Type</p>
+                    <p className="text-lg font-bold text-white capitalize">{userProfile.bodyType || 'Not set'}</p>
+                  </div>
+                  <div>
+                    <p className="text-white/60 text-sm">Lean Body Mass</p>
+                    <p className="text-lg font-bold text-indigo-400">
+                      {userProfile.lbm || profileHelpers.calculateLBM(userProfile.weight || 70, userProfile.bodyType || 'average', userProfile.gender || 'prefer_not_to_say')} kg
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Hydration Target */}
             {targets && (
               <div className="bg-gradient-to-r from-teal-500/20 to-blue-500/20 rounded-lg p-4 border border-white/10">
@@ -266,47 +293,13 @@ export default function FlashCards({ isOpen, onClose, userProfile, userSettings 
                     <p className="text-white/60 text-sm">Total daily goal</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-white/80">Consumed</p>
-                    <p className="text-xl font-bold text-teal-400">{targets.currentIntake}ml</p>
-                    <p className="text-white/60 text-xs">
-                      {Math.max(0, targets.water - targets.currentIntake)}ml remaining
-                    </p>
+                    <p className="text-white/80">Base Target</p>
+                    <p className="text-xl font-bold text-teal-400">Daily Goal</p>
                   </div>
-                </div>
-                {/* Progress bar */}
-                <div className="mt-3 bg-white/10 rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-teal-400 to-blue-400 h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(100, (targets.currentIntake / targets.water) * 100)}%` }}
-                  ></div>
                 </div>
               </div>
             )}
 
-            {/* Electrolyte Targets */}
-            {targets && (
-              <div className="grid grid-cols-2 gap-3">
-                {/* Sodium */}
-                <div className="bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-lg p-4 border border-white/10">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Zap className="w-4 h-4 text-orange-400" />
-                    <span className="text-white font-medium text-sm">Sodium</span>
-                  </div>
-                  <p className="text-xl font-bold text-white">{targets.sodium}mg</p>
-                  <p className="text-white/60 text-xs">Electrolyte balance</p>
-                </div>
-
-                {/* Potassium */}
-                <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg p-4 border border-white/10">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Activity className="w-4 h-4 text-purple-400" />
-                    <span className="text-white font-medium text-sm">Potassium</span>
-                  </div>
-                  <p className="text-xl font-bold text-white">{targets.potassium}mg</p>
-                  <p className="text-white/60 text-xs">Muscle function</p>
-                </div>
-              </div>
-            )}
 
             {/* Location Error */}
             {locationError && !weather && (
