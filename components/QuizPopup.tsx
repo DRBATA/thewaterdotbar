@@ -78,9 +78,10 @@ export default function QuizPopup({ isOpen, onClose, onComplete }: QuizPopupProp
 
       if (profile) {
         setStep('complete');
+        // Wait a bit longer to ensure Dexie save is fully committed
         setTimeout(() => {
           onComplete(profile, settings);
-        }, 1500);
+        }, 2000);
       }
     } catch (error) {
       console.error('Error saving profile:', error);

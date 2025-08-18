@@ -176,12 +176,22 @@ export const profileHelpers = {
     if (existing) {
       // Update existing
       console.log('🔧 UPDATING profile ID:', existing.id, 'with data:', { ...data, lbm });
-      const result = await db.profile.update(existing.id!, {
-        ...data,
-        lbm,
-        updatedAt: new Date()
-      });
-      console.log('🔧 UPDATE result:', result);
+      console.log('🔧 Full existing profile:', existing);
+      
+      try {
+        const result = await db.profile.update(existing.id!, {
+          ...data,
+          lbm,
+          updatedAt: new Date()
+        });
+        console.log('🔧 UPDATE result:', result);
+        
+        // Verify the update worked by reading it back
+        const updated = await db.profile.get(existing.id!);
+        console.log('🔧 VERIFICATION - Updated profile:', updated);
+      } catch (updateError) {
+        console.error('🔧 UPDATE FAILED:', updateError);
+      }
     } else {
       // Create new
       console.log('🔧 CREATING new profile with data:', { ...data, lbm });
