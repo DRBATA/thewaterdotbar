@@ -231,12 +231,7 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
   }, [agentState]); // Only depend on agentState to avoid re-runs
 
   // Watch for quiz completion and trigger agent greeting
-  useEffect(() => {
-    if (userProfile && userProfile.nickname && isAgentAvailable(agentState)) {
-      console.log('🧪 Quiz completed, triggering agent greeting with profile data...');
-      send("Quiz completed! Please greet me with my personalized hydration context");
-    }
-  }, [userProfile, agentState]); // Trigger when profile is set or agent becomes available
+  // Removed duplicate quiz completion injection - profile detection handles this
 
   // Debug logs in useEffect to prevent re-render loops
   useEffect(() => {
