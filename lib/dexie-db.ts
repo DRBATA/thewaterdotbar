@@ -8,6 +8,8 @@ export interface UserProfile {
   gender: 'male' | 'female' | 'prefer_not_to_say';
   bodyType: 'shredded' | 'athletic' | 'fit' | 'average' | 'dad_bod' | 'overweight' | 'obese' | 'stocky_muscular' | 'very_athletic' | 'healthy' | 'curvy_soft';
   lbm?: number; // Lean Body Mass (calculated)
+  sweatRate?: number; // Personal L/hour from sweat tests
+  sweatSodium?: number; // Personal mg/L from patch tests
   createdAt: Date;
   updatedAt: Date;
 }
@@ -48,6 +50,23 @@ export interface QuizResponse {
 // Removed hydration_plans and consumption_logs - agent can't write to Dexie anyway
 // Keeping schema simple: profile, settings, targets only
 
+// Sweat test data for personalized hydration
+export interface SweatTestData {
+  id?: number;
+  testDate: Date;
+  preWorkoutWeight: number; // kg
+  postWorkoutWeight: number; // kg
+  fluidConsumed: number; // ml during workout
+  workoutDuration: number; // minutes
+  sweatRate: number; // L/hour calculated
+  sweatSodium?: number; // mg/L from patch test
+  temperature?: number; // ambient temp
+  humidity?: number; // ambient humidity
+  activityType: string; // "gym", "running", "cycling", etc.
+  notes?: string;
+  createdAt: Date;
+}
+
 // Owned products from purchases - simple tracking only
 export interface OwnedProduct {
   id?: number;
@@ -76,9 +95,19 @@ class WaterBarDB extends Dexie {
   targets!: Table<HydrationTarget>;
   quiz!: Table<QuizResponse>;
   owned_products!: Table<OwnedProduct>;
+  sweat_tests!: Table<SweatTestData>;
 
   constructor() {
     super('WaterBarDB');
+    
+    this.version(4).stores({
+      profile: '++id, nickname, createdAt',
+      settings: '++id, createdAt',
+      targets: '++id, date, createdAt',
+      quiz: '++id, category, createdAt',
+      owned_products: '++id, productId, purchaseDate, isActive, createdAt',
+      sweat_tests: '++id, testDate, activityType, createdAt'
+    });
     
     this.version(3).stores({
       profile: '++id, nickname, createdAt',
@@ -359,6 +388,72 @@ export const ownedProductsHelpers = {
     return recentConsumptions.sort((a, b) => 
       b.consumption.timestamp.getTime() - a.consumption.timestamp.getTime()
     );
+  }
+};
+
+export const sweatTestHelpers = {
+  // Save a new sweat test
+  async saveSweatTest(data: Omit<SweatTestData, 'id' | 'createdAt' | 'sweatRate'>): Promise<number> {
+    // Calculate sweat rate: (pre_weight - post_weight + fluids_consumed) / hours
+    const weightLoss = data.preWorkoutWeight - data.postWorkoutWeight; // kg
+    const totalFluidLoss = weightLoss + (data.fluidConsumed / 1000); // kg to L
+    const hours = data.workoutDuration / 60;
+    const sweatRate = totalFluidLoss / hours; // L/hour
+    
+    const testData: SweatTestData = {
+      ...data,
+      sweatRate,
+      createdAt: new Date()
+    };
+    
+    const id = await db.sweat_tests.add(testData);
+    
+    // Update profile with latest sweat data
+    await this.updateProfileSweatData();
+    
+    return id;
+  },
+
+  // Get all sweat tests for analysis
+  async getAllSweatTests(): Promise<SweatTestData[]> {
+    return await db.sweat_tests.orderBy('testDate').reverse().toArray();
+  },
+
+  // Get recent sweat tests (last 30 days)
+  async getRecentSweatTests(days: number = 30): Promise<SweatTestData[]> {
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    return await db.sweat_tests.where('testDate').above(cutoff).toArray();
+  },
+
+  // Update profile with average sweat data from recent tests
+  async updateProfileSweatData(): Promise<void> {
+    const recentTests = await this.getRecentSweatTests(90); // Last 3 months
+    if (recentTests.length === 0) return;
+
+    // Calculate averages
+    const avgSweatRate = recentTests.reduce((sum, test) => sum + test.sweatRate, 0) / recentTests.length;
+    const sodiumTests = recentTests.filter(test => test.sweatSodium);
+    const avgSweatSodium = sodiumTests.length > 0 
+      ? sodiumTests.reduce((sum, test) => sum + (test.sweatSodium || 0), 0) / sodiumTests.length
+      : undefined;
+
+    // Update profile
+    const profile = await profileHelpers.getOrCreateProfile();
+    if (profile) {
+      await profileHelpers.saveProfile({
+        sweatRate: Math.round(avgSweatRate * 100) / 100, // Round to 2 decimals
+        sweatSodium: avgSweatSodium ? Math.round(avgSweatSodium) : undefined
+      });
+    }
+  },
+
+  // Get personalized sweat data for agent
+  async getPersonalizedSweatData(): Promise<{ sweatRate?: number; sweatSodium?: number }> {
+    const profile = await profileHelpers.getOrCreateProfile();
+    return {
+      sweatRate: profile?.sweatRate,
+      sweatSodium: profile?.sweatSodium
+    };
   }
 };
 

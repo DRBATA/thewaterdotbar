@@ -41,7 +41,7 @@ import {
   Sparkles,
   Wand2
 } from 'lucide-react';
-import { profileHelpers, settingsHelpers, db } from '@/lib/dexie-db';
+import { profileHelpers, settingsHelpers, targetHelpers, ownedProductsHelpers, sweatTestHelpers } from '@/lib/dexie-db';
 import type { UserProfile, UserSettings } from '@/lib/dexie-db';
 import useChatAndTranscription from "@/hooks/useChatAndTranscription"
 import { cn } from "@/lib/utils"
@@ -647,6 +647,94 @@ export function UnifiedChatAvatar() {
     );
     console.log('✅ RPC method client.cart_action registered successfully');
 
+    // Register RPC method to provide cart data to agent
+    console.log('🔧 Registering RPC method client.get_cart_data');
+    room.localParticipant.registerRpcMethod(
+      "client.get_cart_data",
+      async (data) => {
+        console.log('🛒 Agent requesting cart data:', data.payload);
+        try {
+          // Get cart data from localStorage or wherever it's stored
+          const cartData = JSON.parse(localStorage.getItem('cart') || '{"items": [], "total": 0}');
+          console.log('🛒 Returning cart data to agent:', cartData);
+          return JSON.stringify(cartData);
+        } catch (error) {
+          console.error('Error getting cart data:', error);
+          return JSON.stringify({"items": [], "total": 0, "error": "Failed to get cart data"});
+        }
+      }
+    );
+    console.log('✅ RPC method client.get_cart_data registered successfully');
+
+    // Register RPC method to provide Dexie profile/hydration data to agent
+    console.log('🔧 Registering RPC method client.get_dexie_data');
+    room.localParticipant.registerRpcMethod(
+      "client.get_dexie_data",
+      async (data) => {
+        console.log('👤 Agent requesting Dexie data:', data.payload);
+        try {
+          const payload = JSON.parse(data.payload);
+          const requestType = payload.type || 'profile';
+          
+          if (requestType === 'profile') {
+            // Get current user profile from Dexie (fresh fetch to ensure latest data)
+            const profile = await profileHelpers.getOrCreateProfile();
+            const settings = await settingsHelpers.getOrCreateSettings();
+            
+            const profileData = {
+              profile: profile,
+              settings: settings,
+              timestamp: Date.now()
+            };
+            
+            console.log('👤 Returning profile data to agent:', profileData);
+            return JSON.stringify(profileData);
+          } else if (requestType === 'consumption') {
+            // Get recent consumption data from Dexie
+            const ownedProducts = await db.owned_products.toArray();
+            const consumptionData = {
+              owned_products: ownedProducts,
+              timestamp: Date.now()
+            };
+            
+            console.log('🥤 Returning consumption data to agent:', consumptionData);
+            return JSON.stringify(consumptionData);
+          }
+          
+          return JSON.stringify({"error": "Unknown request type"});
+        } catch (error) {
+          console.error('Error getting Dexie data:', error);
+          return JSON.stringify({"error": "Failed to get Dexie data"});
+        }
+      }
+    );
+    console.log('✅ RPC method client.get_dexie_data registered successfully');
+
+    // Register RPC method for sweat test data storage
+    console.log('🔧 Registering RPC method client.save_sweat_test');
+    room.localParticipant.registerRpcMethod("client.save_sweat_test", async (data) => {
+      try {
+        const testData = JSON.parse(data.payload);
+        const id = await sweatTestHelpers.saveSweatTest(testData);
+        return JSON.stringify({ success: true, id });
+      } catch (error) {
+        console.error("❌ RPC save_sweat_test error:", error);
+        return JSON.stringify({ error: "Failed to save sweat test" });
+      }
+    });
+
+    // Register RPC method for getting personalized sweat data
+    console.log('🔧 Registering RPC method client.get_sweat_data');
+    room.localParticipant.registerRpcMethod("client.get_sweat_data", async (data) => {
+      try {
+        const sweatData = await sweatTestHelpers.getPersonalizedSweatData();
+        return JSON.stringify(sweatData);
+      } catch (error) {
+        console.error("❌ RPC get_sweat_data error:", error);
+        return JSON.stringify({ error: "Failed to get sweat data" });
+      }
+    });
+
     if (sessionStarted && room.state === 'disconnected' && connectionDetails) {
       Promise.all([
         room.localParticipant.setMicrophoneEnabled(true, undefined, {
@@ -661,8 +749,13 @@ export function UnifiedChatAvatar() {
     return () => {
       room.off(RoomEvent.Disconnected, onDisconnected);
       room.off(RoomEvent.Connected, onConnected);
-      // Unregister RPC method when component unmounts
+      // Unregister RPC methods when component unmounts
       room.localParticipant.unregisterRpcMethod("client.cart_action");
+      room.localParticipant.unregisterRpcMethod("client.get_cart_data");
+      room.localParticipant.unregisterRpcMethod("client.get_dexie_data");
+      room.localParticipant.unregisterRpcMethod("client.get_profile_data");
+      room.localParticipant.unregisterRpcMethod("client.save_sweat_test");
+      room.localParticipant.unregisterRpcMethod("client.get_sweat_data");
       room.disconnect();
     };
   }, [room, sessionStarted, connectionDetails, refreshConnectionDetails]);

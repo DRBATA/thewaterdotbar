@@ -140,6 +140,42 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
         copyButton.click();
       }
     };
+
+    const handleAgentGetCartData = async () => {
+      console.log('🛒 Agent requested cart data - fetching current cart');
+      try {
+        // Fetch current cart data from API
+        const response = await fetch('/api/cart', {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          const cartData = await response.json();
+          console.log('🛒 Sending cart data back to agent:', cartData);
+          
+          // Dispatch response event back to hedra frontend
+          window.dispatchEvent(new CustomEvent('agent-cart-data-response', {
+            detail: cartData
+          }));
+        } else {
+          console.error('Failed to fetch cart data:', response.statusText);
+          // Send empty cart response on error
+          window.dispatchEvent(new CustomEvent('agent-cart-data-response', {
+            detail: { items: [], total: 0 }
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching cart data:', error);
+        // Send empty cart response on error
+        window.dispatchEvent(new CustomEvent('agent-cart-data-response', {
+          detail: { items: [], total: 0 }
+        }));
+      }
+    };
     
     // Add event listeners
     window.addEventListener('agent-add-to-cart', handleAgentAddToCart);
@@ -149,6 +185,7 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
     window.addEventListener('agent-clear-cart', handleAgentClearCart);
     window.addEventListener('agent-checkout', handleAgentCheckout);
     window.addEventListener('agent-copy-discount', handleAgentCopyDiscount);
+    window.addEventListener('agent-get-cart-data', handleAgentGetCartData);
     
     console.log('🛒 Cart event listeners registered successfully');
     
@@ -161,9 +198,10 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
       window.removeEventListener('agent-clear-cart', handleAgentClearCart);
       window.removeEventListener('agent-checkout', handleAgentCheckout);
       window.removeEventListener('agent-copy-discount', handleAgentCopyDiscount);
+      window.removeEventListener('agent-get-cart-data', handleAgentGetCartData);
       console.log('🛒 Cart event listeners cleaned up');
     };
-  }, []); // Remove tier dependency to ensure listeners are always registered
+  }, [onRemoveItemAction, onClearCart, tier]);
 
   const handleConfettiComplete = () => {
     setShowConfetti(false)
