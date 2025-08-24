@@ -4,7 +4,7 @@ import { cookies } from "next/headers"
 import { getSessionId } from "@/lib/session"
 
 export async function POST(req: Request) {
-  const { itemId, qty = 1, bundle_components } = await req.json()
+  const { itemId, qty = 1, bundle_components, venue_id } = await req.json()
   if (!itemId) {
     return NextResponse.json({ error: "Missing itemId" }, { status: 400 })
   }
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
         .from("cart_headers")
         .insert({
           session_id: sessionId,
-
+          venue_id: venue_id
         })
         .select("id")
         .single();

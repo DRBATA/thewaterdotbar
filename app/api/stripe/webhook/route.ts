@@ -25,7 +25,7 @@ export async function POST(req: Request) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
-    const { session_id, user_id, utm_campaign } = session.metadata as Record<string, string>;
+    const { session_id, user_id, utm_campaign, venue_id } = session.metadata as Record<string, string>;
 
     function isUUID(str: string | undefined): str is string {
       return !!str && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);

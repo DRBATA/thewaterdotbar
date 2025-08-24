@@ -116,31 +116,23 @@ function UnifiedChatAvatarContent({ room, setIsExpanded }: { room: Room; setIsEx
           
           // Get profile data if requested
           if (payload.data_types?.includes('profile')) {
-            // Force fresh read from Dexie - bypass any caching
-            console.log("🔄 FORCING FRESH DEXIE READ for agent request...");
-            const profiles = await db.profile.toArray();
-            const profile = profiles.length > 0 ? profiles[0] : null;
+            console.log("📝 Profile data requested - using temporary placeholder until Supabase user profiles ready");
             
-            console.log("🔍 FRESH PROFILE DATA:", profile);
-            
-            if (profile) {
-              responseData.profile = {
-                weight: profile.weight,
-                bodyType: profile.bodyType,
-                lbm: profile.lbm,
-                nickname: profile.nickname
-              };
-            }
+            // Temporary placeholder until Supabase user profiles are implemented
+            responseData.profile = {
+              weight: null,
+              bodyType: null,
+              lbm: null,
+              nickname: "Guest"
+            };
           }
           
           // Get preferences/settings if requested
           if (payload.data_types?.includes('preferences')) {
-            // Force fresh read from Dexie - bypass any caching
-            console.log("🔄 FORCING FRESH SETTINGS READ for agent request...");
-            const settingsArray = await db.settings.toArray();
-            const settings = settingsArray.length > 0 ? settingsArray[0] : null;
+            console.log("⚙️ Settings data requested - using temporary placeholder until Supabase user profiles ready");
             
-            console.log("🔍 FRESH SETTINGS DATA:", settings);
+            // Temporary placeholder until Supabase user profiles are implemented
+            const settings = null;
             
             if (settings) {
               responseData.preferences = {
@@ -666,6 +658,31 @@ export function UnifiedChatAvatar() {
     );
     console.log('✅ RPC method client.get_cart_data registered successfully');
 
+    // Register RPC method for navigation commands
+    console.log('🔧 Registering RPC method client.navigate');
+    room.localParticipant.registerRpcMethod(
+      "client.navigate",
+      async (data) => {
+        console.log('🧭 Agent requesting navigation:', data.payload);
+        try {
+          const payload = JSON.parse(data.payload);
+          const { action, page } = payload;
+          
+          if (action === 'navigate' && page === 'stock') {
+            console.log('🏪 Navigating to stock management page');
+            window.location.href = '/admin/stock';
+            return "Navigating to stock management";
+          }
+          
+          return "Navigation command not recognized";
+        } catch (error) {
+          console.error('Error handling navigation:', error);
+          return "Navigation failed";
+        }
+      }
+    );
+    console.log('✅ RPC method client.navigate registered successfully');
+
     // Register RPC method to provide Dexie profile/hydration data to agent
     console.log('🔧 Registering RPC method client.get_dexie_data');
     room.localParticipant.registerRpcMethod(
@@ -690,10 +707,10 @@ export function UnifiedChatAvatar() {
             console.log('👤 Returning profile data to agent:', profileData);
             return JSON.stringify(profileData);
           } else if (requestType === 'consumption') {
-            // Get recent consumption data from Dexie
-            const ownedProducts = await db.owned_products.toArray();
+            // Temporary placeholder until Supabase user profiles are implemented
+            console.log('🥤 Consumption data requested - using temporary placeholder');
             const consumptionData = {
-              owned_products: ownedProducts,
+              owned_products: [],
               timestamp: Date.now()
             };
             

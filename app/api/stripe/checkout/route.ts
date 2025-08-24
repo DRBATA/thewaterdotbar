@@ -106,11 +106,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No items in cart have valid pricing information for checkout." }, { status: 400 });
   }
 
-  // Parse POST body for utm_campaign
+  // Parse POST body for utm_campaign and venue_id
   let utm_campaign = "organic";
+  let venue_id = null;
   try {
     const reqBody = req ? await req.json() : {};
     utm_campaign = reqBody.utm_campaign || "organic";
+    venue_id = reqBody.venue_id || null;
   } catch (e) {
     // If parsing fails or body is empty, default to 'organic'
   }
@@ -125,6 +127,7 @@ export async function POST(req: Request) {
       metadata: {
         session_id: sessionId,
         utm_campaign,
+        venue_id: venue_id || "",
       },
     });
     return NextResponse.json({ url: checkout.url });
