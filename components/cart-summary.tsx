@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { ShoppingCart, XCircle } from "lucide-react"
+import { ShoppingCart, XCircle, QrCode } from "lucide-react"
 import { useVolumeDiscount } from "@/hooks/use-volume-discount"
 import { CopyDiscountCode } from "./copy-discount-code"
 import { DiscountConfetti } from "./discount-confetti"
@@ -16,6 +16,12 @@ interface CartItem {
   name: string
   price: number
   quantity: number
+}
+
+interface Venue {
+  id: string
+  name: string
+  address: string
 }
 
 interface CartSummaryProps {
@@ -33,6 +39,26 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
   const [showConfetti, setShowConfetti] = useState(false)
   const prevTierRef = useRef(tier)
   const [isOpen, setIsOpen] = useState(false)
+  const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null)
+  const [venues, setVenues] = useState<Venue[]>([])
+  const [showQR, setShowQR] = useState(false)
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null)
+
+  // Fetch venues on component mount
+  useEffect(() => {
+    const fetchVenues = async () => {
+      try {
+        const response = await fetch('/api/venues')
+        if (response.ok) {
+          const venuesData = await response.json()
+          setVenues(venuesData)
+        }
+      } catch (error) {
+        console.error('Error fetching venues:', error)
+      }
+    }
+    fetchVenues()
+  }, [])
 
   useEffect(() => {
     const prevMinItems = prevTierRef.current?.minItems ?? 0
@@ -124,11 +150,29 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
     };
     
     const handleAgentCheckout = () => {
-      console.log('🛒 Agent triggered checkout - proceeding to Stripe payment');
+      console.log('🛒 Agent triggered checkout - proceeding to payment');
       if (tier) {
         setConfirmationModalOpen(true);
       } else {
         handleCheckout();
+      }
+    };
+    
+    const handleAgentSetVenue = (event: any) => {
+      console.log('🛒 Agent set venue', event.detail);
+      const { venue_id, venue_name } = event.detail || {};
+      
+      if (venue_id) {
+        const venue = venues.find(v => v.id === venue_id);
+        if (venue) {
+          setSelectedVenue(venue);
+          console.log(`✅ Venue set to: ${venue.name}`);
+        } else {
+          // If venue not found in list, create a basic venue object
+          setSelectedVenue({ id: venue_id, name: venue_name || 'Selected Venue', address: '' });
+        }
+      } else {
+        setSelectedVenue(null);
       }
     };
     
@@ -186,6 +230,7 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
     window.addEventListener('agent-checkout', handleAgentCheckout);
     window.addEventListener('agent-copy-discount', handleAgentCopyDiscount);
     window.addEventListener('agent-get-cart-data', handleAgentGetCartData);
+    window.addEventListener('agent-set-venue', handleAgentSetVenue);
     
     console.log('🛒 Cart event listeners registered successfully');
     
@@ -199,6 +244,7 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
       window.removeEventListener('agent-checkout', handleAgentCheckout);
       window.removeEventListener('agent-copy-discount', handleAgentCopyDiscount);
       window.removeEventListener('agent-get-cart-data', handleAgentGetCartData);
+      window.removeEventListener('agent-set-venue', handleAgentSetVenue);
       console.log('🛒 Cart event listeners cleaned up');
     };
   }, [onRemoveItemAction, onClearCart, tier]);
@@ -221,6 +267,10 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
     }
   }
 
+  const generateQRCode = (url: string) => {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=600x600&format=png&ecc=M&data=${encodeURIComponent(url)}`;
+  };
+
   const handleCheckout = async () => {
     logEvent({
       event_name: "checkout_initiated",
@@ -230,10 +280,27 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
     if (loading) return
     setLoading(true)
     try {
-      const res = await fetch("/api/stripe/checkout", { method: "POST" })
-      const data = await res.json()
-      if (data.url) window.location.href = data.url
-      else alert(data.error || "Unable to start checkout")
+      // If venue is selected, generate QR code instead of redirect
+      if (selectedVenue) {
+        const res = await fetch("/api/stripe/checkout", { 
+          method: "POST",
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ venue_id: selectedVenue.id })
+        })
+        const data = await res.json()
+        if (data.url) {
+          setPaymentUrl(data.url)
+          setShowQR(true)
+        } else {
+          alert(data.error || "Unable to generate QR code")
+        }
+      } else {
+        // Default behavior - redirect to Stripe
+        const res = await fetch("/api/stripe/checkout", { method: "POST" })
+        const data = await res.json()
+        if (data.url) window.location.href = data.url
+        else alert(data.error || "Unable to start checkout")
+      }
     } catch (err) {
       alert("Network error starting checkout")
     } finally {
@@ -265,6 +332,33 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
           <SheetHeader>
             <SheetTitle className="text-2xl font-bold text-white">Your Order</SheetTitle>
           </SheetHeader>
+          
+          {/* Venue Selector */}
+          <div className="mb-4">
+            <label className="text-sm text-white/70 mb-2 block">Select Venue (Optional)</label>
+            <select
+              value={selectedVenue?.id || ''}
+              onChange={(e) => {
+                const venue = venues.find(v => v.id === e.target.value);
+                setSelectedVenue(venue || null);
+              }}
+              className="w-full p-3 bg-white/20 border border-white/30 rounded-lg text-white focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 transition-all"
+              style={{ WebkitAppearance: 'menulist', appearance: 'menulist' }}
+            >
+              <option value="">Online Order (Delivery)</option>
+              {venues.map(venue => (
+                <option key={venue.id} value={venue.id} className="bg-gray-800 text-white">
+                  {venue.name}
+                </option>
+              ))}
+            </select>
+            {selectedVenue && (
+              <p className="text-xs text-teal-300 mt-1">
+                📍 {selectedVenue.address}
+              </p>
+            )}
+          </div>
+          
           <Separator className="my-4 bg-white/30" />
           {cartItems.length === 0 ? (
             <div className="flex flex-1 items-center justify-center text-stone-500">Your cart is empty.</div>
@@ -322,7 +416,7 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
             onClick={() => tier ? setConfirmationModalOpen(true) : handleCheckout()}
             disabled={loading || cartItems.length === 0}
           >
-            {loading ? "Redirecting..." : "Proceed to Checkout"}
+            {loading ? "Processing..." : selectedVenue ? "Generate QR Code" : "Proceed to Checkout"}
           </Button>
         {isConfirmationModalOpen && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100]">
@@ -337,6 +431,44 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
                 }}>
                   Yes, Proceed to Checkout
                 </Button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* QR Code Modal */}
+        {showQR && paymentUrl && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100]">
+            <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4">
+              <div className="text-center">
+                <QrCode className="w-8 h-8 mx-auto mb-4 text-teal-600" />
+                <h3 className="text-xl font-bold mb-2 text-gray-900">Payment QR Code</h3>
+                <p className="text-gray-600 mb-2">Scan to pay at {selectedVenue?.name}</p>
+                <p className="text-sm text-gray-500 mb-6">Total: {formatCurrency(discountedTotal)}</p>
+                
+                <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                  <img 
+                    src={generateQRCode(paymentUrl)} 
+                    alt="Payment QR Code"
+                    className="mx-auto max-w-full h-auto w-64 h-64"
+                  />
+                </div>
+                
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => setShowQR(false)}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    onClick={() => window.open(paymentUrl, '_blank')}
+                    className="flex-1 bg-teal-600 hover:bg-teal-700"
+                  >
+                    Open Link
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
