@@ -64,16 +64,9 @@ export default async function HomePage() {
       )
     `)
     
-  // Fetch all wellness experiences with venue stock information, regardless of is_active flag
-  const { data: wellnessData, error: wellnessError } = await supabase
-    .from("experiences")
-    .select(`
-      *,
-      venue_stock(
-        qty_on_hand,
-        venue:venue_id(id, name, address, lat, lng, from_date, to_date)
-      )
-    `)
+  // Skip wellness experiences for now - no venue_stock relationship
+  const wellnessData: any[] = []
+  const wellnessError = null
 
   if (drinksError) {
     console.error("Error fetching drinks:", drinksError.message)
