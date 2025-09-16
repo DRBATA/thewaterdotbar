@@ -11,7 +11,7 @@ async function fetchProducts() {
       id, 
       name, 
       description, 
-      price, 
+      price_aed, 
       tags, 
       pairings, 
       faqs,
@@ -39,7 +39,11 @@ async function fetchProducts() {
           (!vs.venue.to_date || vs.venue.to_date >= currentDateStr)
         )
         ?.map((vs: any) => ({ id: vs.venue.id, name: vs.venue.name, qty_on_hand: vs.qty_on_hand })) || [];
-      return { ...item, venues };
+      return { 
+        ...item, 
+        price: item.price_aed, // Map price_aed to price field expected by UI
+        venues 
+      };
     }).filter(item => item.venues.length > 0);
   };
 
