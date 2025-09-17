@@ -164,45 +164,62 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
     logEvent({ event_name: "page_view", step_name: "landing" })
   }, [])
   
+  // Function to fetch cart items
+  const fetchCartItems = useCallback(async () => {
+    try {
+      const response = await fetch("/api/cart/get", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        
+        // Process cart items from database
+        if (data.items && data.items.length > 0) {
+          // Create cart items by looking up product details
+          const dbCartItems: CartItem[] = data.items
+            .map((item: any) => {
+              // Find matching drink or experience
+              const product = [...drinks, ...wellnessExperiences].find(p => p.id === item.item_id)
+              if (!product) return null
+              
+              return {
+                ...product,
+                quantity: item.qty
+              }
+            })
+            .filter(Boolean) // Remove any nulls
+          
+          setCartItems(dbCartItems)
+          console.log("Loaded " + dbCartItems.length + " items from saved cart")
+        } else {
+          setCartItems([])
+        }
+      }
+    } catch (error) {
+      console.error("Error loading cart items:", error)
+    }
+  }, [drinks, wellnessExperiences])
+
   // Load cart items from Supabase database on page load
   useEffect(() => {
-    const fetchCartItems = async () => {
-      try {
-        const response = await fetch("/api/cart/get", {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        })
-        
-        if (response.ok) {
-          const data = await response.json()
-          
-          // Process cart items from database
-          if (data.items && data.items.length > 0) {
-            // Create cart items by looking up product details
-            const dbCartItems: CartItem[] = data.items
-              .map((item: any) => {
-                // Find matching drink or experience
-                const product = [...drinks, ...wellnessExperiences].find(p => p.id === item.item_id)
-                if (!product) return null
-                
-                return {
-                  ...product,
-                  quantity: item.qty
-                }
-              })
-              .filter(Boolean) // Remove any nulls
-            
-            setCartItems(dbCartItems)
-            console.log("Loaded " + dbCartItems.length + " items from saved cart")
-          }
-        }
-      } catch (error) {
-        console.error("Error loading cart items:", error)
-      }
-    }
-    
     fetchCartItems()
-  }, [drinks, wellnessExperiences]); // Re-run if product data changes
+  }, [fetchCartItems])
+
+  // Listen for cart-updated events to refresh the cart
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      console.log("Cart updated event received, refreshing cart...")
+      fetchCartItems()
+    }
+
+    window.addEventListener('cart-updated', handleCartUpdate)
+    
+    return () => {
+      window.removeEventListener('cart-updated', handleCartUpdate)
+    }
+  }, [fetchCartItems])
 
   const handleAddToCart = useCallback(async (item: MenuItem) => {
     logEvent({ event_name: "add_to_cart", step_name: "cart", metadata: { itemId: item.id, itemName: item.name } })

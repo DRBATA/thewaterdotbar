@@ -627,6 +627,11 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                               size="sm"
                               onClick={async () => {
                                 console.log("Adding product to cart:", product)
+                                if (!product.id) {
+                                  console.error("Product ID is missing:", product)
+                                  toast({ title: "Error", description: "Product ID missing" })
+                                  return
+                                }
                                 try {
                                   const response = await fetch("/api/cart/add", {
                                     method: "POST",
@@ -640,6 +645,15 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                                     toast({ 
                                       title: "Added to cart",
                                       description: `${product.name} x${product.quantity}`
+                                    })
+                                    // Trigger cart refresh
+                                    window.dispatchEvent(new Event('cart-updated'))
+                                  } else {
+                                    const errorData = await response.text()
+                                    console.error("Cart add failed:", response.status, errorData)
+                                    toast({ 
+                                      title: "Failed to add to cart",
+                                      description: `Error: ${response.status}`
                                     })
                                   }
                                 } catch (error) {
