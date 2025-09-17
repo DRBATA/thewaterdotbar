@@ -28,20 +28,10 @@ export function HydrationAssessmentButton() {
   }, [])
 
   return (
-    <>
-      <Button
-        onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-24 right-6 z-50 rounded-full h-14 w-14 p-0 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg"
-        title="AI Hydration Assessment"
-      >
-        <Droplets className="h-6 w-6 text-white" />
-      </Button>
-
-      <HydrationAssessmentModal 
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        sessionId={sessionId}
-      />
-    </>
+    <HydrationAssessmentModal 
+      isOpen={isModalOpen}
+      onClose={() => setIsModalOpen(false)}
+      sessionId={sessionId}
+    />
   )
 }

@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   try {
     const { profile, activityLevel, sweatLoss, currentIntake, planDuration } = await request.json()
     
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Calculate daily targets based on profile
     const targets = calculateTargets(profile, activityLevel, sweatLoss)
@@ -38,32 +38,18 @@ export async function POST(request: NextRequest) {
       protein: Math.max(0, targets.protein - currentIntake.protein),
     }
     
-    // Get products with nutritional data
-    const { data: products } = await supabase
-      .from("products")
-      .select("*")
-      .not("sodium_mg", "is", null)
-      .or("potassium_mg.not.is.null,fiber_g.not.is.null,protein_g.not.is.null")
-      .eq("in_stock", true)
-      .limit(50)
+    // Call AI to generate drink recommendations for 50% of deficits
+    const drinkResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/ai/generate-drinks`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deficits })
+    })
     
-    if (!products || products.length === 0) {
-      // Fallback to basic products if no nutritional data
-      const { data: basicProducts } = await supabase
-        .from("products")
-        .select("*")
-        .eq("in_stock", true)
-        .limit(10)
-      
-      return NextResponse.json({
-        recommendations: basicProducts?.slice(0, 5).map(p => ({
-          id: p.id,
-          name: p.name,
-          quantity: 1,
-          price_aed: p.price_aed,
-        })) || []
-      })
-    }
+    const drinkData = await drinkResponse.json()
+    
+    return NextResponse.json({
+      recommendations: drinkData.drinks || []
+    })
     
     // FOCUSED PRODUCT SCORING ALGORITHM
     const scoredProducts = products.map(product => {

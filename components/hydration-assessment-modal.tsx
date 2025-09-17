@@ -566,10 +566,13 @@ export function HydrationAssessmentModal({ isOpen, onClose, sessionId }: Hydrati
                             protein: Math.max(0, profile.weight * 1.2 - totalIntake.protein)
                           }
                           
+                          // TODO: Add allergy input UI
+                          const allergies = [] // For now, empty array
+                          
                           const response = await fetch("/api/ai/generate-meals", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ deficits })
+                            body: JSON.stringify({ deficits, allergies })
                           })
                           
                           const data = await response.json()
