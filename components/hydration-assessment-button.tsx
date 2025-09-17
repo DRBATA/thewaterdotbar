@@ -10,13 +10,9 @@ export function HydrationAssessmentButton() {
   const [sessionId, setSessionId] = useState("")
 
   useEffect(() => {
-    // Get or create session ID from localStorage
-    let sid = localStorage.getItem("sessionId")
-    if (!sid) {
-      sid = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      localStorage.setItem("sessionId", sid)
-    }
-    setSessionId(sid)
+    // Get session ID from cookie (same as main cart)
+    // We'll pass empty string and let the API handle session creation
+    setSessionId("")
 
     // Listen for custom event from UnifiedChatAvatar
     const handleOpenModal = () => setIsModalOpen(true)
@@ -31,7 +27,6 @@ export function HydrationAssessmentButton() {
     <HydrationAssessmentModal 
       isOpen={isModalOpen}
       onClose={() => setIsModalOpen(false)}
-      sessionId={sessionId}
     />
   )
 }

@@ -51,10 +51,10 @@ interface RecommendedProduct {
 interface HydrationAssessmentModalProps {
   isOpen: boolean
   onClose: () => void
-  sessionId: string
+  sessionId?: string  // Make optional since we'll use cookie session
 }
 
-export function HydrationAssessmentModal({ isOpen, onClose, sessionId }: HydrationAssessmentModalProps) {
+export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmentModalProps) {
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("profile")
   const [isProcessing, setIsProcessing] = useState(false)
