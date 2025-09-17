@@ -40,7 +40,7 @@ export async function POST(req: Request) {
         .from("cart_headers")
         .insert({
           session_id: sessionId,
-          venue_id: venue_id
+          venue_id: venue_id || null
         })
         .select("id")
         .single();

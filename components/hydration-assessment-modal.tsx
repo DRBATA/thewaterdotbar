@@ -195,21 +195,16 @@ export function HydrationAssessmentModal({ isOpen, onClose, sessionId }: Hydrati
 
   // Add all recommendations to cart with multiplier
   const addAllToCart = async () => {
-    const multipliers = { 1: 1, 3: 1.7, 5: 1.9 }
-    const multiplier = multipliers[planDuration]
-
     setIsProcessing(true)
+    
     try {
-      for (const item of aiRecommendations) {
-        const quantity = Math.ceil(item.quantity * multiplier)
-        
-        await fetch("/api/cart/add", {
+      for (const product of aiRecommendations) {
+        const response = await fetch("/api/cart/add", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            productId: item.id,
-            quantity,
-            sessionId,
+            itemId: product.id,
+            qty: product.quantity,
           }),
         })
       }
@@ -614,14 +609,14 @@ export function HydrationAssessmentModal({ isOpen, onClose, sessionId }: Hydrati
                             <Button
                               size="sm"
                               onClick={async () => {
+                                console.log("Adding product to cart:", product)
                                 try {
                                   const response = await fetch("/api/cart/add", {
                                     method: "POST",
                                     headers: { "Content-Type": "application/json" },
                                     body: JSON.stringify({
-                                      sessionId,
-                                      productId: product.id,
-                                      quantity: product.quantity,
+                                      itemId: product.id,
+                                      qty: product.quantity,
                                     }),
                                   })
                                   if (response.ok) {

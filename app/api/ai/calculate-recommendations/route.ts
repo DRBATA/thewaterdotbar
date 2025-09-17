@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     
     // Get products with nutritional data for AI-based recommendations
     // Filter by actual venue stock (only items with qty_on_hand > 0)
-    const { data: products } = await supabase
+    const { data: productsWithStock } = await supabase
       .from("products")
       .select(`
         *,
@@ -49,6 +49,14 @@ export async function POST(request: NextRequest) {
       .not("volume_ml", "is", null)
       .gt("venue_stock.qty_on_hand", 0)
       .limit(50)
+    
+    // Clean up the products array to remove the nested venue_stock
+    const products = productsWithStock?.map(p => {
+      const { venue_stock, ...product } = p
+      return product
+    })
+    
+    console.log("Products with stock:", products?.slice(0, 2).map(p => ({ id: p.id, name: p.name })))
     
     if (!products || products.length === 0) {
       return NextResponse.json({ recommendations: [] })
