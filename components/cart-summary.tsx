@@ -254,12 +254,17 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
   }
 
   const handleClearCart = async () => {
-    if (clearingCart || cartItems.length === 0) return
     setClearingCart(true)
     try {
-      const response = await fetch("/api/cart/clear", { method: "POST", headers: { "Content-Type": "application/json" } })
-      if (response.ok && onClearCart) onClearCart()
-      else console.error("Failed to clear cart")
+      const response = await fetch("/api/cart/clear", {
+        method: "POST",
+      })
+      if (response.ok) {
+        onClearCart?.()
+        setIsOpen(false)
+        // Trigger cart refresh event to reload with new cart_header
+        window.dispatchEvent(new Event('cart-updated'))
+      }
     } catch (error) {
       console.error("Error clearing cart:", error)
     } finally {
