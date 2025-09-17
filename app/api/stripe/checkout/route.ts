@@ -14,6 +14,7 @@ export async function POST(req: Request) {
   const supabase = await createClient()
 
   const sessionId = await getSessionId()
+  console.log(`🛒 CHECKOUT: Using session_id=${sessionId}`)
 
   // Fetch cart items from the normalized cart structure
   // 1. Find cart header for this session
@@ -26,13 +27,17 @@ export async function POST(req: Request) {
     .maybeSingle()
   
   if (headerError) {
+    console.error(`🛒 CHECKOUT: Cart header error:`, headerError)
     return NextResponse.json({ error: `Error finding cart: ${headerError.message}` }, { status: 400 })
   }
     
   // Check if we have a cart
   if (!cartHeader) {
+    console.log(`🛒 CHECKOUT: No cart found for session ${sessionId}`)
     return NextResponse.json({ error: "Cart is empty" }, { status: 400 })
   }
+  
+  console.log(`🛒 CHECKOUT: Found cart ${cartHeader.id} for session ${sessionId}`)
   
   // 2. Fetch items from the cart
   const { data: cartRows, error: itemsError } = await supabase
