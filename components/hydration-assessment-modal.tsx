@@ -100,6 +100,19 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
     polyphenols: 0,
   })
 
+  // Individual meal nutrition tracking
+  const [mealNutrition, setMealNutrition] = useState<{
+    breakfast: NutritionalIntake | null,
+    lunch: NutritionalIntake | null,
+    dinner: NutritionalIntake | null,
+    snacks: NutritionalIntake | null,
+  }>({
+    breakfast: null,
+    lunch: null,
+    dinner: null,
+    snacks: null,
+  })
+
   // Update profile calculations
   const updateProfile = (field: keyof BodyComposition, value: number) => {
     const newProfile = { ...profile, [field]: value }
@@ -129,7 +142,11 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
 
   // Process meal with AI (nano model for simple parsing)
   const processMealWithAI = async (meal: string, mealType: string) => {
-    if (!meal.trim()) return
+    if (!meal.trim()) {
+      // Clear individual meal nutrition if meal is empty
+      setMealNutrition(prev => ({ ...prev, [mealType]: null }))
+      return
+    }
 
     setIsProcessing(true)
     try {
@@ -140,6 +157,22 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
       })
 
       const data = await response.json()
+      
+      // Store individual meal nutrition
+      const mealData = {
+        water: data.water || 0,
+        sodium: data.sodium || 0,
+        potassium: data.potassium || 0,
+        magnesium: data.magnesium || 0,
+        calcium: data.calcium || 0,
+        fiber: data.fiber || 0,
+        protein: data.protein || 0,
+        probiotics: data.probiotics || 0,
+        omega3: data.omega3 || 0,
+        polyphenols: data.polyphenols || 0,
+      }
+      
+      setMealNutrition(prev => ({ ...prev, [mealType]: mealData }))
       
       // Update total intake with parsed nutritional data
       setTotalIntake(prev => ({
@@ -525,42 +558,122 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
               <CardContent className="space-y-4">
                 <div>
                   <Label>Breakfast</Label>
-                  <Input
-                    placeholder="e.g., eggs, toast, orange juice"
-                    value={breakfast}
-                    onChange={(e) => setBreakfast(e.target.value)}
-                    onBlur={() => processMealWithAI(breakfast, "breakfast")}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="e.g., eggs, toast, orange juice"
+                      value={breakfast}
+                      onChange={(e) => setBreakfast(e.target.value)}
+                    />
+                    <Button 
+                      size="sm" 
+                      onClick={() => processMealWithAI(breakfast, "breakfast")}
+                      disabled={!breakfast.trim()}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  {mealNutrition.breakfast && (
+                    <div className="p-2 bg-blue-50 rounded-md mt-2 text-xs">
+                      <div className="font-medium text-blue-800 mb-1">From breakfast:</div>
+                      <div className="text-blue-700 space-y-0.5">
+                        {mealNutrition.breakfast.water > 0 && <div>Water: {mealNutrition.breakfast.water}ml</div>}
+                        {mealNutrition.breakfast.sodium > 0 && <div>Sodium: {mealNutrition.breakfast.sodium}mg</div>}
+                        {mealNutrition.breakfast.potassium > 0 && <div>Potassium: {mealNutrition.breakfast.potassium}mg</div>}
+                        {mealNutrition.breakfast.fiber > 0 && <div>Fiber: {mealNutrition.breakfast.fiber}g</div>}
+                        {mealNutrition.breakfast.protein > 0 && <div>Protein: {mealNutrition.breakfast.protein}g</div>}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
                   <Label>Lunch</Label>
-                  <Input
-                    placeholder="e.g., chicken salad, rice"
-                    value={lunch}
-                    onChange={(e) => setLunch(e.target.value)}
-                    onBlur={() => processMealWithAI(lunch, "lunch")}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="e.g., chicken salad, rice"
+                      value={lunch}
+                      onChange={(e) => setLunch(e.target.value)}
+                    />
+                    <Button 
+                      size="sm" 
+                      onClick={() => processMealWithAI(lunch, "lunch")}
+                      disabled={!lunch.trim()}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  {mealNutrition.lunch && (
+                    <div className="p-2 bg-green-50 rounded-md mt-2 text-xs">
+                      <div className="font-medium text-green-800 mb-1">From lunch:</div>
+                      <div className="text-green-700 space-y-0.5">
+                        {mealNutrition.lunch.water > 0 && <div>Water: {mealNutrition.lunch.water}ml</div>}
+                        {mealNutrition.lunch.sodium > 0 && <div>Sodium: {mealNutrition.lunch.sodium}mg</div>}
+                        {mealNutrition.lunch.potassium > 0 && <div>Potassium: {mealNutrition.lunch.potassium}mg</div>}
+                        {mealNutrition.lunch.fiber > 0 && <div>Fiber: {mealNutrition.lunch.fiber}g</div>}
+                        {mealNutrition.lunch.protein > 0 && <div>Protein: {mealNutrition.lunch.protein}g</div>}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
                   <Label>Dinner</Label>
-                  <Input
-                    placeholder="e.g., salmon, vegetables"
-                    value={dinner}
-                    onChange={(e) => setDinner(e.target.value)}
-                    onBlur={() => processMealWithAI(dinner, "dinner")}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="e.g., salmon, vegetables"
+                      value={dinner}
+                      onChange={(e) => setDinner(e.target.value)}
+                    />
+                    <Button 
+                      size="sm" 
+                      onClick={() => processMealWithAI(dinner, "dinner")}
+                      disabled={!dinner.trim()}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  {mealNutrition.dinner && (
+                    <div className="p-2 bg-orange-50 rounded-md mt-2 text-xs">
+                      <div className="font-medium text-orange-800 mb-1">From dinner:</div>
+                      <div className="text-orange-700 space-y-0.5">
+                        {mealNutrition.dinner.water > 0 && <div>Water: {mealNutrition.dinner.water}ml</div>}
+                        {mealNutrition.dinner.sodium > 0 && <div>Sodium: {mealNutrition.dinner.sodium}mg</div>}
+                        {mealNutrition.dinner.potassium > 0 && <div>Potassium: {mealNutrition.dinner.potassium}mg</div>}
+                        {mealNutrition.dinner.fiber > 0 && <div>Fiber: {mealNutrition.dinner.fiber}g</div>}
+                        {mealNutrition.dinner.protein > 0 && <div>Protein: {mealNutrition.dinner.protein}g</div>}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
                   <Label>Snacks</Label>
-                  <Input
-                    placeholder="e.g., apple, nuts"
-                    value={snacks}
-                    onChange={(e) => setSnacks(e.target.value)}
-                    onBlur={() => processMealWithAI(snacks, "snacks")}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="e.g., apple, nuts"
+                      value={snacks}
+                      onChange={(e) => setSnacks(e.target.value)}
+                    />
+                    <Button 
+                      size="sm" 
+                      onClick={() => processMealWithAI(snacks, "snacks")}
+                      disabled={!snacks.trim()}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  {mealNutrition.snacks && (
+                    <div className="p-2 bg-purple-50 rounded-md mt-2 text-xs">
+                      <div className="font-medium text-purple-800 mb-1">From snacks:</div>
+                      <div className="text-purple-700 space-y-0.5">
+                        {mealNutrition.snacks.water > 0 && <div>Water: {mealNutrition.snacks.water}ml</div>}
+                        {mealNutrition.snacks.sodium > 0 && <div>Sodium: {mealNutrition.snacks.sodium}mg</div>}
+                        {mealNutrition.snacks.potassium > 0 && <div>Potassium: {mealNutrition.snacks.potassium}mg</div>}
+                        {mealNutrition.snacks.fiber > 0 && <div>Fiber: {mealNutrition.snacks.fiber}g</div>}
+                        {mealNutrition.snacks.protein > 0 && <div>Protein: {mealNutrition.snacks.protein}g</div>}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 {/* Show meal nutritional breakdown */}
