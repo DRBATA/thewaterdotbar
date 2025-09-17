@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { MenuDisplay } from "@/components/menu-display" // We will create this next
 import { UnifiedChatAvatar } from "@/components/UnifiedChatAvatar"
 import PageClientWrapper from "@/components/PageClientWrapper"
+import { HydrationAssessmentButton } from "@/components/hydration-assessment-button"
 
 // Define types for fetched data
 interface Product {
@@ -163,6 +164,7 @@ export default async function HomePage() {
           initialDrinks={availableDrinks} 
           initialWellnessExperiences={availableExperiences} 
         />
+        <HydrationAssessmentButton />
         <UnifiedChatAvatar />
       </div>
     </PageClientWrapper>
