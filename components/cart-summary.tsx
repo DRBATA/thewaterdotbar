@@ -338,9 +338,22 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
             <label className="text-sm text-white/70 mb-2 block">Select Venue (Optional)</label>
             <select
               value={selectedVenue?.id || ''}
-              onChange={(e) => {
+              onChange={async (e) => {
                 const venue = venues.find(v => v.id === e.target.value);
                 setSelectedVenue(venue || null);
+                
+                // Update cart header with venue_id in database
+                if (venue) {
+                  try {
+                    await fetch('/api/cart/update-venue', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ venue_id: venue.id })
+                    });
+                  } catch (error) {
+                    console.error('Failed to update cart venue:', error);
+                  }
+                }
               }}
               className="w-full p-3 bg-white/20 border border-white/30 rounded-lg text-white focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 transition-all"
               style={{ WebkitAppearance: 'menulist', appearance: 'menulist' }}
