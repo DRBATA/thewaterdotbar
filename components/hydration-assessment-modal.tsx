@@ -396,21 +396,117 @@ export function HydrationAssessmentModal({ isOpen, onClose, sessionId }: Hydrati
             <Card>
               <CardHeader>
                 <CardTitle>What have you had to drink today?</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Click quick add buttons or type custom drinks
+                </p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <Label>Drinks (e.g., "2 coffees, 1L water, coconut water")</Label>
+                <div className="space-y-2">
+                  <Label>Quick Add Drinks</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setTotalIntake(prev => ({
+                          ...prev,
+                          water: prev.water + 240,
+                        }))
+                        toast({ title: "Added Coffee (240ml)" })
+                      }}
+                    >
+                      ☕ Coffee (240ml)
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setTotalIntake(prev => ({
+                          ...prev,
+                          water: prev.water + 500,
+                        }))
+                        toast({ title: "Added Water (500ml)" })
+                      }}
+                    >
+                      💧 Water (500ml)
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setTotalIntake(prev => ({
+                          ...prev,
+                          water: prev.water + 500,
+                          potassium: prev.potassium + 600,
+                          sodium: prev.sodium + 50,
+                        }))
+                        toast({ title: "Added Coconut Water" })
+                      }}
+                    >
+                      🥥 Coconut Water
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setTotalIntake(prev => ({
+                          ...prev,
+                          water: prev.water + 500,
+                          sodium: prev.sodium + 300,
+                          potassium: prev.potassium + 100,
+                        }))
+                        toast({ title: "Added Electrolyte Drink" })
+                      }}
+                    >
+                      ⚡ Electrolytes
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setTotalIntake(prev => ({
+                          ...prev,
+                          water: prev.water + 350,
+                          potassium: prev.potassium + 450,
+                          sodium: prev.sodium + 150,
+                          protein: prev.protein + 8,
+                        }))
+                        toast({ title: "Added Milk" })
+                      }}
+                    >
+                      🥛 Milk (350ml)
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setTotalIntake(prev => ({
+                          ...prev,
+                          water: prev.water + 250,
+                          fiber: prev.fiber + 8.5,
+                          protein: prev.protein + 12,
+                        }))
+                        toast({ title: "Added Rite Greens" })
+                      }}
+                    >
+                      🥬 Rite Greens
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Custom Drinks</Label>
                   <Input
-                    placeholder="List all drinks you've had today..."
+                    placeholder="Enter other drinks (e.g., '2 venti macchiatos')"
                     value={currentDrinks}
                     onChange={(e) => setCurrentDrinks(e.target.value)}
                     onBlur={() => processMealWithAI(currentDrinks, "drinks")}
                   />
                 </div>
-
+                
                 <Button 
+                  className="w-full mt-4"
                   onClick={() => setActiveTab("meals")}
-                  className="w-full"
                   disabled={isProcessing}
                 >
                   {isProcessing ? (
@@ -504,16 +600,59 @@ export function HydrationAssessmentModal({ isOpen, onClose, sessionId }: Hydrati
 
                 {aiRecommendations.length > 0 ? (
                   <div className="space-y-4">
-                    <div className="space-y-2">
-                      {aiRecommendations.map((item, idx) => (
-                        <div key={idx} className="flex justify-between items-center p-3 border rounded-lg">
-                          <div>
-                            <p className="font-medium">{item.name}</p>
+                    <div className="grid gap-3">
+                      {aiRecommendations.map((product, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex-1">
+                            <p className="font-medium">{product.name}</p>
                             <p className="text-sm text-muted-foreground">
-                              Qty: {item.quantity} × {planDuration === 1 ? 1 : planDuration === 3 ? 1.7 : 1.9} = {Math.ceil(item.quantity * (planDuration === 1 ? 1 : planDuration === 3 ? 1.7 : 1.9))}
+                              Quantity: {product.quantity}
+                              {product.water_content_ml && ` • ${product.water_content_ml * product.quantity}ml`}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {product.sodium_mg && `Na: ${product.sodium_mg}mg `}
+                              {product.potassium_mg && `K: ${product.potassium_mg}mg `}
+                              {product.fiber_g && `Fiber: ${product.fiber_g}g`}
                             </p>
                           </div>
-                          <p className="font-medium">AED {(item.price_aed * Math.ceil(item.quantity * (planDuration === 1 ? 1 : planDuration === 3 ? 1.7 : 1.9))).toFixed(2)}</p>
+                          <div className="flex items-center gap-2">
+                            <div className="text-right">
+                              <p className="text-sm font-medium">
+                                {product.price_aed * product.quantity} AED
+                              </p>
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  const response = await fetch("/api/cart/add", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                      sessionId,
+                                      productId: product.id,
+                                      quantity: product.quantity,
+                                    }),
+                                  })
+                                  if (response.ok) {
+                                    toast({ 
+                                      title: "Added to cart",
+                                      description: `${product.name} x${product.quantity}`
+                                    })
+                                  }
+                                } catch (error) {
+                                  console.error("Error adding to cart:", error)
+                                  toast({ 
+                                    title: "Error",
+                                    description: "Failed to add to cart",
+                                    variant: "destructive"
+                                  })
+                                }
+                              }}
+                            >
+                              <ShoppingCart className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>

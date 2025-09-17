@@ -38,140 +38,73 @@ export async function POST(request: NextRequest) {
       protein: Math.max(0, targets.protein - currentIntake.protein),
     }
     
-    // Call AI to generate drink recommendations for 50% of deficits
-    const drinkResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/ai/generate-drinks`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ deficits })
-    })
+    // Get products with nutritional data for AI-based recommendations
+    const { data: products } = await supabase
+      .from("products")
+      .select("*")
+      .not("volume_ml", "is", null)
+      .limit(50)
     
-    const drinkData = await drinkResponse.json()
+    if (!products || products.length === 0) {
+      return NextResponse.json({ recommendations: [] })
+    }
     
-    return NextResponse.json({
-      recommendations: drinkData.drinks || []
-    })
-    
-    // FOCUSED PRODUCT SCORING ALGORITHM
+    // Simple scoring algorithm for now (can be replaced with AI call later)
     const scoredProducts = products.map(product => {
       let score = 0
-      const contributions = {}
       
-      // Priority 1: B-Vitamins (Rite Greens for vitamins/minerals)
-      if (product.vitamin_b6_mg || product.vitamin_b12_mcg || product.iron_mg || product.zinc_mg) {
-        score += 2.0  // High priority for Rite Greens
-        contributions.vitamins = true
+      // Score based on water content
+      if (product.water_content_ml && deficits.water > 0) {
+        score += (product.water_content_ml / 500) * 10 // Normalize to 500ml
       }
       
-      // Priority 2: Fiber for gut health - if <15g, recommend gut health sachet
-      if (deficits.fiber > 0 && (product.soluble_fiber_g || product.fiber_g)) {
-        const fiberAmount = product.soluble_fiber_g || product.fiber_g || 0
-        const contribution = Math.min(fiberAmount, deficits.fiber)
-        // Boost score for products with high soluble fiber (gut health sachets)
-        const fiberBonus = product.soluble_fiber_g ? 2.0 : 1.0
-        score += (contribution / deficits.fiber) * fiberBonus
-        contributions.fiber = contribution
+      // Score based on sodium
+      if (product.sodium_mg && deficits.sodium > 0) {
+        score += Math.min(product.sodium_mg / deficits.sodium, 1) * 20
       }
       
-      // Priority 3: Electrolyte balance
-      // Recommend Coconut products when potassium deficit exists AND product has high K+
-      if (deficits.potassium > 0 && product.potassium_mg) {
-        // Only score highly if this product actually has significant potassium (like coconut water)
-        if (product.potassium_mg > 400) {
-          const contribution = Math.min(product.potassium_mg, deficits.potassium)
-          score += (contribution / deficits.potassium) * 1.0
-          contributions.potassium = contribution
-        }
+      // Score based on potassium
+      if (product.potassium_mg && deficits.potassium > 0) {
+        score += Math.min(product.potassium_mg / deficits.potassium, 1) * 20
       }
       
-      // Recommend Celery products when sodium deficit exists AND product has high Na+
-      if (deficits.sodium > 0 && product.sodium_mg) {
-        // Only score highly if this product actually has significant sodium (like celery juice)
-        if (product.sodium_mg > 150) {
-          const contribution = Math.min(product.sodium_mg, deficits.sodium)
-          score += (contribution / deficits.sodium) * 0.9
-          contributions.sodium = contribution
-        }
+      // Score based on fiber
+      if (product.fiber_g && deficits.fiber > 0) {
+        score += Math.min(product.fiber_g / deficits.fiber, 1) * 15
       }
       
-      // Priority 4: Protein (any protein-rich product)
-      if (deficits.protein > 0 && product.protein_g && product.protein_g > 5) {
-        const contribution = Math.min(product.protein_g, deficits.protein)
-        score += (contribution / deficits.protein) * 0.8
-        contributions.protein = contribution
+      // Score based on protein
+      if (product.protein_g && deficits.protein > 0) {
+        score += Math.min(product.protein_g / deficits.protein, 1) * 15
       }
       
-      // Priority 5: Plain water (Perrier) for hydration-only needs
-      if (deficits.water > 0 && product.water_content_ml) {
-        const contribution = Math.min(product.water_content_ml, deficits.water)
-        // Boost score for plain water products when only hydration is needed
-        const isPlainWater = !product.sodium_mg && !product.potassium_mg && !product.fiber_g
-        const waterBonus = isPlainWater ? 0.8 : 0.5
-        score += (contribution / deficits.water) * waterBonus
-        contributions.water = contribution
-      }
-      
-      // Priority 6: Polyphenols (kombucha) - low priority since coffee/tea already provide
-      if (product.polyphenols_mg && product.polyphenols_mg > 100) {
-        score += 0.2  // Low priority bonus for polyphenol-rich products
-        contributions.polyphenols = true
-      }
-      
-      return {
-        ...product,
-        score,
-        contributions,
-      }
+      return { ...product, score }
     })
     
     // Sort by score and select top items
     scoredProducts.sort((a, b) => b.score - a.score)
     
-    // Greedy selection: pick items that best close gaps
-    const recommendations = []
-    const remainingDeficits = { ...deficits }
-    const maxItems = 8 // Reasonable cart size
-    
-    for (const product of scoredProducts) {
-      if (recommendations.length >= maxItems) break
+    // Select top 5 products with quantities
+    const recommendations = scoredProducts.slice(0, 5).map(product => {
+      let quantity = 1
       
-      // Check if this product helps with remaining deficits
-      let helps = false
-      if (product.water_content_ml && remainingDeficits.water > 0) helps = true
-      if (product.sodium_mg && remainingDeficits.sodium > 0) helps = true
-      if (product.potassium_mg && remainingDeficits.potassium > 0) helps = true
-      if (product.fiber_g && remainingDeficits.fiber > 0) helps = true
-      if (product.protein_g && remainingDeficits.protein > 0) helps = true
-      
-      if (helps) {
-        // Calculate quantity needed
-        let quantity = 1
-        
-        // For water-based products, calculate based on water deficit
-        if (product.water_content_ml && remainingDeficits.water > 0) {
-          quantity = Math.min(3, Math.ceil(remainingDeficits.water / product.water_content_ml))
-        }
-        
-        recommendations.push({
-          id: product.id,
-          name: product.name,
-          quantity,
-          sodium_mg: product.sodium_mg,
-          potassium_mg: product.potassium_mg,
-          magnesium_mg: product.magnesium_mg,
-          fiber_g: product.fiber_g,
-          protein_g: product.protein_g,
-          water_content_ml: product.water_content_ml,
-          price_aed: product.price_aed,
-        })
-        
-        // Update remaining deficits
-        if (product.water_content_ml) remainingDeficits.water -= product.water_content_ml * quantity
-        if (product.sodium_mg) remainingDeficits.sodium -= product.sodium_mg * quantity
-        if (product.potassium_mg) remainingDeficits.potassium -= product.potassium_mg * quantity
-        if (product.fiber_g) remainingDeficits.fiber -= product.fiber_g * quantity
-        if (product.protein_g) remainingDeficits.protein -= product.protein_g * quantity
+      // Calculate quantity based on water deficit
+      if (product.water_content_ml && deficits.water > 0) {
+        quantity = Math.min(3, Math.ceil(deficits.water / product.water_content_ml))
       }
-    }
+      
+      return {
+        id: product.id,
+        name: product.name,
+        quantity,
+        sodium_mg: product.sodium_mg,
+        potassium_mg: product.potassium_mg,
+        fiber_g: product.fiber_g,
+        protein_g: product.protein_g,
+        water_content_ml: product.water_content_ml,
+        price_aed: product.price_aed,
+      }
+    })
     
     return NextResponse.json({ recommendations })
     
