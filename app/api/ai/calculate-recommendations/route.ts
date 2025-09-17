@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import OpenAI from "openai"
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+})
 
 interface BodyProfile {
   weight: number
@@ -32,8 +37,6 @@ export async function POST(request: NextRequest) {
       water: Math.max(0, targets.water - currentIntake.water),
       sodium: Math.max(0, targets.sodium - currentIntake.sodium),
       potassium: Math.max(0, targets.potassium - currentIntake.potassium),
-      magnesium: Math.max(0, targets.magnesium - currentIntake.magnesium),
-      calcium: Math.max(0, targets.calcium - currentIntake.calcium),
       fiber: Math.max(0, targets.fiber - currentIntake.fiber),
       protein: Math.max(0, targets.protein - currentIntake.protein),
     }
@@ -62,64 +65,115 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ recommendations: [] })
     }
     
-    // Simple scoring algorithm for now (can be replaced with AI call later)
-    const scoredProducts = products.map(product => {
-      let score = 0
+    // Use OpenAI to intelligently select products based on deficits
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are a hydration and nutrition expert recommending drinks from The Water Bar.
+            
+RULES:
+1. ALWAYS recommend at least 3 items minimum (even if no deficits, suggest things to try)
+2. Prioritize products that address the largest deficits
+3. For each product, suggest appropriate quantities
+4. Focus on the actual nutritional benefits
+
+Return a JSON array of recommendations with this exact structure:
+{
+  "recommendations": [
+    {
+      "id": "product-uuid",
+      "quantity": 1-3,
+      "reason": "Brief explanation of why this helps"
+    }
+  ]
+}`
+          },
+          {
+            role: "user",
+            content: `Current deficits:
+- Water: ${deficits.water}ml
+- Sodium: ${deficits.sodium}mg
+- Potassium: ${deficits.potassium}mg
+- Fiber: ${deficits.fiber}g
+- Protein: ${deficits.protein}g
+
+Available products in stock:
+${products.map(p => `- ${p.name} (ID: ${p.id})
+  Water: ${p.water_content_ml}ml, Sodium: ${p.sodium_mg}mg, Potassium: ${p.potassium_mg}mg, Fiber: ${p.fiber_g}g, Protein: ${p.protein_g}g`).join('\n')}
+
+Select the best products to address these deficits. If potassium deficit is high, prioritize coconut water. If fiber deficit exists, include Poppi or Rite Gut Health. For sodium, consider SoCelery.`
+          }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.7,
+        max_tokens: 500,
+      })
       
-      // Score based on water content
-      if (product.water_content_ml && deficits.water > 0) {
-        score += (product.water_content_ml / 500) * 10 // Normalize to 500ml
+      const aiResponse = JSON.parse(completion.choices[0]?.message?.content || '{"recommendations": []}')
+      
+      // Map AI recommendations to full product details
+      const recommendations = aiResponse.recommendations.map((rec: any) => {
+        const product = products.find(p => p.id === rec.id)
+        if (!product) return null
+        
+        return {
+          id: product.id,
+          name: product.name,
+          quantity: rec.quantity || 1,
+          sodium_mg: product.sodium_mg,
+          potassium_mg: product.potassium_mg,
+          fiber_g: product.fiber_g,
+          protein_g: product.protein_g,
+          water_content_ml: product.water_content_ml,
+          price_aed: product.price_aed,
+          reason: rec.reason,
+        }
+      }).filter(Boolean)
+      
+      // Ensure at least 3 items
+      if (recommendations.length < 3) {
+        const additionalProducts = products
+          .filter(p => !recommendations.find((r: any) => r.id === p.id))
+          .slice(0, 3 - recommendations.length)
+          .map(product => ({
+            id: product.id,
+            name: product.name,
+            quantity: 1,
+            sodium_mg: product.sodium_mg,
+            potassium_mg: product.potassium_mg,
+            fiber_g: product.fiber_g,
+            protein_g: product.protein_g,
+            water_content_ml: product.water_content_ml,
+            price_aed: product.price_aed,
+            reason: "Recommended to explore",
+          }))
+        
+        recommendations.push(...additionalProducts)
       }
       
-      // Score based on sodium
-      if (product.sodium_mg && deficits.sodium > 0) {
-        score += Math.min(product.sodium_mg / deficits.sodium, 1) * 20
-      }
+      return NextResponse.json({ recommendations })
       
-      // Score based on potassium
-      if (product.potassium_mg && deficits.potassium > 0) {
-        score += Math.min(product.potassium_mg / deficits.potassium, 1) * 20
-      }
+    } catch (error) {
+      console.error("OpenAI error:", error)
       
-      // Score based on fiber
-      if (product.fiber_g && deficits.fiber > 0) {
-        score += Math.min(product.fiber_g / deficits.fiber, 1) * 15
-      }
-      
-      // Score based on protein
-      if (product.protein_g && deficits.protein > 0) {
-        score += Math.min(product.protein_g / deficits.protein, 1) * 15
-      }
-      
-      return { ...product, score }
-    })
-    
-    // Sort by score and select top items
-    scoredProducts.sort((a, b) => b.score - a.score)
-    
-    // Select top 5 products with quantities
-    const recommendations = scoredProducts.slice(0, 5).map(product => {
-      let quantity = 1
-      
-      // Calculate quantity based on water deficit
-      if (product.water_content_ml && deficits.water > 0) {
-        quantity = Math.min(3, Math.ceil(deficits.water / product.water_content_ml))
-      }
-      
-      return {
+      // Fallback to simple selection if AI fails
+      const fallbackRecommendations = products.slice(0, 3).map(product => ({
         id: product.id,
         name: product.name,
-        quantity,
+        quantity: 1,
         sodium_mg: product.sodium_mg,
         potassium_mg: product.potassium_mg,
         fiber_g: product.fiber_g,
         protein_g: product.protein_g,
         water_content_ml: product.water_content_ml,
         price_aed: product.price_aed,
-      }
-    })
-    
-    return NextResponse.json({ recommendations })
+      }))
+      
+      return NextResponse.json({ recommendations: fallbackRecommendations })
+    }
     
   } catch (error) {
     console.error("Error calculating recommendations:", error)

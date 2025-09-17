@@ -398,7 +398,7 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>Quick Add Drinks</Label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2 mb-3">
                     <Button
                       variant="outline"
                       size="sm"
@@ -487,6 +487,20 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                       🥬 Rite Greens
                     </Button>
                   </div>
+                  
+                  {/* Show cumulative totals */}
+                  {totalIntake.water > 0 && (
+                    <div className="p-3 bg-muted rounded-lg">
+                      <p className="text-sm font-medium mb-1">Current Totals:</p>
+                      <p className="text-xs text-muted-foreground">
+                        Water: {totalIntake.water}ml
+                        {totalIntake.sodium > 0 && ` • Sodium: ${totalIntake.sodium}mg`}
+                        {totalIntake.potassium > 0 && ` • Potassium: ${totalIntake.potassium}mg`}
+                        {totalIntake.fiber > 0 && ` • Fiber: ${totalIntake.fiber}g`}
+                        {totalIntake.protein > 0 && ` • Protein: ${totalIntake.protein}g`}
+                      </p>
+                    </div>
+                  )}
                 </div>
                 
                 <Button 
@@ -548,17 +562,20 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                     onBlur={() => processMealWithAI(snacks, "snacks")}
                   />
                 </div>
-
-                <Button 
-                  onClick={() => setActiveTab("recommendations")}
-                  className="w-full"
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
-                  View Recommendations
-                </Button>
+                
+                {/* Show meal nutritional breakdown */}
+                {(totalIntake.sodium > 0 || totalIntake.potassium > 0 || totalIntake.fiber > 0) && (
+                  <div className="p-3 bg-muted rounded-lg mt-4">
+                    <p className="text-sm font-medium mb-1">Nutrients from meals:</p>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      {totalIntake.water > 0 && <div>Water: {totalIntake.water}ml</div>}
+                      {totalIntake.sodium > 0 && <div>Sodium: {totalIntake.sodium}mg</div>}
+                      {totalIntake.potassium > 0 && <div>Potassium: {totalIntake.potassium}mg</div>}
+                      {totalIntake.fiber > 0 && <div>Fiber: {totalIntake.fiber}g</div>}
+                      {totalIntake.protein > 0 && <div>Protein: {totalIntake.protein}g</div>}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
