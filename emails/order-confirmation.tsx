@@ -4,7 +4,7 @@ import * as React from 'react';
 interface OrderConfirmationEmailProps {
   userFirstName?: string;
   orderId?: string;
-  orderItems?: { name: string; quantity: number; pin_code: string | string[]; image_url?: string; price?: number }[];
+  orderItems?: { name: string; quantity: number; image_url?: string; price?: number }[];
   total?: number;
 }
 
@@ -15,7 +15,7 @@ const baseUrl = process.env.VERCEL_URL
 export const OrderConfirmationEmail = ({ userFirstName = 'Valued Customer', orderId, orderItems = [], total = 0 }: OrderConfirmationEmailProps) => (
   <Html>
     <Head />
-    <Preview>Your Water Bar Order Confirmation & Tickets</Preview>
+    <Preview>Your Water Bar Order Confirmation</Preview>
     <Body style={main}>
       <Container>
         <Section style={logo}>
@@ -28,7 +28,7 @@ export const OrderConfirmationEmail = ({ userFirstName = 'Valued Customer', orde
           <Heading style={heading}>Your Order is Confirmed!</Heading>
           <Text style={paragraph}>Hi {userFirstName},</Text>
           <Text style={paragraph}>
-            Thank you for your order! We're excited to see you. Below are your digital tickets with PIN codes. Please present these at the venue to claim your items.
+            Thank you for your order! We're excited to see you at the venue. Your items are ready for collection - simply show this confirmation to our staff.
           </Text>
           
           {orderId && (
@@ -53,30 +53,6 @@ export const OrderConfirmationEmail = ({ userFirstName = 'Valued Customer', orde
                   <Text style={itemText}>Qty: {item.quantity}{item.price && ` | Price: AED ${item.price.toFixed(2)}`}</Text>
                 </Column>
               </Row>
-              
-              {item.pin_code && (
-                <Section style={{ textAlign: 'center', marginTop: '16px' }}>
-                  {Array.isArray(item.pin_code) ? (
-                    <div style={{ display: 'inline-block' }}>
-                      {item.pin_code.map((pin: string, pinIndex: number) => {
-                        const pinLabels = ['Entry', 'Drink', 'Wellness'];
-                        return (
-                          <div key={pin} style={pinContainer}>
-                            <Text style={pinLabel}>{pinLabels[pinIndex] || 'Your'} PIN</Text>
-                            <Text style={pinCode}>{pin}</Text>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div style={pinContainer}>
-                      <Text style={pinLabel}>Your PIN</Text>
-                      <Text style={pinCode}>{item.pin_code}</Text>
-                    </div>
-                  )}
-                  <Text style={pinInfo}>You'll need these PINs to claim your purchases.</Text>
-                </Section>
-              )}
             </Section>
           ))}
 
