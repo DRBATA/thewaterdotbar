@@ -798,8 +798,9 @@ export function UnifiedChatAvatar() {
         {/* Main button with gradient animation */}
         <Button
           onClick={() => {
-            setIsExpanded(true);
-            setSessionStarted(true); // Auto-start session when expanding
+            // Open hydration assessment modal instead
+            const event = new CustomEvent('openHydrationAssessment');
+            window.dispatchEvent(event);
           }}
           className="relative px-6 py-4 rounded-full shadow-2xl flex items-center justify-center gap-3 whitespace-nowrap overflow-hidden group
                      bg-gradient-to-r from-teal-500 via-purple-500 to-yellow-500 

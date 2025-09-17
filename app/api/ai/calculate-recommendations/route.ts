@@ -70,33 +70,41 @@ export async function POST(request: NextRequest) {
       let score = 0
       const contributions = {}
       
-      // Priority 1: B-Vitamins (Rite Greens specific)
-      if (product.vitamin_b6_mg || product.vitamin_b12_mcg) {
+      // Priority 1: B-Vitamins (Rite Greens for vitamins/minerals)
+      if (product.vitamin_b6_mg || product.vitamin_b12_mcg || product.iron_mg || product.zinc_mg) {
         score += 2.0  // High priority for Rite Greens
         contributions.vitamins = true
       }
       
-      // Priority 2: Fiber for gut health (Poppy focus)
+      // Priority 2: Fiber for gut health - if <15g, recommend gut health sachet
       if (deficits.fiber > 0 && (product.soluble_fiber_g || product.fiber_g)) {
         const fiberAmount = product.soluble_fiber_g || product.fiber_g || 0
         const contribution = Math.min(fiberAmount, deficits.fiber)
-        score += (contribution / deficits.fiber) * 1.5
+        // Boost score for products with high soluble fiber (gut health sachets)
+        const fiberBonus = product.soluble_fiber_g ? 2.0 : 1.0
+        score += (contribution / deficits.fiber) * fiberBonus
         contributions.fiber = contribution
       }
       
       // Priority 3: Electrolyte balance
-      // Use Coconut for potassium needs
-      if (deficits.potassium > 0 && product.potassium_mg && product.potassium_mg > 400) {
-        const contribution = Math.min(product.potassium_mg, deficits.potassium)
-        score += (contribution / deficits.potassium) * 1.0
-        contributions.potassium = contribution
+      // Recommend Coconut products when potassium deficit exists AND product has high K+
+      if (deficits.potassium > 0 && product.potassium_mg) {
+        // Only score highly if this product actually has significant potassium (like coconut water)
+        if (product.potassium_mg > 400) {
+          const contribution = Math.min(product.potassium_mg, deficits.potassium)
+          score += (contribution / deficits.potassium) * 1.0
+          contributions.potassium = contribution
+        }
       }
       
-      // Use Celery for sodium needs
-      if (deficits.sodium > 0 && product.sodium_mg && product.sodium_mg > 150) {
-        const contribution = Math.min(product.sodium_mg, deficits.sodium)
-        score += (contribution / deficits.sodium) * 0.9
-        contributions.sodium = contribution
+      // Recommend Celery products when sodium deficit exists AND product has high Na+
+      if (deficits.sodium > 0 && product.sodium_mg) {
+        // Only score highly if this product actually has significant sodium (like celery juice)
+        if (product.sodium_mg > 150) {
+          const contribution = Math.min(product.sodium_mg, deficits.sodium)
+          score += (contribution / deficits.sodium) * 0.9
+          contributions.sodium = contribution
+        }
       }
       
       // Priority 4: Protein (any protein-rich product)
@@ -106,11 +114,20 @@ export async function POST(request: NextRequest) {
         contributions.protein = contribution
       }
       
-      // Always consider hydration
+      // Priority 5: Plain water (Perrier) for hydration-only needs
       if (deficits.water > 0 && product.water_content_ml) {
         const contribution = Math.min(product.water_content_ml, deficits.water)
-        score += (contribution / deficits.water) * 0.5
+        // Boost score for plain water products when only hydration is needed
+        const isPlainWater = !product.sodium_mg && !product.potassium_mg && !product.fiber_g
+        const waterBonus = isPlainWater ? 0.8 : 0.5
+        score += (contribution / deficits.water) * waterBonus
         contributions.water = contribution
+      }
+      
+      // Priority 6: Polyphenols (kombucha) - low priority since coffee/tea already provide
+      if (product.polyphenols_mg && product.polyphenols_mg > 100) {
+        score += 0.2  // Low priority bonus for polyphenol-rich products
+        contributions.polyphenols = true
       }
       
       return {

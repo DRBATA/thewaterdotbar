@@ -17,6 +17,14 @@ export function HydrationAssessmentButton() {
       localStorage.setItem("sessionId", sid)
     }
     setSessionId(sid)
+
+    // Listen for custom event from UnifiedChatAvatar
+    const handleOpenModal = () => setIsModalOpen(true)
+    window.addEventListener('openHydrationAssessment', handleOpenModal)
+    
+    return () => {
+      window.removeEventListener('openHydrationAssessment', handleOpenModal)
+    }
   }, [])
 
   return (
