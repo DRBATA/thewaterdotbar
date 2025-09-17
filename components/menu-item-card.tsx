@@ -180,11 +180,11 @@ export function MenuItemCard({ item, onAddToCartAction, onRemoveFromCartAction, 
                   <DialogTitle>{item.name} - Frequently Asked Questions</DialogTitle>
                 </DialogHeader>
                 <div className="mt-4">
-                  {item.faqs.sections.map((section, sectionIdx) => (
+                  {item.faqs?.sections?.map((section, sectionIdx) => (
                     <div key={sectionIdx} className="mb-6">
                       <h3 className="text-lg font-semibold mb-3 text-stone-700">{section.title}</h3>
                       <Accordion type="single" collapsible className="w-full">
-                        {section.questions.map((faq, qIdx) => (
+                        {section.questions?.map((faq, qIdx) => (
                           <AccordionItem key={qIdx} value={`${sectionIdx}-${qIdx}`}>
                             <AccordionTrigger className="text-left">{faq.q}</AccordionTrigger>
                             <AccordionContent className="text-stone-600">{faq.a}</AccordionContent>

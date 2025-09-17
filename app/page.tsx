@@ -107,7 +107,7 @@ export default async function HomePage() {
       id: d.id,
       name: d.name,
       description: d.description || "No description available.",
-      price: d.price || 0,
+      price: d.price_aed || 0,
       image: d.image_url || "/refreshing-summer-drink.png",
       faqs: d.faqs, // Include FAQ data from Supabase
       venues: venues
