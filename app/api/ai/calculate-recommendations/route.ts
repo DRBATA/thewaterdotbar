@@ -39,10 +39,15 @@ export async function POST(request: NextRequest) {
     }
     
     // Get products with nutritional data for AI-based recommendations
+    // Filter by actual venue stock (only items with qty_on_hand > 0)
     const { data: products } = await supabase
       .from("products")
-      .select("*")
+      .select(`
+        *,
+        venue_stock!inner(qty_on_hand)
+      `)
       .not("volume_ml", "is", null)
+      .gt("venue_stock.qty_on_hand", 0)
       .limit(50)
     
     if (!products || products.length === 0) {

@@ -452,10 +452,10 @@ export function HydrationAssessmentModal({ isOpen, onClose, sessionId }: Hydrati
                         setTotalIntake(prev => ({
                           ...prev,
                           water: prev.water + 500,
-                          sodium: prev.sodium + 300,
-                          potassium: prev.potassium + 100,
+                          sodium: prev.sodium + 200,
+                          potassium: prev.potassium + 200,
                         }))
-                        toast({ title: "Added Electrolyte Drink" })
+                        toast({ title: "Added Electrolytes (500ml)" })
                       }}
                     >
                       ⚡ Electrolytes
@@ -492,16 +492,6 @@ export function HydrationAssessmentModal({ isOpen, onClose, sessionId }: Hydrati
                       🥬 Rite Greens
                     </Button>
                   </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Custom Drinks</Label>
-                  <Input
-                    placeholder="Enter other drinks (e.g., '2 venti macchiatos')"
-                    value={currentDrinks}
-                    onChange={(e) => setCurrentDrinks(e.target.value)}
-                    onBlur={() => processMealWithAI(currentDrinks, "drinks")}
-                  />
                 </div>
                 
                 <Button 
