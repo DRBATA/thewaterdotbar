@@ -82,6 +82,7 @@ export async function POST(req: Request) {
         throw new Error(`Update error: ${updateError.message}`);
       }
       console.log(`🛒 ADD: Successfully updated item ${itemId}`)
+      return NextResponse.json({ success: true, action: 'updated' });
     } else {
       console.log(`🛒 ADD: Inserting new item ${itemId} with qty ${qty}`)
       // Insert new item
@@ -99,9 +100,8 @@ export async function POST(req: Request) {
         throw new Error(`Insert error: ${insertError.message}`);
       }
       console.log(`🛒 ADD: Successfully inserted item ${itemId}`)
+      return NextResponse.json({ success: true, action: 'inserted' });
     }
-    
-    return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Cart add error:", error);
     return NextResponse.json({ error: error.message }, { status: 400 });

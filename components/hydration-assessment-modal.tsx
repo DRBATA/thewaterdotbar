@@ -755,12 +755,20 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                                     }),
                                   })
                                   if (response.ok) {
+                                    const data = await response.json()
                                     toast({ 
                                       title: "Added to cart",
                                       description: `${product.name} x${product.quantity}`
                                     })
-                                    // Trigger cart refresh
+                                    // Always trigger cart refresh, especially important for INSERT
+                                    console.log(`🛒 AI Modal: Cart ${data.action}, triggering refresh`)
                                     window.dispatchEvent(new Event('cart-updated'))
+                                    // Force immediate refresh for INSERT operations
+                                    if (data.action === 'inserted') {
+                                      setTimeout(() => {
+                                        window.dispatchEvent(new Event('cart-updated'))
+                                      }, 100)
+                                    }
                                   } else {
                                     const errorData = await response.text()
                                     console.error("Cart add failed:", response.status, errorData)
