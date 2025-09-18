@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, lazy, Suspense } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2, Plus, ShoppingCart, Sparkles } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+
+const HydrationSphere = lazy(() => import("./hydration-sphere").then(m => ({ default: m.HydrationSphere })))
 
 interface BodyComposition {
   weight: number
@@ -592,16 +594,78 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
           </TabsContent>
 
           <TabsContent value="drinks" className="space-y-4">
-            <Card>
+            <Card className="bg-white/90 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle>What have you had to drink today?</CardTitle>
+                <CardTitle className="text-gray-900">What have you had to drink today?</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Click quick add buttons or type custom drinks
+                  Click quick add buttons or search from database
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Search and Sort Controls */}
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Search drinks..."
+                      value={drinkSearch}
+                      onChange={(e) => setDrinkSearch(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Select value={drinkSortBy} onValueChange={(v: "name" | "volume") => setDrinkSortBy(v)}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="name">A-Z</SelectItem>
+                        <SelectItem value="volume">Volume</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Drinks Grid from Database */}
+                  <div className="h-48 overflow-y-auto border rounded-lg p-2">
+                    <div className="grid grid-cols-3 gap-2">
+                      {availableDrinks
+                        .filter(d => d.name.toLowerCase().includes(drinkSearch.toLowerCase()))
+                        .sort((a, b) => {
+                          if (drinkSortBy === "name") return a.name.localeCompare(b.name)
+                          return (b.fluid_ml || 0) - (a.fluid_ml || 0)
+                        })
+                        .map((drink, idx) => (
+                          <Button
+                            key={idx}
+                            variant="outline"
+                            size="sm"
+                            className="text-xs h-auto py-2 px-1"
+                            onClick={() => {
+                              setTotalIntake(prev => ({
+                                ...prev,
+                                water: prev.water + (drink.fluid_ml || 0),
+                                sodium: prev.sodium + (drink.na_mg || 0),
+                                potassium: prev.potassium + (drink.k_mg || 0),
+                                fiber: prev.fiber + ((drink.soluble_fiber_g || 0) + (drink.insoluble_fiber_g || 0)),
+                                protein: prev.protein + (drink.protein_g || 0),
+                              }))
+                              toast({ 
+                                title: `Added ${drink.name}`,
+                                description: `${drink.fluid_ml || 0}ml`
+                              })
+                            }}
+                          >
+                            <div className="text-center w-full">
+                              <div className="font-medium truncate">{drink.name}</div>
+                              <div className="text-gray-500">
+                                {drink.fluid_ml ? `${drink.fluid_ml}ml` : ""}
+                              </div>
+                            </div>
+                          </Button>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label>Quick Add Drinks</Label>
+                  <Label>Quick Add Common Drinks</Label>
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     <Button
                       variant="outline"
@@ -1115,11 +1179,37 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
           </TabsContent>
 
           <TabsContent value="review" className="space-y-4">
-            <Card>
+            <Card className="bg-white/90 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle>Nutritional Summary</CardTitle>
+                <CardTitle className="text-gray-900">Nutritional Summary</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                {/* 3D Hydration Sphere */}
+                <div className="border rounded-lg p-4 bg-gray-50">
+                  <h4 className="text-sm font-medium mb-2">Hydration Visualization</h4>
+                  <Suspense fallback={<div className="h-64 flex items-center justify-center">Loading 3D sphere...</div>}>
+                    <HydrationSphere
+                      waterIntake={totalIntake.water}
+                      sodiumIntake={totalIntake.sodium}
+                      potassiumIntake={totalIntake.potassium}
+                      waterTarget={calculateSweatLoss() * 1000 + 33 * profile.leanBodyMass}
+                      sodiumTarget={(activityLevel === "desk" ? 35 : 50) * profile.leanBodyMass + 920 * calculateSweatLoss()}
+                      potassiumTarget={45 * profile.leanBodyMass * (profile.icwLbmRatio < 0.43 ? 1.2 : 1) + 195 * calculateSweatLoss()}
+                    />
+                  </Suspense>
+                  <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
+                    <div className="text-center">
+                      <div className="text-pink-600">Inner Blob (ICW)</div>
+                      <div>Potassium-driven</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-blue-600">Outer Blob (ECW)</div>
+                      <div>Water/Sodium-driven</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Nutritional Totals */}
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Water:</span>
