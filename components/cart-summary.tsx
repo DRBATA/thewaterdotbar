@@ -44,6 +44,21 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
   const [showQR, setShowQR] = useState(false)
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null)
 
+  // Listen for cart-updated events to trigger parent component refresh
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      console.log("🛒 CartSummary: cart-updated event received")
+      // Trigger parent component to refresh cart data
+      window.dispatchEvent(new Event('cart-refresh-needed'))
+    }
+
+    window.addEventListener('cart-updated', handleCartUpdate)
+    
+    return () => {
+      window.removeEventListener('cart-updated', handleCartUpdate)
+    }
+  }, [])
+
   // Fetch venues on component mount
   useEffect(() => {
     const fetchVenues = async () => {

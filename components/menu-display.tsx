@@ -210,14 +210,21 @@ function LocationAwareMenuDisplay({ initialDrinks, initialWellnessExperiences }:
   // Listen for cart-updated events to refresh the cart
   useEffect(() => {
     const handleCartUpdate = () => {
-      console.log("Cart updated event received, refreshing cart...")
+      console.log("📱 MenuDisplay: cart-updated event received, refreshing cart...")
+      fetchCartItems()
+    }
+
+    const handleCartRefreshNeeded = () => {
+      console.log("📱 MenuDisplay: cart-refresh-needed event received, refreshing cart...")
       fetchCartItems()
     }
 
     window.addEventListener('cart-updated', handleCartUpdate)
+    window.addEventListener('cart-refresh-needed', handleCartRefreshNeeded)
     
     return () => {
       window.removeEventListener('cart-updated', handleCartUpdate)
+      window.removeEventListener('cart-refresh-needed', handleCartRefreshNeeded)
     }
   }, [fetchCartItems])
 
