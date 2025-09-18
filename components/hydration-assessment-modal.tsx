@@ -241,7 +241,21 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
             qty: product.quantity,
           }),
         })
+        
+        if (response.ok) {
+          const data = await response.json()
+          console.log(`🛒 AI Modal Batch: Cart ${data.action || 'unknown'} for ${product.name}`)
+        }
       }
+
+      // Trigger cart refresh after all items added
+      console.log(`🛒 AI Modal: Triggering refresh after batch add of ${aiRecommendations.length} items`)
+      window.dispatchEvent(new Event('cart-updated'))
+      
+      // Double trigger for safety with batch operations
+      setTimeout(() => {
+        window.dispatchEvent(new Event('cart-updated'))
+      }, 100)
 
       toast({
         title: "Success!",
