@@ -41,17 +41,16 @@ export async function POST(request: NextRequest) {
       protein: Math.max(0, targets.protein - currentIntake.protein),
     }
     
-    // Get products with nutritional data for AI-based recommendations
-    // Filter by actual venue stock (only items with qty_on_hand > 0)
+    // Get ALL products with any nutritional data for AI-based recommendations
+    // Don't filter by volume_ml as many products have nutrients but no volume
     const { data: productsWithStock } = await supabase
       .from("products")
       .select(`
         *,
         venue_stock!inner(qty_on_hand)
       `)
-      .not("volume_ml", "is", null)
+      .or('sodium_mg.not.is.null,potassium_mg.not.is.null,fiber_g.not.is.null,protein_g.not.is.null,water_content_ml.not.is.null')
       .gt("venue_stock.qty_on_hand", 0)
-      .limit(50)
     
     // Clean up the products array to remove the nested venue_stock
     const products = productsWithStock?.map(p => {

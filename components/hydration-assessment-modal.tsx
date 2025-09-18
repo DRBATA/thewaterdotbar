@@ -85,7 +85,7 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
   const [lunch, setLunch] = useState("")
   const [dinner, setDinner] = useState("")
   const [snacks, setSnacks] = useState("")
-  const [allergies, setAllergies] = useState("")
+  // Removed allergies - these are only suggestions!
 
   // Nutritional accumulator
   const [totalIntake, setTotalIntake] = useState<NutritionalIntake>({
@@ -313,16 +313,16 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
           </TabsList>
 
           <TabsContent value="profile" className="space-y-4">
-            <Card>
+            <Card className="bg-white/90 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle>Body Composition</CardTitle>
+                <CardTitle className="text-gray-900">Body Composition</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-white/80">Input Method</Label>
+                    <Label className="text-gray-700">Input Method</Label>
                     <Select value={inputMethod} onValueChange={(v) => setInputMethod(v as any)}>
-                      <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                      <SelectTrigger className="bg-white border-gray-300 text-gray-900">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-gray-800 border-white/20">
@@ -335,21 +335,21 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                   {inputMethod === "direct" ? (
                     <>
                       <div>
-                        <Label className="text-white/80">Weight (kg)</Label>
+                        <Label className="text-gray-700">Weight (kg)</Label>
                         <Input
                           type="number"
                           value={profile.weight}
                           onChange={(e) => setProfile({ ...profile, weight: Number(e.target.value) })}
-                          className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                          className="bg-white border-gray-300 text-gray-900"
                         />
                       </div>
                       <div>
-                        <Label className="text-white/80">Body Fat (%)</Label>
+                        <Label className="text-gray-700">Body Fat (%)</Label>
                         <Input
                           type="number"
                           value={profile.bodyFat}
                           onChange={(e) => setProfile({ ...profile, bodyFat: Number(e.target.value) })}
-                          className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                          className="bg-white border-gray-300 text-gray-900"
                         />
                       </div>
                     </>
@@ -390,9 +390,9 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-white/80">Activity Level</Label>
+                    <Label className="text-gray-700">Activity Level</Label>
                     <Select value={activityLevel} onValueChange={(v) => setActivityLevel(v as any)}>
-                      <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                      <SelectTrigger className="bg-white border-gray-300 text-gray-900">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-gray-800 border-white/20">
@@ -402,13 +402,13 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-white/80">Sweat Loss (L)</Label>
+                    <Label className="text-gray-700">Sweat Loss (L)</Label>
                     <Input
                       type="number"
                       value={sweatLoss}
                       onChange={(e) => setSweatLoss(Number(e.target.value))}
                       step="0.1"
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                      className="bg-white border-gray-300 text-gray-900"
                     />
                   </div>
 
