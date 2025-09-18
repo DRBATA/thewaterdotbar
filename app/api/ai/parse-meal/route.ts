@@ -56,17 +56,23 @@ Return format: {"ingredients": ["ingredient1", "ingredient2"]}`
 
     const supabase = await createClient()
     
-    // Search for only the specific ingredients identified by AI
-    const searchPromises = ingredients.map(ingredient => 
-      supabase
-        .from("hydration_options")
-        .select("name, h2o_ml, na_mg, k_mg, mg_mg, calcium_mg, soluble_fiber_g, insoluble_fiber_g, protein_g")
-        .ilike("name", `%${ingredient}%`)
-        .limit(3)
-    )
-
-    const searchResults = await Promise.all(searchPromises)
-    const foundFoods = searchResults.flatMap(result => result.data || [])
+    // First search for foods that might match the meal description
+    // Handle typos and variations
+    let searchTerms = meal.toLowerCase().split(/[\s,]+/).filter(term => term.length > 2)
+    
+    // Common typo corrections
+    searchTerms = searchTerms.map(term => {
+      if (term === 'chicen' || term === 'chiken') return 'chicken'
+      if (term === 'brocoli') return 'broccoli'
+      if (term === 'tomatoe') return 'tomato'
+      return term
+    })
+    
+    const { data: foundFoods } = await supabase
+      .from("hydration_options")
+      .select("*")
+      .or(searchTerms.map(term => `name.ilike.%${term}%`).join(','))
+      .limit(20)
 
     if (foundFoods.length === 0) {
       return NextResponse.json({
@@ -82,25 +88,36 @@ Return format: {"ingredients": ["ingredient1", "ingredient2"]}`
       messages: [
         {
           role: "system",
-          content: `You are a nutritionist calculating meal nutrients. You have these relevant foods from the database:
+          content: `You are a nutritionist calculating meal nutrients. Be flexible and use your best judgment.
 
-${foundFoods.map(f => `${f.name}: H2O=${f.h2o_ml}ml, Na=${f.na_mg}mg, K=${f.k_mg}mg, Mg=${f.mg_mg}mg, Ca=${f.calcium_mg}mg, Fiber=${(f.soluble_fiber_g||0)+(f.insoluble_fiber_g||0)}g, Protein=${f.protein_g}g`).join('\n')}
+Available foods from database:
+${foundFoods.map(f => 
+  `${f.name}: H2O=${f.fluid_ml || 0}ml, Na=${f.na_mg || 0}mg, K=${f.k_mg || 0}mg, Mg=${f.mg_mg || 'null'}mg, Ca=${f.ca_mg || 'null'}mg, Fiber=${(f.soluble_fiber_g || 0) + (f.insoluble_fiber_g || 0)}g, Protein=${f.protein_g || 0}g`
+).join('\n')}
 
-Calculate the total nutrients for the meal by estimating portions:
-- "carrot soup" → ~200g carrots (typical bowl)
+Instructions:
+1. Match user input to the most similar foods (handle typos, abbreviations)
+2. If exact match not found, use closest alternatives
+3. For generic items like "chicken soup", use chicken broth/miso or estimate
+4. For typos like "chicen" → recognize as "chicken"
+5. Estimate reasonable portions if not specified
+6. ALWAYS return non-zero values when food is recognized
+
+Examples:
+- "chicen soup" → chicken soup → use Miso Broth (240ml) or similar
+- "chicken soup" → estimate from chicken + broth components
 - "eggs and toast" → 2 eggs (100g) + 2 slices bread (60g)
-- "small salad" → ~100g mixed greens
 
 Return ONLY a JSON object with total nutrients:
 {
   "water": number (ml),
-  "sodium": number (mg), 
+  "sodium": number (mg),
   "potassium": number (mg),
   "magnesium": number (mg),
   "calcium": number (mg),
   "fiber": number (g),
   "protein": number (g)
-}`
+`
         },
         {
           role: "user",
