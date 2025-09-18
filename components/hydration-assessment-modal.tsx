@@ -1024,8 +1024,20 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                           
                           const data = await response.json()
                           if (data.meals && data.meals.length > 0) {
-                            setMealSuggestions(data.meals)
-                            setShowMealModal(true)
+                            // Generate images for meals
+                            const imageResponse = await fetch("/api/ai/generate-meal-images", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ meals: data.meals })
+                            })
+                            const mealsWithImages = await imageResponse.json()
+                            setMealSuggestions(mealsWithImages.meals || data.meals)
+                            
+                            // Display inline instead of modal
+                            const mealDisplay = document.getElementById('meal-suggestions-display')
+                            if (mealDisplay) {
+                              mealDisplay.scrollIntoView({ behavior: 'smooth' })
+                            }
                           }
                         } catch (error) {
                           console.error("Error generating meals:", error)
@@ -1040,6 +1052,56 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                       ) : null}
                       Generate Meal Suggestions for Remaining Needs
                     </Button>
+
+                    {/* Meal Suggestions Display */}
+                    {mealSuggestions.length > 0 && (
+                      <div id="meal-suggestions-display" className="mt-6 space-y-4">
+                        <h3 className="font-semibold text-lg">Meal Suggestions</h3>
+                        {mealSuggestions.map((meal, idx) => (
+                          <Card key={idx} className="overflow-hidden">
+                            <div className="grid md:grid-cols-2 gap-4">
+                              {/* Meal Image */}
+                              {meal.image_url ? (
+                                <img 
+                                  src={meal.image_url} 
+                                  alt={meal.name}
+                                  className="w-full h-48 md:h-full object-cover"
+                                />
+                              ) : (
+                                <div className="relative h-48 md:h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                                  <div className="text-center p-4">
+                                    <div className="text-4xl mb-2">🍽️</div>
+                                    <p className="text-sm text-gray-600">{meal.name}</p>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Meal Details */}
+                              <CardContent className="p-4 space-y-3">
+                                <h4 className="font-semibold">{meal.name}</h4>
+                                <p className="text-sm text-gray-600">{meal.foods.join(", ")}</p>
+                                <p className="text-xs text-gray-500">{meal.explanation}</p>
+                                
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  <div className="bg-blue-50 p-1 rounded">
+                                    Na: {meal.nutrients.sodium}mg
+                                  </div>
+                                  <div className="bg-green-50 p-1 rounded">
+                                    K: {meal.nutrients.potassium}mg
+                                  </div>
+                                  <div className="bg-orange-50 p-1 rounded">
+                                    Fiber: {meal.nutrients.fiber}g
+                                  </div>
+                                  <div className="bg-purple-50 p-1 rounded">
+                                    Protein: {meal.nutrients.protein}g
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
