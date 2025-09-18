@@ -85,6 +85,7 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
   const [lunch, setLunch] = useState("")
   const [dinner, setDinner] = useState("")
   const [snacks, setSnacks] = useState("")
+  const [allergies, setAllergies] = useState("")
 
   // Nutritional accumulator
   const [totalIntake, setTotalIntake] = useState<NutritionalIntake>({

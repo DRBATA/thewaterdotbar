@@ -262,7 +262,7 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
       window.removeEventListener('agent-set-venue', handleAgentSetVenue);
       console.log('🛒 Cart event listeners cleaned up');
     };
-  }, [onRemoveItemAction, onClearCart, tier]);
+  }, [onRemoveItemAction, onClearCart]);
 
   const handleConfettiComplete = () => {
     setShowConfetti(false)
