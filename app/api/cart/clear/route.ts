@@ -22,16 +22,17 @@ export async function POST() {
       throw new Error(`Error finding cart header: ${headerError.message}`)
     }
     
-    // If cart header exists, delete it (will cascade delete cart_items)
+    // If cart header exists, delete only the items, keep the header
     if (cartHeader) {
       const { error: deleteError } = await supabase
-        .from("cart_headers")
+        .from("cart_items")
         .delete()
-        .eq("id", cartHeader.id)
+        .eq("cart_id", cartHeader.id)
       
       if (deleteError) {
-        throw new Error(`Error deleting cart header: ${deleteError.message}`)
+        throw new Error(`Error deleting cart items: ${deleteError.message}`)
       }
+      console.log(`🛒 CLEAR: Cleared items from cart ${cartHeader.id}, keeping header`)
     }
     
     // Log the cart clear event for analytics
