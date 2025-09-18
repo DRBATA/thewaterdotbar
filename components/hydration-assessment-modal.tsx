@@ -419,15 +419,13 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                       <span className={profile.icwLbmRatio < 0.43 ? "text-orange-600" : ""}>
                         {profile.icwLbmRatio.toFixed(3)}
                       </span>
-                    <span className={profile.icwLbmRatio < 0.43 ? "text-orange-600" : ""}>
-                      {profile.icwLbmRatio.toFixed(3)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>ECW/TBW Ratio:</span>
-                    <span className={profile.ecwTbwRatio > 0.4 ? "text-blue-600" : ""}>
-                      {profile.ecwTbwRatio.toFixed(3)}
-                    </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>ECW/TBW Ratio:</span>
+                      <span className={profile.ecwTbwRatio > 0.4 ? "text-blue-600" : ""}>
+                        {profile.ecwTbwRatio.toFixed(3)}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
