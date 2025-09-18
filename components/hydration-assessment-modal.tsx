@@ -761,10 +761,11 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                                       description: `${product.name} x${product.quantity}`
                                     })
                                     // Always trigger cart refresh, especially important for INSERT
-                                    console.log(`🛒 AI Modal: Cart ${data.action}, triggering refresh`)
+                                    console.log(`🛒 AI Modal: Cart ${data.action || 'unknown'}, triggering refresh`, data)
                                     window.dispatchEvent(new Event('cart-updated'))
                                     // Force immediate refresh for INSERT operations
                                     if (data.action === 'inserted') {
+                                      console.log(`🛒 AI Modal: Firing delayed refresh for INSERT`)
                                       setTimeout(() => {
                                         window.dispatchEvent(new Event('cart-updated'))
                                       }, 100)
