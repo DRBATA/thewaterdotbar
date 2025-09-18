@@ -43,6 +43,7 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
   const [venues, setVenues] = useState<Venue[]>([])
   const [showQR, setShowQR] = useState(false)
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null)
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'paid' | null>(null)
 
   // Listen for cart-updated events to trigger parent component refresh
   useEffect(() => {
@@ -291,6 +292,37 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
     return `https://api.qrserver.com/v1/create-qr-code/?size=600x600&format=png&ecc=M&data=${encodeURIComponent(url)}`;
   };
 
+  // Poll for payment status when QR is shown
+  useEffect(() => {
+    if (!showQR || !paymentUrl || paymentStatus === 'paid') return
+
+    const checkPaymentStatus = async () => {
+      // Extract session ID from payment URL
+      const urlParts = paymentUrl.split('/')
+      const sessionId = urlParts[urlParts.length - 1].split('?')[0]
+      
+      try {
+        const response = await fetch(`/api/stripe/check-payment?session_id=${sessionId}`)
+        const data = await response.json()
+        
+        if (data.status === 'paid') {
+          setPaymentStatus('paid')
+          // Play success sound
+          const audio = new Audio('/notification.mp3')
+          audio.play().catch(() => {})
+        }
+      } catch (error) {
+        console.error('Error checking payment status:', error)
+      }
+    }
+
+    // Check immediately, then every 3 seconds
+    checkPaymentStatus()
+    const interval = setInterval(checkPaymentStatus, 3000)
+
+    return () => clearInterval(interval)
+  }, [showQR, paymentUrl, paymentStatus])
+
   const handleCheckout = async () => {
     logEvent({
       event_name: "checkout_initiated",
@@ -474,34 +506,60 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100]">
             <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4">
               <div className="text-center">
-                <QrCode className="w-8 h-8 mx-auto mb-4 text-teal-600" />
-                <h3 className="text-xl font-bold mb-2 text-gray-900">Payment QR Code</h3>
-                <p className="text-gray-600 mb-2">Scan to pay at {selectedVenue?.name}</p>
-                <p className="text-sm text-gray-500 mb-6">Total: {formatCurrency(discountedTotal)}</p>
-                
-                <div className="bg-gray-50 p-4 rounded-lg mb-6">
-                  <img 
-                    src={generateQRCode(paymentUrl)} 
-                    alt="Payment QR Code"
-                    className="mx-auto max-w-full h-auto w-64 h-64"
-                  />
-                </div>
-                
-                <div className="flex gap-3">
-                  <Button
-                    onClick={() => setShowQR(false)}
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    Close
-                  </Button>
-                  <Button
-                    onClick={() => window.open(paymentUrl, '_blank')}
-                    className="flex-1 bg-teal-600 hover:bg-teal-700"
-                  >
-                    Open Link
-                  </Button>
-                </div>
+                {paymentStatus === 'paid' ? (
+                  <>
+                    <div className="text-6xl mb-4">✅</div>
+                    <h3 className="text-2xl font-bold mb-2 text-green-600">Payment Received!</h3>
+                    <p className="text-gray-600 mb-6">Order has been paid successfully</p>
+                    <Button
+                      onClick={() => {
+                        setShowQR(false)
+                        setPaymentStatus(null)
+                        // Clear cart and refresh
+                        onClearCart?.()
+                        // Clear AI questionnaire data
+                        sessionStorage.removeItem("hydrationAssessment")
+                        window.location.reload()
+                      }}
+                      className="w-full bg-green-600 hover:bg-green-700"
+                    >
+                      Start New Order
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <QrCode className="w-8 h-8 mx-auto mb-4 text-teal-600" />
+                    <h3 className="text-xl font-bold mb-2 text-gray-900">Payment QR Code</h3>
+                    <p className="text-gray-600 mb-2">Scan to pay at {selectedVenue?.name}</p>
+                    <p className="text-sm text-gray-500 mb-6">Total: {formatCurrency(discountedTotal)}</p>
+                    
+                    <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                      <img 
+                        src={generateQRCode(paymentUrl)} 
+                        alt="Payment QR Code"
+                        className="mx-auto max-w-full h-auto w-64 h-64"
+                      />
+                    </div>
+                    
+                    <p className="text-xs text-gray-400 mb-4">Waiting for payment...</p>
+                    
+                    <div className="flex gap-3">
+                      <Button
+                        onClick={() => setShowQR(false)}
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        Close
+                      </Button>
+                      <Button
+                        onClick={() => window.open(paymentUrl, '_blank')}
+                        className="flex-1 bg-teal-600 hover:bg-teal-700"
+                      >
+                        Open Link
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

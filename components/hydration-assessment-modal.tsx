@@ -296,20 +296,20 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white/10 backdrop-blur-xl border border-white/20">
         <DialogHeader>
-          <DialogTitle>AI Hydration Assessment</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-teal-300">AI Hydration Assessment</DialogTitle>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="drinks">Drinks</TabsTrigger>
-            <TabsTrigger value="meals">Meals</TabsTrigger>
-            <TabsTrigger value="recommendations">
+          <TabsList className="grid w-full grid-cols-5 bg-white/10 backdrop-blur-sm border border-white/20">
+            <TabsTrigger value="profile" className="data-[state=active]:bg-teal-500/30 data-[state=active]:text-white text-white/70">Profile</TabsTrigger>
+            <TabsTrigger value="drinks" className="data-[state=active]:bg-teal-500/30 data-[state=active]:text-white text-white/70">Drinks</TabsTrigger>
+            <TabsTrigger value="meals" className="data-[state=active]:bg-teal-500/30 data-[state=active]:text-white text-white/70">Meals</TabsTrigger>
+            <TabsTrigger value="recommendations" className="data-[state=active]:bg-teal-500/30 data-[state=active]:text-white text-white/70">
               Plan {aiRecommendations.length > 0 && `(${aiRecommendations.length})`}
             </TabsTrigger>
-            <TabsTrigger value="review">Review</TabsTrigger>
+            <TabsTrigger value="review" className="data-[state=active]:bg-teal-500/30 data-[state=active]:text-white text-white/70">Review</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="space-y-4">
@@ -318,38 +318,41 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                 <CardTitle>Body Composition</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <Label>Input Method</Label>
-                  <Select value={inputMethod} onValueChange={(v: any) => setInputMethod(v)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="direct">Direct (Weight + Body Fat %)</SelectItem>
-                      <SelectItem value="bodytype">Body Type Estimate</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>Weight (kg)</Label>
-                    <Input
-                      type="number"
-                      value={profile.weight}
-                      onChange={(e) => updateProfile("weight", parseFloat(e.target.value) || 0)}
-                    />
+                    <Label className="text-white/80">Input Method</Label>
+                    <Select value={inputMethod} onValueChange={(v) => setInputMethod(v as any)}>
+                      <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-800 border-white/20">
+                        <SelectItem value="direct" className="text-white hover:bg-white/10">Direct (Weight + Body Fat %)</SelectItem>
+                        <SelectItem value="visual" className="text-white hover:bg-white/10">Visual Estimation</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   {inputMethod === "direct" ? (
-                    <div>
-                      <Label>Body Fat (%)</Label>
-                      <Input
-                        type="number"
-                        value={profile.bodyFat}
-                        onChange={(e) => updateProfile("bodyFat", parseFloat(e.target.value) || 0)}
-                      />
-                    </div>
+                    <>
+                      <div>
+                        <Label className="text-white/80">Weight (kg)</Label>
+                        <Input
+                          type="number"
+                          value={profile.weight}
+                          onChange={(e) => setProfile({ ...profile, weight: Number(e.target.value) })}
+                          className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-white/80">Body Fat (%)</Label>
+                        <Input
+                          type="number"
+                          value={profile.bodyFat}
+                          onChange={(e) => setProfile({ ...profile, bodyFat: Number(e.target.value) })}
+                          className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                        />
+                      </div>
+                    </>
                   ) : (
                     <>
                       <div>
@@ -387,32 +390,35 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>Activity Level</Label>
-                    <Select value={activityLevel} onValueChange={(v: any) => setActivityLevel(v)}>
-                      <SelectTrigger>
+                    <Label className="text-white/80">Activity Level</Label>
+                    <Select value={activityLevel} onValueChange={(v) => setActivityLevel(v as any)}>
+                      <SelectTrigger className="bg-white/10 border-white/20 text-white">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="desk">Desk/Light</SelectItem>
-                        <SelectItem value="training">Training/Heat</SelectItem>
+                      <SelectContent className="bg-gray-800 border-white/20">
+                        <SelectItem value="desk" className="text-white hover:bg-white/10">Desk/Light</SelectItem>
+                        <SelectItem value="training" className="text-white hover:bg-white/10">Training</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label>Sweat Loss (L)</Label>
+                    <Label className="text-white/80">Sweat Loss (L)</Label>
                     <Input
                       type="number"
-                      step="0.1"
                       value={sweatLoss}
-                      onChange={(e) => setSweatLoss(parseFloat(e.target.value) || 0)}
+                      onChange={(e) => setSweatLoss(Number(e.target.value))}
+                      step="0.1"
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
                     />
                   </div>
-                </div>
 
-                {/* Display key ratios */}
-                <div className="p-3 bg-muted rounded-lg space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>ICW/LBM Ratio:</span>
+                  {/* Display key ratios */}
+                  <div className="p-3 bg-muted rounded-lg space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>ICW/LBM Ratio:</span>
+                      <span className={profile.icwLbmRatio < 0.43 ? "text-orange-600" : ""}>
+                        {profile.icwLbmRatio.toFixed(3)}
+                      </span>
                     <span className={profile.icwLbmRatio < 0.43 ? "text-orange-600" : ""}>
                       {profile.icwLbmRatio.toFixed(3)}
                     </span>
