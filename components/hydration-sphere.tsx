@@ -68,30 +68,31 @@ export function HydrationSphere({
     )
     scene.add(innerWireframeMesh)
 
-    // Inner blob (ICW - potassium driven)
-    const innerBlobGeometry = new THREE.IcosahedronGeometry(1.8, 20)
-    const innerBlobMaterial = new THREE.MeshPhongMaterial({
-      color: new THREE.Color().setHSL(0.95, 0.7, 0.5),
-      transparent: true,
-      opacity: 0.6 + potassiumProgress * 0.3,
-    })
-    const innerBlob = new THREE.Mesh(innerBlobGeometry, innerBlobMaterial)
-    const innerScale = 0.3 + potassiumProgress * 0.7
-    innerBlob.scale.set(innerScale, innerScale, innerScale)
-    scene.add(innerBlob)
-
-    // Outer blob (ECW - water/sodium driven)
+    // Outer blob (ECW - water/sodium driven) - ADD FIRST so inner renders on top
     const outerBlobGeometry = new THREE.IcosahedronGeometry(4.5, 24)
     const combinedProgress = (waterProgress + sodiumProgress) / 2
     const outerBlobMaterial = new THREE.MeshPhongMaterial({
       color: new THREE.Color().setHSL(0.55, 0.6, 0.5),
       transparent: true,
-      opacity: 0.3 + combinedProgress * 0.3,
+      opacity: 0.2 + combinedProgress * 0.2,  // Lower opacity
+      depthWrite: false,  // Allow transparency to work properly
     })
     const outerBlob = new THREE.Mesh(outerBlobGeometry, outerBlobMaterial)
     const outerScale = 0.4 + combinedProgress * 0.6
     outerBlob.scale.set(outerScale, outerScale, outerScale)
     scene.add(outerBlob)
+
+    // Inner blob (ICW - potassium driven) - ADD SECOND so it renders on top
+    const innerBlobGeometry = new THREE.IcosahedronGeometry(1.8, 20)
+    const innerBlobMaterial = new THREE.MeshPhongMaterial({
+      color: new THREE.Color().setHSL(0.95, 0.7, 0.5),
+      transparent: true,
+      opacity: 0.7 + potassiumProgress * 0.3,  // Higher opacity
+    })
+    const innerBlob = new THREE.Mesh(innerBlobGeometry, innerBlobMaterial)
+    const innerScale = 0.3 + potassiumProgress * 0.7
+    innerBlob.scale.set(innerScale, innerScale, innerScale)
+    scene.add(innerBlob)
 
     // Store initial positions for animation
     const innerPositions = innerBlobGeometry.attributes.position

@@ -5,11 +5,11 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
     
-    // Get only drinks from hydration_options table (items with fluid_ml > 0)
+    // Get only drinks from hydration_options table (items with h2o_ml > 0)
     const { data: drinks, error } = await supabase
       .from("hydration_options")
       .select("*")
-      .gt("fluid_ml", 0)
+      .gt("h2o_ml", 0)
       .order("name")
     
     if (error) {

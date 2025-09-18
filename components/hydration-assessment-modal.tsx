@@ -629,7 +629,7 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                         .filter(d => d.name.toLowerCase().includes(drinkSearch.toLowerCase()))
                         .sort((a, b) => {
                           if (drinkSortBy === "name") return a.name.localeCompare(b.name)
-                          return (b.fluid_ml || 0) - (a.fluid_ml || 0)
+                          return (b.h2o_ml || 0) - (a.h2o_ml || 0)
                         })
                         .map((drink, idx) => (
                           <Button
@@ -640,7 +640,7 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                             onClick={() => {
                               setTotalIntake(prev => ({
                                 ...prev,
-                                water: prev.water + (drink.fluid_ml || 0),
+                                water: prev.water + (drink.h2o_ml || 0),
                                 sodium: prev.sodium + (drink.na_mg || 0),
                                 potassium: prev.potassium + (drink.k_mg || 0),
                                 fiber: prev.fiber + ((drink.soluble_fiber_g || 0) + (drink.insoluble_fiber_g || 0)),
@@ -648,14 +648,14 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                               }))
                               toast({ 
                                 title: `Added ${drink.name}`,
-                                description: `${drink.fluid_ml || 0}ml`
+                                description: `${drink.h2o_ml || 0}ml`
                               })
                             }}
                           >
                             <div className="text-center w-full">
                               <div className="font-medium truncate">{drink.name}</div>
                               <div className="text-gray-500">
-                                {drink.fluid_ml ? `${drink.fluid_ml}ml` : ""}
+                                {drink.h2o_ml ? `${drink.h2o_ml}ml` : ""}
                               </div>
                             </div>
                           </Button>
