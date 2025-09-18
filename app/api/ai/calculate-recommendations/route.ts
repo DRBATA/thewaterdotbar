@@ -183,10 +183,16 @@ Select the best products to address these deficits. If potassium deficit is high
 function calculateTargets(profile: BodyProfile, activityLevel: string, sweatLoss: number) {
   const lbm = profile.leanBodyMass
   
-  // SIMPLIFIED FOCUS TARGETS:
+  // ADVANCED SWEAT & ACTIVITY CALCULATIONS:
   
-  // 1. HYDRATION - Base water: 33ml/kg LBM + sweat replacement
-  const waterTotal = (33 * lbm + sweatLoss * 1000)
+  // Adjust sweat loss for hot/sweat training
+  let adjustedSweatLoss = sweatLoss
+  if (activityLevel === "sweat-training") {
+    adjustedSweatLoss *= 1.2  // Hot yoga, outdoor training multiplier
+  }
+  
+  // 1. HYDRATION - Base water: 33ml/kg LBM + adjusted sweat replacement
+  const waterTotal = (33 * lbm + adjustedSweatLoss * 1000)
   
   // 2. ELECTROLYTES (key for hydration balance)
   // Potassium: 45mg/kg LBM base
@@ -194,17 +200,36 @@ function calculateTargets(profile: BodyProfile, activityLevel: string, sweatLoss
   if (profile.icwLbmRatio < 0.43) {
     potassiumBase *= 1.2  // ICW boost for cellular hydration
   }
-  const potassiumTotal = potassiumBase + (195 * sweatLoss)
+  const potassiumSweat = 195 * adjustedSweatLoss
+  const potassiumTotal = potassiumBase + potassiumSweat
   
-  // Sodium: Activity dependent
-  let sodiumBase = (activityLevel === "desk" ? 35 : 50) * lbm
+  // Sodium: Activity type determines base needs
+  let sodiumBase: number
+  if (activityLevel === "desk") {
+    sodiumBase = 35 * lbm  // Lowest baseline - sedentary
+  } else if (activityLevel === "sweat-training") {
+    sodiumBase = 50 * lbm  // Highest baseline - anticipates heavy sweating
+  } else if (activityLevel === "muscular-training") {
+    sodiumBase = 45 * lbm  // Middle ground - moderate activity
+  } else {
+    sodiumBase = 35 * lbm  // Default to desk if "training" generic
+  }
+  
+  // ECW/TBW flag: reduce baseline sodium if puffy
   if (profile.ecwTbwRatio > 0.4) {
     sodiumBase *= 0.8  // Reduce for puffiness
   }
-  const sodiumTotal = sodiumBase + (920 * sweatLoss)
   
-  // 3. PROTEIN - Critical for recovery
-  const proteinTotal = activityLevel === "training" ? 1.5 * profile.weight : 1.2 * profile.weight
+  const sodiumSweat = 920 * adjustedSweatLoss  // Never reduced
+  const sodiumTotal = sodiumBase + sodiumSweat
+  
+  // 3. PROTEIN - Changes based on training type
+  let proteinTotal: number
+  if (activityLevel === "muscular-training") {
+    proteinTotal = 1.8 * profile.weight  // 1.8g/kg for muscle building
+  } else {
+    proteinTotal = 1.2 * profile.weight  // 1.2g/kg baseline
+  }
   
   // 4. FIBER - Gut health focus (Rite Greens target)
   const fiberTotal = 15  // 15g fiber target for gut health

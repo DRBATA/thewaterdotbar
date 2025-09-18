@@ -73,19 +73,27 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
     ecwTbwRatio: 0.43,
   })
 
-  const [inputMethod, setInputMethod] = useState<"direct" | "bodytype">("direct")
+  const [inputMethod, setInputMethod] = useState<"direct" | "tbw" | "bodytype">("direct")
   const [sex, setSex] = useState<"male" | "female">("male")
   const [bodyType, setBodyType] = useState<"shredded" | "fit" | "average" | "carrying-extra">("average")
   const [activityLevel, setActivityLevel] = useState<"desk" | "training">("desk")
   const [sweatLoss, setSweatLoss] = useState(0)
+  const [sweatMethod, setSweatMethod] = useState<"manual" | "context">("context")
+  const [sweatContext, setSweatContext] = useState<"cool" | "moderate" | "hot">("moderate")
+  const [sessionHours, setSessionHours] = useState(1)
 
   // Current intake tracking
   const [currentDrinks, setCurrentDrinks] = useState("")
+  const [drinkSearch, setDrinkSearch] = useState("")
+  const [availableDrinks, setAvailableDrinks] = useState<any[]>([])
+  const [drinkSortBy, setDrinkSortBy] = useState<"name" | "volume">("name")
   const [breakfast, setBreakfast] = useState("")
   const [lunch, setLunch] = useState("")
   const [dinner, setDinner] = useState("")
   const [snacks, setSnacks] = useState("")
   // Removed allergies - these are only suggestions!
+  const [mealSuggestions, setMealSuggestions] = useState<any[]>([])
+  const [showMealModal, setShowMealModal] = useState(false)
 
   // Nutritional accumulator
   const [totalIntake, setTotalIntake] = useState<NutritionalIntake>({
@@ -118,13 +126,30 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
   const updateProfile = (field: keyof BodyComposition, value: number) => {
     const newProfile = { ...profile, [field]: value }
 
-    if (field === "weight" || field === "bodyFat") {
+    if (inputMethod === "direct" && (field === "weight" || field === "bodyFat")) {
+      // Calculate from weight and body fat
       newProfile.leanBodyMass = newProfile.weight * (1 - newProfile.bodyFat / 100)
       newProfile.totalBodyWater = newProfile.leanBodyMass * 0.738
-      newProfile.intracellularWater = newProfile.totalBodyWater * 0.57
-      newProfile.extracellularWater = newProfile.totalBodyWater * 0.43
+      // Correct ratio: ~62% ICW, ~38% ECW
+      newProfile.intracellularWater = newProfile.totalBodyWater * 0.62
+      newProfile.extracellularWater = newProfile.totalBodyWater * 0.38
+    } else if (inputMethod === "tbw" && field === "totalBodyWater") {
+      // From BIA device - derive LBM from TBW
+      newProfile.leanBodyMass = value / 0.738
+      newProfile.bodyFat = ((newProfile.weight - newProfile.leanBodyMass) / newProfile.weight) * 100
+      newProfile.totalBodyWater = value
+      // Use standard ratios if ICW/ECW not provided
+      if (!newProfile.intracellularWater || !newProfile.extracellularWater) {
+        newProfile.intracellularWater = value * 0.62
+        newProfile.extracellularWater = value * 0.38
+      }
     }
 
+    // Allow manual ICW/ECW override from BIA device
+    if (field === "intracellularWater" || field === "extracellularWater") {
+      newProfile.totalBodyWater = newProfile.intracellularWater + newProfile.extracellularWater
+    }
+    
     newProfile.icwLbmRatio = newProfile.intracellularWater / newProfile.leanBodyMass
     newProfile.ecwTbwRatio = newProfile.extracellularWater / newProfile.totalBodyWater
 
@@ -198,6 +223,15 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
     }
   }
 
+  // Calculate sweat loss based on method
+  const calculateSweatLoss = () => {
+    if (sweatMethod === "context") {
+      const rates = { cool: 0.3, moderate: 0.6, hot: 1.0 }
+      return rates[sweatContext] * sessionHours
+    }
+    return sweatLoss
+  }
+
   // Background AI calculation that updates as meals are added
   const calculateRecommendationsInBackground = useCallback(async () => {
     try {
@@ -207,7 +241,7 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
         body: JSON.stringify({
           profile,
           activityLevel,
-          sweatLoss,
+          sweatLoss: calculateSweatLoss(),
           currentIntake: totalIntake,
           planDuration,
         }),
@@ -218,7 +252,21 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
     } catch (error) {
       console.error("Error calculating recommendations:", error)
     }
-  }, [profile, activityLevel, sweatLoss, totalIntake, planDuration])
+  }, [profile, activityLevel, sweatLoss, sweatMethod, sweatContext, sessionHours, totalIntake, planDuration])
+
+  // Load drinks from hydration_options on mount
+  useEffect(() => {
+    const loadDrinks = async () => {
+      try {
+        const response = await fetch("/api/hydration-options")
+        const data = await response.json()
+        setAvailableDrinks(data.drinks || [])
+      } catch (error) {
+        console.error("Error loading drinks:", error)
+      }
+    }
+    loadDrinks()
+  }, [])
 
   // Trigger background calculation when relevant state changes
   useEffect(() => {
@@ -327,7 +375,8 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                       </SelectTrigger>
                       <SelectContent className="bg-gray-800 border-white/20">
                         <SelectItem value="direct" className="text-white hover:bg-white/10">Direct (Weight + Body Fat %)</SelectItem>
-                        <SelectItem value="visual" className="text-white hover:bg-white/10">Visual Estimation</SelectItem>
+                        <SelectItem value="tbw" className="text-white hover:bg-white/10">From BIA Device (TBW)</SelectItem>
+                        <SelectItem value="bodytype" className="text-white hover:bg-white/10">Visual Estimation</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -339,7 +388,7 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                         <Input
                           type="number"
                           value={profile.weight}
-                          onChange={(e) => setProfile({ ...profile, weight: Number(e.target.value) })}
+                          onChange={(e) => updateProfile("weight", Number(e.target.value))}
                           className="bg-white border-gray-300 text-gray-900"
                         />
                       </div>
@@ -348,9 +397,64 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                         <Input
                           type="number"
                           value={profile.bodyFat}
-                          onChange={(e) => setProfile({ ...profile, bodyFat: Number(e.target.value) })}
+                          onChange={(e) => updateProfile("bodyFat", Number(e.target.value))}
                           className="bg-white border-gray-300 text-gray-900"
                         />
+                      </div>
+                    </>
+                  ) : inputMethod === "tbw" ? (
+                    <>
+                      <div>
+                        <Label className="text-gray-700">Weight (kg)</Label>
+                        <Input
+                          type="number"
+                          value={profile.weight}
+                          onChange={(e) => setProfile({ ...profile, weight: Number(e.target.value) })}
+                          className="bg-white border-gray-300 text-gray-900"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-gray-700">Total Body Water (L)</Label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={profile.totalBodyWater}
+                          onChange={(e) => updateProfile("totalBodyWater", Number(e.target.value))}
+                          className="bg-white border-gray-300 text-gray-900"
+                        />
+                      </div>
+                      <div className="col-span-2 grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-gray-700">ICW (L)</Label>
+                          <Input
+                            type="number"
+                            step="0.1"
+                            value={profile.intracellularWater}
+                            onChange={(e) => updateProfile("intracellularWater", Number(e.target.value))}
+                            className="bg-white border-gray-300 text-gray-900"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-gray-700">ECW (L)</Label>
+                          <Input
+                            type="number"
+                            step="0.1"
+                            value={profile.extracellularWater}
+                            onChange={(e) => updateProfile("extracellularWater", Number(e.target.value))}
+                            className="bg-white border-gray-300 text-gray-900"
+                          />
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-gray-700">Lean Body Mass (kg)</Label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={profile.leanBodyMass.toFixed(1)}
+                          readOnly
+                          className="bg-gray-100 border-gray-300 text-gray-700"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Calculated from TBW ÷ 0.738</p>
                       </div>
                     </>
                   ) : (
@@ -402,6 +506,54 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                     </Select>
                   </div>
                   <div>
+                    <Label className="text-gray-700">Sweat Loss Calculation</Label>
+                    <Select value={sweatMethod} onValueChange={(v: "manual" | "context") => setSweatMethod(v)}>
+                      <SelectTrigger className="bg-white border-gray-300 text-gray-900">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-800 border-white/20">
+                        <SelectItem value="context" className="text-white hover:bg-white/10">Context Estimate</SelectItem>
+                        <SelectItem value="manual" className="text-white hover:bg-white/10">Manual Input</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Sweat calculation inputs based on method */}
+                {sweatMethod === "context" ? (
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-gray-700">Session Context</Label>
+                      <Select value={sweatContext} onValueChange={(v: "cool" | "moderate" | "hot") => setSweatContext(v)}>
+                        <SelectTrigger className="bg-white border-gray-300 text-gray-900">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-800 border-white/20">
+                          <SelectItem value="cool" className="text-white hover:bg-white/10">Cool/Light (0.3 L/h)</SelectItem>
+                          <SelectItem value="moderate" className="text-white hover:bg-white/10">Moderate (0.6 L/h)</SelectItem>
+                          <SelectItem value="hot" className="text-white hover:bg-white/10">Hot/Hard (1.0 L/h)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-gray-700">Session Hours</Label>
+                      <Input
+                        type="number"
+                        step="0.25"
+                        value={sessionHours}
+                        onChange={(e) => setSessionHours(Number(e.target.value) || 1)}
+                        className="bg-white border-gray-300 text-gray-900"
+                      />
+                    </div>
+                    <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                      Estimated: {(() => {
+                        const rates = { cool: 0.3, moderate: 0.6, hot: 1.0 }
+                        return (rates[sweatContext] * sessionHours).toFixed(2)
+                      })()} L
+                    </div>
+                  </div>
+                ) : (
+                  <div>
                     <Label className="text-gray-700">Sweat Loss (L)</Label>
                     <Input
                       type="number"
@@ -411,9 +563,10 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                       className="bg-white border-gray-300 text-gray-900"
                     />
                   </div>
+                )}
 
-                  {/* Display key ratios */}
-                  <div className="p-3 bg-muted rounded-lg space-y-2 text-sm">
+                {/* Display key ratios */}
+                <div className="p-3 bg-muted rounded-lg space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>ICW/LBM Ratio:</span>
                       <span className={profile.icwLbmRatio < 0.43 ? "text-orange-600" : ""}>
@@ -427,7 +580,6 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                       </span>
                     </div>
                   </div>
-                </div>
 
                 <Button 
                   onClick={() => setActiveTab("drinks")}
@@ -862,18 +1014,19 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                             protein: Math.max(0, profile.weight * 1.2 - totalIntake.protein)
                           }
                           
-                          // TODO: Add allergy input UI
-                          const allergies = [] // For now, empty array
+                          // No allergies - these are only suggestions
                           
                           const response = await fetch("/api/ai/generate-meals", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ deficits, allergies })
+                            body: JSON.stringify({ deficits, allergies: [] })
                           })
                           
                           const data = await response.json()
-                          // TODO: Display meal suggestions in a modal or new tab
-                          console.log("Meal suggestions:", data)
+                          if (data.meals && data.meals.length > 0) {
+                            setMealSuggestions(data.meals)
+                            setShowMealModal(true)
+                          }
                         } catch (error) {
                           console.error("Error generating meals:", error)
                         } finally {
@@ -933,5 +1086,75 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
         </Tabs>
       </DialogContent>
     </Dialog>
+
+    {/* Meal Suggestions Modal */}
+    {showMealModal && (
+      <Dialog open={showMealModal} onOpenChange={setShowMealModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>AI Meal Suggestions</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4">
+            {mealSuggestions.map((meal, idx) => (
+              <Card key={idx} className="overflow-hidden">
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* Meal Image Placeholder */}
+                  <div className="relative h-48 md:h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                    <div className="text-center p-4">
+                      <div className="text-4xl mb-2">🍽️</div>
+                      <p className="text-sm text-gray-600">
+                        {meal.name}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Meal Details */}
+                  <CardContent className="p-4 space-y-3">
+                    <h3 className="font-semibold text-lg">{meal.name}</h3>
+                    
+                    <div className="text-sm text-gray-600">
+                      <p className="font-medium mb-1">Ingredients:</p>
+                      <p>{meal.foods.join(", ")}</p>
+                    </div>
+                    
+                    <div className="text-sm text-gray-600">
+                      <p className="font-medium mb-1">Why this meal:</p>
+                      <p>{meal.explanation}</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="bg-blue-50 p-2 rounded">
+                        <span className="font-medium">Sodium:</span> {meal.nutrients.sodium}mg
+                      </div>
+                      <div className="bg-green-50 p-2 rounded">
+                        <span className="font-medium">Potassium:</span> {meal.nutrients.potassium}mg
+                      </div>
+                      <div className="bg-orange-50 p-2 rounded">
+                        <span className="font-medium">Fiber:</span> {meal.nutrients.fiber}g
+                      </div>
+                      <div className="bg-purple-50 p-2 rounded">
+                        <span className="font-medium">Protein:</span> {meal.nutrients.protein}g
+                      </div>
+                    </div>
+                  </CardContent>
+                </div>
+              </Card>
+            ))}
+            
+            {mealSuggestions.length > 0 && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm font-medium mb-2">Total from all meals:</p>
+                <div className="grid grid-cols-4 gap-2 text-sm">
+                  <div>Sodium: {mealSuggestions.reduce((sum, m) => sum + m.nutrients.sodium, 0)}mg</div>
+                  <div>Potassium: {mealSuggestions.reduce((sum, m) => sum + m.nutrients.potassium, 0)}mg</div>
+                  <div>Fiber: {mealSuggestions.reduce((sum, m) => sum + m.nutrients.fiber, 0).toFixed(1)}g</div>
+                  <div>Protein: {mealSuggestions.reduce((sum, m) => sum + m.nutrients.protein, 0).toFixed(1)}g</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    )}
   )
 }
