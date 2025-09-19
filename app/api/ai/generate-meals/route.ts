@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import OpenAI from "openai"
+import { applyThresholdRules, applyRotationRules } from "@/lib/threshold-matrix-rules"
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
     // Remove duplicates and filter out allergens
     const uniqueFoods = relevantFoods.filter((food, index, self) => 
       index === self.findIndex(f => f.id === food.id) &&
-      !allergies.some(allergy => food.name.toLowerCase().includes(allergy.toLowerCase()))
+      !allergies.some((allergy: string) => food.name.toLowerCase().includes(allergy.toLowerCase()))
     )
 
     if (uniqueFoods.length === 0) {

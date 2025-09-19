@@ -35,6 +35,19 @@ interface NutritionalIntake {
   probiotics: number
   omega3: number
   polyphenols: number
+  // Additional micronutrients
+  b6: number
+  b9: number
+  b12: number
+  iron: number
+  zinc: number
+  copper: number
+  choline: number
+  vitamin_c: number
+  vitamin_d: number
+  caffeine: number
+  soluble_fiber: number
+  insoluble_fiber: number
 }
 
 interface RecommendedProduct {
@@ -52,15 +65,16 @@ interface RecommendedProduct {
 
 interface HydrationAssessmentModalProps {
   isOpen: boolean
-  onClose: () => void
+  onCloseAction: () => void
   sessionId?: string  // Make optional since we'll use cookie session
 }
 
-export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmentModalProps) {
+export function HydrationAssessmentModal({ isOpen, onCloseAction }: HydrationAssessmentModalProps) {
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("profile")
   const [isProcessing, setIsProcessing] = useState(false)
-  const [aiRecommendations, setAiRecommendations] = useState<RecommendedProduct[]>([])
+  const [aiRecommendations, setAiRecommendations] = useState<any[]>([])
+  const [recentProducts, setRecentProducts] = useState<string[]>([])
   const [planDuration, setPlanDuration] = useState<1 | 3 | 5>(1)
   
   // Body composition state
@@ -78,7 +92,16 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
   const [inputMethod, setInputMethod] = useState<"direct" | "tbw" | "bodytype">("direct")
   const [sex, setSex] = useState<"male" | "female">("male")
   const [bodyType, setBodyType] = useState<"shredded" | "fit" | "average" | "carrying-extra">("average")
-  const [activityLevel, setActivityLevel] = useState<"desk" | "training">("desk")
+  const [activityLevel, setActivityLevel] = useState<"light" | "moderate" | "heavy">("moderate")
+  const [dailyTargets, setDailyTargets] = useState({
+    potassium: 0,
+    sodium: 0,
+    protein: 0,
+    water: 0,
+    fiber: 20,
+    b12: 2.4,
+    magnesium: 320,
+  })
   const [sweatLoss, setSweatLoss] = useState(0)
   const [sweatMethod, setSweatMethod] = useState<"manual" | "context">("context")
   const [sweatContext, setSweatContext] = useState<"cool" | "moderate" | "hot">("moderate")
@@ -89,6 +112,12 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
   const [drinkSearch, setDrinkSearch] = useState("")
   const [availableDrinks, setAvailableDrinks] = useState<any[]>([])
   const [drinkSortBy, setDrinkSortBy] = useState<"name" | "volume">("name")
+  const [showClarification, setShowClarification] = useState(false)
+  const [clarificationData, setClarificationData] = useState<{
+    question: string
+    suggestions: string[]
+    originalInput: string
+  } | null>(null)
   const [breakfast, setBreakfast] = useState("")
   const [lunch, setLunch] = useState("")
   const [dinner, setDinner] = useState("")
@@ -97,18 +126,31 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
   const [mealSuggestions, setMealSuggestions] = useState<any[]>([])
   const [showMealModal, setShowMealModal] = useState(false)
 
-  // Nutritional accumulator
+  // Comprehensive nutritional accumulator (all nutrients from matrix)
   const [totalIntake, setTotalIntake] = useState<NutritionalIntake>({
     water: 0,
-    sodium: 0,
-    potassium: 0,
-    magnesium: 0,
+    sodium: 0,      // na_mg in DB
+    potassium: 0,   // k_mg in DB
+    magnesium: 0,   // mg_mg in DB
     calcium: 0,
-    fiber: 0,
+    fiber: 0,       // soluble_fiber_g + insoluble_fiber_g
     protein: 0,
-    probiotics: 0,
-    omega3: 0,
-    polyphenols: 0,
+    probiotics: 0,  // probiotic_cfu in DB
+    omega3: 0,      // omega3_mg in DB
+    polyphenols: 0, // polyphenols_mg in DB
+    // Additional micronutrients from matrix
+    b6: 0,          // b6_mg in DB
+    b9: 0,          // b9_ug in DB (folate)
+    b12: 0,         // b12_ug in DB
+    iron: 0,        // iron_mg in DB
+    zinc: 0,        // zinc_mg in DB
+    copper: 0,      // copper_mg in DB
+    choline: 0,     // choline_mg in DB
+    vitamin_c: 0,   // vitamin_c_mg in DB
+    vitamin_d: 0,   // vitamin_d_ug in DB
+    caffeine: 0,    // caffeine_mg in DB
+    soluble_fiber: 0,
+    insoluble_fiber: 0,
   })
 
   // Individual meal nutrition tracking
@@ -156,6 +198,40 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
     newProfile.ecwTbwRatio = newProfile.extracellularWater / newProfile.totalBodyWater
 
     setProfile(newProfile)
+    
+    // Calculate LBM-based daily targets
+    calculateDailyTargets(newProfile)
+  }
+
+  // Calculate realistic LBM-based targets
+  const calculateDailyTargets = (bodyProfile: BodyComposition) => {
+    const lbm = bodyProfile.leanBodyMass
+    
+    // Base targets scaled to LBM (more realistic)
+    const baseTargets = {
+      potassium: lbm * 40,      // 40mg × LBM kg (vs impossible 3500mg)
+      sodium: lbm * 30,         // 30mg × LBM kg (vs impossible 1500mg)  
+      protein: lbm * 1.4,       // 1.4g × LBM kg for moderate activity
+      water: lbm * 35,          // 35ml × LBM kg base hydration
+    }
+    
+    // Calculate sweat adjustments
+    const sweatLoss = calculateSweatLoss()
+    const sweatAdjustments = {
+      potassium: sweatLoss * 250,
+      sodium: sweatLoss * 900,
+      water: sweatLoss * 500,
+    }
+    
+    setDailyTargets({
+      potassium: baseTargets.potassium + sweatAdjustments.potassium,
+      sodium: baseTargets.sodium + sweatAdjustments.sodium,
+      protein: baseTargets.protein,
+      water: baseTargets.water + sweatAdjustments.water,
+      fiber: 20, // Fixed daily target
+      b12: 2.4, // Fixed RDA
+      magnesium: sex === "female" ? 310 : 420, // Gender-specific RDA
+    })
   }
 
   const calculateFromBodyType = () => {
@@ -186,6 +262,18 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
 
       const data = await response.json()
       
+      // Check if clarification is needed
+      if (data.needsClarification) {
+        setClarificationData({
+          question: data.question,
+          suggestions: data.suggestions,
+          originalInput: meal
+        })
+        setShowClarification(true)
+        setIsProcessing(false)
+        return
+      }
+      
       // Store individual meal nutrition
       const mealData = {
         water: data.water || 0,
@@ -198,12 +286,29 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
         probiotics: data.probiotics || 0,
         omega3: data.omega3 || 0,
         polyphenols: data.polyphenols || 0,
+        b6: data.b6 || 0,
+        b9: data.b9 || 0,
+        b12: data.b12 || 0,
+        iron: data.iron || 0,
+        zinc: data.zinc || 0,
+        copper: data.copper || 0,
+        choline: data.choline || 0,
+        vitamin_c: data.vitamin_c || 0,
+        vitamin_d: data.vitamin_d || 0,
+        caffeine: data.caffeine || 0,
+        soluble_fiber: data.soluble_fiber || 0,
+        insoluble_fiber: data.insoluble_fiber || 0,
       }
       
-      setMealNutrition(prev => ({ ...prev, [mealType]: mealData }))
+      // Update meal-specific nutrition
+      setMealNutrition(prev => ({
+        ...prev,
+        [mealType]: mealData
+      }))
       
-      // Update total intake with parsed nutritional data
+      // Add to total intake (all nutrients)
       setTotalIntake(prev => ({
+        ...prev,
         water: prev.water + (data.water || 0),
         sodium: prev.sodium + (data.sodium || 0),
         potassium: prev.potassium + (data.potassium || 0),
@@ -214,15 +319,43 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
         probiotics: prev.probiotics + (data.probiotics || 0),
         omega3: prev.omega3 + (data.omega3 || 0),
         polyphenols: prev.polyphenols + (data.polyphenols || 0),
+        b6: prev.b6 + (data.b6 || 0),
+        b9: prev.b9 + (data.b9 || 0),
+        b12: prev.b12 + (data.b12 || 0),
+        iron: prev.iron + (data.iron || 0),
+        zinc: prev.zinc + (data.zinc || 0),
+        copper: prev.copper + (data.copper || 0),
+        choline: prev.choline + (data.choline || 0),
+        vitamin_c: prev.vitamin_c + (data.vitamin_c || 0),
+        vitamin_d: prev.vitamin_d + (data.vitamin_d || 0),
+        caffeine: prev.caffeine + (data.caffeine || 0),
+        soluble_fiber: prev.soluble_fiber + (data.soluble_fiber || 0),
+        insoluble_fiber: prev.insoluble_fiber + (data.insoluble_fiber || 0),
       }))
 
-      // Trigger background AI calculation for recommendations
-      calculateRecommendationsInBackground()
+      toast({
+        title: "Meal Added",
+        description: data.explanation || `${meal} - ${data.water}ml water, ${data.sodium}mg sodium, ${data.protein}g protein`,
+      })
     } catch (error) {
-      console.error("Error processing meal:", error)
+      console.error("Error parsing meal:", error)
+      toast({
+        title: "Error",
+        description: "Failed to parse meal. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsProcessing(false)
     }
+  }
+
+  // Handle clarification response
+  const handleClarificationResponse = async (clarifiedMeal: string) => {
+    setShowClarification(false)
+    setClarificationData(null)
+    
+    // Re-submit with clarified meal
+    await processMealWithAI(clarifiedMeal, "meal")
   }
 
   // Calculate sweat loss based on method
@@ -235,7 +368,52 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
   }
 
   // Background AI calculation that updates as meals are added
-  const calculateRecommendationsInBackground = useCallback(async () => {
+  const generateAIRecommendations = useCallback(async () => {
+    // Calculate current deficits
+    const deficits = {
+      water: Math.max(0, dailyTargets.water - totalIntake.water),
+      sodium: Math.max(0, dailyTargets.sodium - totalIntake.sodium),
+      potassium: Math.max(0, dailyTargets.potassium - totalIntake.potassium),
+      protein: Math.max(0, dailyTargets.protein - totalIntake.protein),
+      fiber: Math.max(0, dailyTargets.fiber - totalIntake.fiber),
+      b12: Math.max(0, (dailyTargets.b12 || 2.4) - totalIntake.b12),
+      magnesium: Math.max(0, (dailyTargets.magnesium || 320) - totalIntake.magnesium),
+      probiotics: totalIntake.probiotics === 0 ? 1 : 0, // Binary check
+    };
+    
+    // Call new hydration plan API with threshold matrix rules
+    try {
+      const response = await fetch('/api/ai/generate-hydration-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deficits,
+          dailyTargets,
+          totalIntake,
+          recentProducts,
+          planDays: planDuration
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.drinks) {
+        setAiRecommendations(data.drinks);
+        // Track what we recommended to avoid repetition
+        setRecentProducts(prev => [...prev, ...data.drinks.map((d: any) => d.name)]);
+      } else if (data.plan) {
+        // Multi-day plan
+        setAiRecommendations(data.plan[0]); // Show day 1
+        console.log('Multi-day plan generated:', data.plan);
+      }
+    } catch (error) {
+      console.error('Error generating recommendations:', error);
+      // Fallback to previous logic if new API fails
+      generateFallbackRecommendations();
+    }
+  }, [dailyTargets, totalIntake, planDuration, recentProducts]);
+
+  const generateFallbackRecommendations = async () => {
     try {
       const response = await fetch("/api/ai/calculate-recommendations", {
         method: "POST",
@@ -254,7 +432,7 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
     } catch (error) {
       console.error("Error calculating recommendations:", error)
     }
-  }, [profile, activityLevel, sweatLoss, sweatMethod, sweatContext, sessionHours, totalIntake, planDuration])
+  }
 
   // Load drinks from hydration_options on mount
   useEffect(() => {
@@ -270,12 +448,12 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
     loadDrinks()
   }, [])
 
-  // Trigger background calculation when relevant state changes
+  // Trigger AI recommendations when switching to recommendations tab or when intake changes
   useEffect(() => {
-    if (totalIntake.water > 0 || totalIntake.sodium > 0) {
-      calculateRecommendationsInBackground()
+    if (activeTab === "recommendations") {
+      generateAIRecommendations()
     }
-  }, [totalIntake, calculateRecommendationsInBackground])
+  }, [activeTab, totalIntake, dailyTargets, planDuration])
 
   // Add all recommendations to cart with multiplier
   const addAllToCart = async () => {
@@ -314,7 +492,7 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
 
       // Clear session storage for next user
       sessionStorage.clear()
-      onClose()
+      onCloseAction()
     } catch (error) {
       toast({
         title: "Error",
@@ -345,7 +523,7 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
   }, [profile, totalIntake])
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={onCloseAction}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white/10 backdrop-blur-xl border border-white/20">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-teal-300">AI Hydration Assessment</DialogTitle>
@@ -567,6 +745,15 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                   </div>
                 )}
 
+                <div>
+                  <Label htmlFor="breakfast">Breakfast</Label>
+                  <Input
+                    id="breakfast"
+                    value={breakfast}
+                    onChange={(e) => setBreakfast(e.target.value)}
+                  />
+                </div>
+
                 {/* Display key ratios */}
                 <div className="p-3 bg-muted rounded-lg space-y-2 text-sm">
                     <div className="flex justify-between">
@@ -622,11 +809,14 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                     </Select>
                   </div>
                   
-                  {/* Drinks Grid from Database */}
+                  {/* Drinks Grid from Database - Filter by category='drink' */}
                   <div className="h-48 overflow-y-auto border rounded-lg p-2">
                     <div className="grid grid-cols-3 gap-2">
                       {availableDrinks
-                        .filter(d => d.name.toLowerCase().includes(drinkSearch.toLowerCase()))
+                        .filter(d => 
+                          d.category === 'drink' && 
+                          d.name.toLowerCase().includes(drinkSearch.toLowerCase())
+                        )
                         .sort((a, b) => {
                           if (drinkSortBy === "name") return a.name.localeCompare(b.name)
                           return (b.h2o_ml || 0) - (a.h2o_ml || 0)
@@ -643,12 +833,29 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                                 water: prev.water + (drink.h2o_ml || 0),
                                 sodium: prev.sodium + (drink.na_mg || 0),
                                 potassium: prev.potassium + (drink.k_mg || 0),
+                                magnesium: prev.magnesium + (drink.mg_mg || 0),
+                                calcium: prev.calcium + (drink.calcium_mg || 0),
                                 fiber: prev.fiber + ((drink.soluble_fiber_g || 0) + (drink.insoluble_fiber_g || 0)),
                                 protein: prev.protein + (drink.protein_g || 0),
+                                probiotics: prev.probiotics + (drink.probiotic_cfu || 0),
+                                omega3: prev.omega3 + (drink.omega3_mg || 0),
+                                polyphenols: prev.polyphenols + (drink.polyphenols_mg || 0),
+                                b6: prev.b6 + (drink.b6_mg || 0),
+                                b9: prev.b9 + (drink.b9_ug || 0),
+                                b12: prev.b12 + (drink.b12_ug || 0),
+                                iron: prev.iron + (drink.iron_mg || 0),
+                                zinc: prev.zinc + (drink.zinc_mg || 0),
+                                copper: prev.copper + (drink.copper_mg || 0),
+                                choline: prev.choline + (drink.choline_mg || 0),
+                                vitamin_c: prev.vitamin_c + (drink.vitamin_c_mg || 0),
+                                vitamin_d: prev.vitamin_d + (drink.vitamin_d_ug || 0),
+                                caffeine: prev.caffeine + (drink.caffeine_mg || 0),
+                                soluble_fiber: prev.soluble_fiber + (drink.soluble_fiber_g || 0),
+                                insoluble_fiber: prev.insoluble_fiber + (drink.insoluble_fiber_g || 0),
                               }))
                               toast({ 
                                 title: `Added ${drink.name}`,
-                                description: `${drink.h2o_ml || 0}ml`
+                                description: `${drink.h2o_ml || 0}ml water${drink.caffeine_mg ? `, ${drink.caffeine_mg}mg caffeine` : ''}`
                               })
                             }}
                           >
@@ -714,38 +921,6 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                       onClick={() => {
                         setTotalIntake(prev => ({
                           ...prev,
-                          water: prev.water + 500,
-                          sodium: prev.sodium + 200,
-                          potassium: prev.potassium + 200,
-                        }))
-                        toast({ title: "Added Electrolytes (500ml)" })
-                      }}
-                    >
-                      ⚡ Electrolytes
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setTotalIntake(prev => ({
-                          ...prev,
-                          water: prev.water + 350,
-                          potassium: prev.potassium + 450,
-                          sodium: prev.sodium + 150,
-                          protein: prev.protein + 8,
-                        }))
-                        toast({ title: "Added Milk" })
-                      }}
-                    >
-                      🥛 Milk (350ml)
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setTotalIntake(prev => ({
-                          ...prev,
-                          water: prev.water + 250,
                           fiber: prev.fiber + 8.5,
                           protein: prev.protein + 12,
                         }))
@@ -828,6 +1003,7 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                       placeholder="e.g., chicken salad, rice"
                       value={lunch}
                       onChange={(e) => setLunch(e.target.value)}
+                      onBlur={() => processMealWithAI(lunch, "lunch")}
                     />
                     <Button 
                       size="sm" 
@@ -910,6 +1086,48 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                     </div>
                   )}
                 </div>
+
+                {/* Global Clarification Mini-Chat */}
+                {showClarification && clarificationData && (
+                  <div className="border rounded-lg p-4 bg-blue-50 space-y-3">
+                    <div className="flex items-start space-x-2">
+                      <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs">
+                        AI
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-700">{clarificationData.question}</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {clarificationData.suggestions.map((suggestion, idx) => (
+                            <Button
+                              key={idx}
+                              variant="outline"
+                              size="sm"
+                              className="text-xs"
+                              onClick={() => handleClarificationResponse(suggestion)}
+                            >
+                              {suggestion}
+                            </Button>
+                          ))}
+                        </div>
+                        <div className="mt-2">
+                          <Input
+                            placeholder="Or type your own..."
+                            className="text-sm"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                const target = e.target as HTMLInputElement
+                                if (target.value.trim()) {
+                                  handleClarificationResponse(target.value.trim())
+                                  target.value = ''
+                                }
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 {/* Show meal nutritional breakdown */}
                 {(totalIntake.sodium > 0 || totalIntake.potassium > 0 || totalIntake.fiber > 0) && (
@@ -950,19 +1168,45 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
 
                 {aiRecommendations.length > 0 ? (
                   <div className="space-y-4">
-                    <div className="grid gap-3">
-                      {aiRecommendations.map((product, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div className="flex-1">
+                    {/* Make recommendations scrollable horizontally */}
+                    <div className="overflow-x-auto pb-2">
+                      <div className="flex gap-3 min-w-max">
+                        {aiRecommendations.map((product, index) => (
+                        <div key={index} className="flex-shrink-0 w-64 p-3 border rounded-lg relative">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="absolute top-1 right-1 h-6 w-6 p-0"
+                            onClick={async () => {
+                              // Remove this item and get a replacement
+                              const dismissed = aiRecommendations[index].name;
+                              setRecentProducts(prev => [...prev, dismissed]);
+                              
+                              // Remove from current recommendations
+                              const newRecs = aiRecommendations.filter((_, i) => i !== index);
+                              setAiRecommendations(newRecs);
+                              
+                              // Get a replacement recommendation
+                              generateAIRecommendations();
+                            }}
+                          >
+                            ×
+                          </Button>
+                          <div className="flex-1 pt-2">
                             <p className="font-medium">{product.name}</p>
                             <p className="text-sm text-muted-foreground">
                               Quantity: {product.quantity}
-                              {product.water_content_ml && ` • ${product.water_content_ml * product.quantity}ml`}
+                              {product.h2o_ml && ` • ${product.h2o_ml * product.quantity}ml`}
                             </p>
+                            {product.reason && (
+                              <p className="text-xs text-blue-600 italic mb-1">
+                                {product.reason}
+                              </p>
+                            )}
                             <p className="text-xs text-muted-foreground">
-                              {product.sodium_mg && `Na: ${product.sodium_mg}mg `}
-                              {product.potassium_mg && `K: ${product.potassium_mg}mg `}
-                              {product.fiber_g && `Fiber: ${product.fiber_g}g`}
+                              {product.na_mg && `Na: ${product.na_mg * product.quantity}mg `}
+                              {product.k_mg && `K: ${product.k_mg * product.quantity}mg `}
+                              {product.protein_g && `Protein: ${product.protein_g * product.quantity}g`}
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
@@ -974,7 +1218,39 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                             <Button
                               size="sm"
                               onClick={async () => {
-                                console.log("Adding product to cart:", product)
+                                // Store assessment data for email integration via Stripe webhook
+                                const assessmentData = {
+                                  profile,
+                                  dailyTargets,
+                                  totalIntake,
+                                  activityLevel,
+                                  deficits: {
+                                    protein: Math.max(0, dailyTargets.protein - totalIntake.protein),
+                                    sodium: Math.max(0, dailyTargets.sodium - totalIntake.sodium),
+                                    potassium: Math.max(0, dailyTargets.potassium - totalIntake.potassium),
+                                    fiber: Math.max(0, dailyTargets.fiber - totalIntake.fiber),
+                                    water: Math.max(0, dailyTargets.water - totalIntake.water),
+                                  },
+                                  timestamp: Date.now()
+                                }
+                                sessionStorage.setItem('hydrationAssessment', JSON.stringify(assessmentData))
+                                console.log('💾 Stored assessment for email integration')
+                                
+                                // Also store in database for Stripe webhook email integration
+                                try {
+                                  await fetch('/api/cart/store-assessment', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      sessionId: sessionStorage.getItem('session_id') || `session_${Date.now()}`,
+                                      assessmentData
+                                    })
+                                  });
+                                  console.log('📧 Assessment stored for webhook email integration');
+                                } catch (dbError) {
+                                  console.log('Database storage failed, but session storage succeeded');
+                                }
+                                
                                 if (!product.id) {
                                   console.error("Product ID is missing:", product)
                                   toast({ title: "Error", description: "Product ID missing" })
@@ -1028,10 +1304,45 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                           </div>
                         </div>
                       ))}
+                      </div>
                     </div>
 
                     <Button 
-                      onClick={addAllToCart}
+                      onClick={() => {
+                        // Store assessment data for email integration via Stripe webhook
+                        const assessmentData = {
+                          profile,
+                          dailyTargets,
+                          totalIntake,
+                          activityLevel,
+                          deficits: {
+                            protein: Math.max(0, dailyTargets.protein - totalIntake.protein),
+                            sodium: Math.max(0, dailyTargets.sodium - totalIntake.sodium),
+                            potassium: Math.max(0, dailyTargets.potassium - totalIntake.potassium),
+                            fiber: Math.max(0, dailyTargets.fiber - totalIntake.fiber),
+                            water: Math.max(0, dailyTargets.water - totalIntake.water),
+                          },
+                          timestamp: Date.now()
+                        }
+                        sessionStorage.setItem('hydrationAssessment', JSON.stringify(assessmentData))
+                        console.log('💾 Stored assessment for bundle purchase email integration')
+                        
+                        // Also store in database for Stripe webhook email integration
+                        fetch('/api/cart/store-assessment', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            sessionId: sessionStorage.getItem('session_id') || `session_${Date.now()}`,
+                            assessmentData
+                          })
+                        }).then(() => {
+                          console.log('📧 Assessment stored for webhook email integration');
+                        }).catch(() => {
+                          console.log('Database storage failed, but session storage succeeded');
+                        });
+                        
+                        addAllToCart()
+                      }}
                       className="w-full"
                       disabled={isProcessing}
                     >
@@ -1051,15 +1362,15 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                       <div className="text-sm space-y-1">
                         <div className="flex justify-between">
                           <span>Protein:</span>
-                          <span>{Math.max(0, profile.weight * 1.2 - totalIntake.protein).toFixed(0)}g</span>
+                          <span>{Math.max(0, dailyTargets.protein - totalIntake.protein).toFixed(0)}g</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Sodium:</span>
-                          <span>{Math.max(0, (activityLevel === "desk" ? 1500 : 2000) - totalIntake.sodium).toFixed(0)}mg</span>
+                          <span>{Math.max(0, dailyTargets.sodium - totalIntake.sodium).toFixed(0)}mg</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Potassium:</span>
-                          <span>{Math.max(0, 3500 - totalIntake.potassium).toFixed(0)}mg</span>
+                          <span>{Math.max(0, dailyTargets.potassium - totalIntake.potassium).toFixed(0)}mg</span>
                         </div>
                       </div>
                     </div>
@@ -1072,10 +1383,10 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                         setIsProcessing(true)
                         try {
                           const deficits = {
-                            sodium: Math.max(0, (activityLevel === "desk" ? 1500 : 2000) - totalIntake.sodium),
-                            potassium: Math.max(0, 3500 - totalIntake.potassium),
-                            fiber: Math.max(0, 15 - totalIntake.fiber),
-                            protein: Math.max(0, profile.weight * 1.2 - totalIntake.protein)
+                            sodium: Math.max(0, dailyTargets.sodium - totalIntake.sodium),
+                            potassium: Math.max(0, dailyTargets.potassium - totalIntake.potassium),
+                            fiber: Math.max(0, dailyTargets.fiber - totalIntake.fiber),
+                            protein: Math.max(0, dailyTargets.protein - totalIntake.protein)
                           }
                           
                           // No allergies - these are only suggestions
@@ -1192,9 +1503,9 @@ export function HydrationAssessmentModal({ isOpen, onClose }: HydrationAssessmen
                       waterIntake={totalIntake.water}
                       sodiumIntake={totalIntake.sodium}
                       potassiumIntake={totalIntake.potassium}
-                      waterTarget={calculateSweatLoss() * 1000 + 33 * profile.leanBodyMass}
-                      sodiumTarget={(activityLevel === "desk" ? 35 : 50) * profile.leanBodyMass + 920 * calculateSweatLoss()}
-                      potassiumTarget={45 * profile.leanBodyMass * (profile.icwLbmRatio < 0.43 ? 1.2 : 1) + 195 * calculateSweatLoss()}
+                      waterTarget={dailyTargets.water}
+                      sodiumTarget={dailyTargets.sodium}
+                      potassiumTarget={dailyTargets.potassium}
                     />
                   </Suspense>
                   <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
