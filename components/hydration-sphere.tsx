@@ -53,20 +53,26 @@ export function HydrationSphere({
     const sodiumProgress = Math.min(sodiumIntake / sodiumTarget, 1)
     const potassiumProgress = Math.min(potassiumIntake / potassiumTarget, 1)
 
-    // Wireframe spheres (boundaries)
-    const outerWireframe = new THREE.SphereGeometry(5, 32, 32)
-    const outerWireframeMesh = new THREE.Mesh(
-      outerWireframe,
-      new THREE.MeshBasicMaterial({ color: 0x4a90e2, wireframe: true, opacity: 0.3, transparent: true })
+    // CORRECTED PHYSIOLOGY: ICW = 2/3 TBW, ECW = 1/3 TBW
+    // Total sphere radius = 5, so:
+    // ICW radius = 5 * (2/3)^(1/3) ≈ 4.3 (inner sphere)
+    // ECW thickness = outer shell from 4.3 to 5.0
+    
+    // Total Body Water boundary (outer wireframe)
+    const totalWireframe = new THREE.SphereGeometry(5, 32, 32)
+    const totalWireframeMesh = new THREE.Mesh(
+      totalWireframe,
+      new THREE.MeshBasicMaterial({ color: 0x888888, wireframe: true, opacity: 0.2, transparent: true })
     )
-    scene.add(outerWireframeMesh)
+    scene.add(totalWireframeMesh)
 
-    const innerWireframe = new THREE.SphereGeometry(2, 32, 32)
-    const innerWireframeMesh = new THREE.Mesh(
-      innerWireframe,
+    // ICW boundary (inner wireframe) - 2/3 of total volume
+    const icwWireframe = new THREE.SphereGeometry(4.3, 32, 32)
+    const icwWireframeMesh = new THREE.Mesh(
+      icwWireframe,
       new THREE.MeshBasicMaterial({ color: 0xe24a90, wireframe: true, opacity: 0.3, transparent: true })
     )
-    scene.add(innerWireframeMesh)
+    scene.add(icwWireframeMesh)
 
     // Outer blob (ECW - water/sodium driven) - ADD FIRST so inner renders on top
     const outerBlobGeometry = new THREE.IcosahedronGeometry(4.5, 24)
@@ -108,8 +114,8 @@ export function HydrationSphere({
       time += 0.01
 
       // Rotate wireframes
-      outerWireframeMesh.rotation.y += 0.002
-      innerWireframeMesh.rotation.y -= 0.003
+      totalWireframeMesh.rotation.y += 0.002
+      icwWireframeMesh.rotation.y -= 0.003
 
       // Rotate blobs slowly
       innerBlob.rotation.x = time * 0.1
