@@ -1,7 +1,7 @@
+// app/api/ai/generate-meals/route.ts
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import OpenAI from "openai"
-import { applyThresholdRules, applyRotationRules } from "@/lib/threshold-matrix-rules"
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -9,7 +9,16 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
-    const { deficits, allergies = [] } = await request.json()
+    const body = await request.json()
+    
+    // This now comes from the clean splitter (mealsPayload)
+    const { 
+      deficits,
+      allergies = [],
+      previousMeals = [],
+      includeSnacks = true,
+      days_requested = 1
+    } = body
     
     if (!deficits) {
       return NextResponse.json({ meals: [] })
@@ -17,137 +26,90 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient()
     
-    // Calculate 50% of each deficit for food recommendations
-    const foodTargets = {
-      sodium: deficits.sodium * 0.5,
-      potassium: deficits.potassium * 0.5,
-      fiber: deficits.fiber * 0.5,
-      protein: deficits.protein * 0.5,
-    }
+    // Get all food items from hydration_options
+    const { data: foods, error } = await supabase
+      .from("hydration_options")
+      .select("*")
+      .not("protein_g", "is", null)
 
-    // Stage 1: Search for foods that can meet specific nutrient thresholds
-    const searchPromises = []
-    
-    // High potassium foods (>300mg per serving)
-    if (foodTargets.potassium > 0) {
-      searchPromises.push(
-        supabase
-          .from("hydration_options")
-          .select("*")
-          .gte("k_mg", Math.max(300, foodTargets.potassium / 3))
-          .limit(10)
-      )
-    }
-    
-    // High protein foods (>15g per serving)
-    if (foodTargets.protein > 0) {
-      searchPromises.push(
-        supabase
-          .from("hydration_options")
-          .select("*")
-          .gte("protein_g", Math.max(15, foodTargets.protein / 3))
-          .limit(10)
-      )
-    }
-    
-    // High fiber foods (>5g per serving)
-    if (foodTargets.fiber > 0) {
-      searchPromises.push(
-        supabase
-          .from("hydration_options")
-          .select("*")
-          .gte("soluble_fiber_g", Math.max(2, foodTargets.fiber / 4))
-          .limit(10)
-      )
-      searchPromises.push(
-        supabase
-          .from("hydration_options")
-          .select("*")
-          .gte("insoluble_fiber_g", Math.max(3, foodTargets.fiber / 4))
-          .limit(10)
-      )
-    }
-    
-    // High sodium foods (>200mg per serving) - if needed
-    if (foodTargets.sodium > 0) {
-      searchPromises.push(
-        supabase
-          .from("hydration_options")
-          .select("*")
-          .gte("na_mg", Math.max(200, foodTargets.sodium / 3))
-          .limit(10)
-      )
-    }
+    if (error) throw error
 
-    const searchResults = await Promise.all(searchPromises)
-    const relevantFoods = searchResults.flatMap(result => result.data || [])
-    
-    // Remove duplicates and filter out allergens
-    const uniqueFoods = relevantFoods.filter((food, index, self) => 
-      index === self.findIndex(f => f.id === food.id) &&
-      !allergies.some((allergy: string) => food.name.toLowerCase().includes(allergy.toLowerCase()))
+    // Filter out allergens
+    const safeFoods = (foods || []).filter(food => 
+      !allergies.some((allergy: string) => 
+        food.name?.toLowerCase().includes(allergy.toLowerCase())
+      )
     )
 
-    if (uniqueFoods.length === 0) {
-      return NextResponse.json({ meals: [] })
-    }
-
-    // Stage 2: AI creates meal combinations from targeted foods
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5-mini",
       messages: [
         {
           role: "system",
-          content: `You are a nutritionist creating meal suggestions to fill 50% of nutritional deficits.
+          content: `You are a clinical nutrition planner composing **meals + a snack** that close today's remaining **meal-side** gaps.
 
-Target nutrients to fill (50% of total deficit):
-- Sodium: ${foodTargets.sodium}mg
-- Potassium: ${foodTargets.potassium}mg  
-- Fiber: ${foodTargets.fiber}g
-- Protein: ${foodTargets.protein}g
+HARD GUARD:
+- Use ONLY foods present in foods[].
+- Respect allergies strictly.
+- Avoid repeating the same core protein/starch from previousMeals[].
+- If a gap cannot be met, say so explicitly (never hallucinate).
 
-Available high-nutrient foods (pre-filtered for deficits):
-${uniqueFoods.map(f => 
-  `${f.name}: Na=${f.na_mg}mg, K=${f.k_mg}mg, SolFiber=${f.soluble_fiber_g}g, InsolFiber=${f.insoluble_fiber_g}g, Protein=${f.protein_g}g`
+Available foods with nutrients per serving:
+${safeFoods.map(f => 
+  `${f.name}: Protein=${f.protein_g}g, Na=${f.na_mg}mg, K=${f.k_mg}mg, Fiber=${(f.soluble_fiber_g||0)+(f.insoluble_fiber_g||0)}g`
 ).join('\n')}
 
-Create practical meal combinations that:
-1. Use 1-3 foods per meal for simplicity
-2. Target the highest deficits first
-3. Make culinary sense (e.g., salmon + rice, not random combinations)
-4. Consider portion sizes realistically
+HOW TO REASON:
+1) Identify limiting nutrients: protein_g, fiber_g, iron_mg, zinc_mg, choline_mg, omega3_mg, etc.
+2) Compose 2-3 meals + 1 snack:
+   - Each meal: 1 protein base + 1-2 sides/veg
+   - Distribute coverage across meals (avoid huge portions)
+   - Include 1 snack for gentle top-ups
+3) Microbiome & polyphenols:
+   - If probiotic_cfu == 0: include kefir or kraut/kimchi if present
+   - If polyphenols low: add berries/cocoa/green tea if present
+4) Iron + vitamin C pairing for absorption
+5) Near-threshold flexibility: use snack instead of overbuilding meals
+6) Variety: avoid repeating previousMeals
 
-Examples:
-- For protein + fiber: "Salmon sushi" (salmon for protein, rice for insoluble fiber)
-- For potassium: "Banana smoothie" if bananas are available
-- For sodium: "Miso soup" if miso is available
-
-Return JSON:
+OUTPUT JSON:
 {
   "meals": [
     {
-      "name": "Meal name",
-      "foods": ["food1", "food2"],
+      "name": "Salmon Bowl",
+      "foods": ["salmon fillet", "quinoa", "spinach"],
       "nutrients": {
-        "sodium": number,
-        "potassium": number,
-        "fiber": number,
-        "protein": number
+        "sodium": 300,
+        "potassium": 800,
+        "protein": 35,
+        "fiber": 8
       },
-      "explanation": "Why this meal targets your specific deficits"
+      "explanation": "35g protein covers 77% of gap; omega-3 supports membranes"
+    }
+  ],
+  "snacks": [
+    {
+      "name": "Kefir with berries",
+      "nutrients": { "protein": 8, "probiotic_cfu": 1000000 },
+      "explanation": "Microbiome seeding + polyphenols"
     }
   ],
   "total_from_meals": {
-    "sodium": number,
-    "potassium": number,
-    "fiber": number,
-    "protein": number
-  }
+    "sodium": 585,
+    "potassium": 520,
+    "protein": 48,
+    "fiber": 12
+  },
+  "summary": "Balanced protein across meals, kefir for probiotics, avoided nuts per allergy."
 }`
         },
         {
           role: "user",
-          content: `Generate meal suggestions for these deficits. ${allergies.length > 0 ? `Avoid: ${allergies.join(', ')}` : ''}`
+          content: `Generate meal suggestions for these deficits.
+Deficits: ${JSON.stringify(deficits)}
+Allergies: ${allergies.join(', ') || 'none'}
+Previous meals to avoid: ${previousMeals.join(', ') || 'none'}
+Include snacks: ${includeSnacks}`
         }
       ],
       temperature: 0.7,

@@ -1,111 +1,420 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
+import { X, Plus, ShoppingCart, Loader2, RefreshCw } from 'lucide-react'
 import { useHydrationContext } from '@/contexts'
-import { splitDeficitsForRecommendations, buildDrinkQueryInstructions, buildMealQueryInstructions } from '@/utils/recommendationSplitter'
-import { buildMealRecommendationRequest, buildDrinkRecommendationRequest } from '@/utils/mealRecommendationBuilder'
+import { useToast } from '@/hooks/use-toast'
+import { splitDeficitsForAI } from '@/utils/recommendationSplitter'
+
+interface Product {
+  id: string
+  name: string
+  quantity: number
+  price_aed?: number
+  nutrients?: any
+  reason?: string
+}
+
+interface MealCard {
+  name: string
+  foods: string[]
+  nutrients?: any
+  explanation?: string
+  image_url?: string
+  image_type?: string
+}
 
 export function RecommendationEngine() {
-  const { totalIntake, deficits, meals: mealsData } = useHydrationContext()
-  const [recommendations, setRecommendations] = useState<any>(null)
-  const [isGenerating, setIsGenerating] = useState(false)
+  const { profile, totalIntake, deficits, meals } = useHydrationContext()
+  const { toast } = useToast()
   
-  const generateRecommendations = async () => {
-    setIsGenerating(true)
+  // Loading states for each API
+  const [isLoadingDrinks, setIsLoadingDrinks] = useState(false)
+  const [isLoadingMeals, setIsLoadingMeals] = useState(false)
+  const [isLoadingImages, setIsLoadingImages] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
+  
+  // Results state
+  const [recommendations, setRecommendations] = useState<Product[]>([])
+  const [mealCards, setMealCards] = useState<MealCard[]>([])
+  
+  // Input payloads
+  const [drinkInputs, setDrinkInputs] = useState<any | null>(null)
+  const [mealInputs, setMealInputs] = useState<any | null>(null)
+  
+  // Error states
+  const [drinksError, setDrinksError] = useState<string | null>(null)
+  const [mealsError, setMealsError] = useState<string | null>(null)
+
+  // Auto-prepare inputs when component mounts (AI Plan tab opens)
+  useEffect(() => {
+    if (!deficits || !totalIntake) return
     
     try {
-      // 1. Split deficits 50/50
+      // Parse allergies from comma-separated string
+      const allergiesList = (meals?.allergies || '')
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean)
+
+      // Get previous meals to avoid repetition
       const previousMeals = [
-        mealsData.breakfast, mealsData.lunch, mealsData.dinner, mealsData.snacks
-      ].filter(Boolean)
-      
-      const { drinksTarget, mealsTarget } = splitDeficitsForRecommendations(
-        deficits, 
-        totalIntake, 
-        previousMeals
+        meals?.breakfast,
+        meals?.lunch, 
+        meals?.dinner,
+        meals?.snacks,
+      ].filter(Boolean) as string[]
+
+      // Estimate caffeine drink count (80mg = 1 drink)
+      const caffeineCount = Math.max(0, Math.round(((totalIntake as any).caffeine || 0) / 80))
+
+      // Split deficits using our clean splitter
+      const { drinksPayload, mealsPayload } = splitDeficitsForAI(
+        deficits as any,
+        totalIntake as any,
+        {
+          sweatLossL: (profile as any)?.sweatLoss ?? 0,
+          caffeineCount,
+          daysRequested: 1,
+          allergies: allergiesList,
+          previousMeals,
+          sessionDrinks: [],
+        }
       )
+
+      setDrinkInputs(drinksPayload)
+      setMealInputs(mealsPayload)
       
-      // 2. Generate variety rules
-      const drinkInstructions = buildDrinkQueryInstructions(drinksTarget, 'venue_id_here')
+    } catch (err) {
+      console.error('Failed to prepare AI inputs:', err)
+    }
+  }, [deficits, totalIntake, meals?.allergies, meals?.breakfast, meals?.lunch, meals?.dinner, meals?.snacks])
+
+  // Generate recommendations using our new APIs
+  const generateRecommendations = async () => {
+    if (!drinkInputs || !mealInputs) return
+    
+    // Reset errors
+    setDrinksError(null)
+    setMealsError(null)
+    
+    try {
+      // Step 1: Call generate-drinks API
+      setIsLoadingDrinks(true)
+      const drinksResponse = await fetch('/api/ai/generate-drinks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(drinkInputs)
+      })
       
-      // 3. Build AI requests
-      const drinkRequest = {
-        ...drinkInstructions,
-        ...buildDrinkRecommendationRequest(drinksTarget, [], {})
-      }
-      const mealRequest = {
-        ...buildMealQueryInstructions(mealsTarget),
-        ...buildMealRecommendationRequest(mealsTarget, previousMeals)
-      }
+      if (!drinksResponse.ok) throw new Error('Drinks API failed')
+      const drinksData = await drinksResponse.json()
+      setRecommendations(drinksData.drinks || [])
+      setIsLoadingDrinks(false)
       
-      // 4. Call AI endpoints in parallel
-      const [drinkResponse, mealResponse] = await Promise.all([
-        fetch('/api/ai/recommend-drinks', {
+      // Step 2: Call generate-meals API  
+      setIsLoadingMeals(true)
+      const mealsResponse = await fetch('/api/ai/generate-meals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mealInputs)
+      })
+      
+      if (!mealsResponse.ok) throw new Error('Meals API failed')
+      const mealsData = await mealsResponse.json()
+      setIsLoadingMeals(false)
+      
+      // Step 3: Call generate-meal-images API with meal results
+      if (mealsData.meals && mealsData.meals.length > 0) {
+        setIsLoadingImages(true)
+        const mealImagesResponse = await fetch('/api/ai/generate-meal-images', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(drinkRequest)
-        }),
-        fetch('/api/ai/recommend-meals', {
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(mealRequest)
+          body: JSON.stringify({
+            meals: mealsData.meals,
+            allergies: mealInputs.allergies || [],
+            previousMeals: mealInputs.previousMeals || []
+          })
         })
-      ])
-      
-      const drinks = await drinkResponse.json()
-      const mealsRecommendations = await mealResponse.json()
-      
-      setRecommendations({ drinks, meals: mealsRecommendations })
+        
+        if (mealImagesResponse.ok) {
+          const mealImagesData = await mealImagesResponse.json()
+          setMealCards(mealImagesData.meals || [])
+        } else {
+          // If images fail, still show meals without images
+          setMealCards(mealsData.meals || [])
+        }
+        setIsLoadingImages(false)
+      }
       
     } catch (error) {
-      console.error('Error generating recommendations:', error)
-    } finally {
-      setIsGenerating(false)
+      console.error('Failed to generate recommendations:', error)
+      
+      if (isLoadingDrinks) {
+        setDrinksError('Failed to load drink recommendations')
+        setIsLoadingDrinks(false)
+      }
+      if (isLoadingMeals) {
+        setMealsError('Failed to load meal recommendations')
+        setIsLoadingMeals(false)
+      }
+      if (isLoadingImages) {
+        setIsLoadingImages(false)
+      }
+      
+      toast({
+        title: "Error",
+        description: "Failed to generate recommendations. Try refreshing.",
+        variant: "destructive",
+      })
     }
   }
-  
+
+  // Auto-generate recommendations when inputs are ready
+  useEffect(() => {
+    if (drinkInputs && mealInputs) {
+      generateRecommendations()
+    }
+  }, [drinkInputs, mealInputs])
+
+  // Retry mechanism
+  const retryRecommendations = () => {
+    generateRecommendations()
+  }
+
+  const addProduct = async (productId: string, quantity: number, productName: string) => {
+    try {
+      const response = await fetch('/api/cart/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId: productId, qty: quantity })
+      })
+      
+      if (response.ok) {
+        window.dispatchEvent(new Event('cart-updated'))
+        toast({
+          title: "Added to Cart",
+          description: `${productName} (${quantity}x)`,
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add to cart",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Remove product and add replacement
+  const removeAndReplace = async (productId: string) => {
+    // Remove from current recommendations
+    setRecommendations(prev => prev.filter(p => p.id !== productId))
+    
+    // Could trigger a new recommendation here
+    toast({
+      title: "Removed",
+      description: "Product removed from recommendations",
+    })
+  }
+
+  // Add all drinks to cart
+  const addAllToCart = async () => {
+    setIsProcessing(true)
+    
+    try {
+      // Add all products to cart
+      for (const product of recommendations) {
+        await fetch('/api/cart/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ itemId: product.id, qty: product.quantity })
+        })
+      }
+
+      // Store assessment data for success page
+      await fetch('/api/cart/store-assessment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          sessionId: 'current-session',
+          assessmentData: {
+            profile,
+            totalIntake,
+            deficits,
+            recommendedDrinks: recommendations,
+            recommendedMeals: mealCards,
+            dailyTargets: profile.targets
+          }
+        })
+      })
+
+      // Trigger cart refresh
+      window.dispatchEvent(new Event('cart-updated'))
+      setTimeout(() => {
+        window.dispatchEvent(new Event('cart-updated'))
+      }, 100)
+
+      toast({
+        title: "Success!",
+        description: `Added ${recommendations.length} items to cart`,
+      })
+
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add items to cart",
+        variant: "destructive",
+      })
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const isLoading = isLoadingDrinks || isLoadingMeals || isLoadingImages
+  const hasErrors = drinksError || mealsError
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>AI Recommendations</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Button 
-          onClick={generateRecommendations}
-          disabled={isGenerating}
-          className="w-full mb-4"
-        >
-          {isGenerating ? 'Generating...' : '🤖 Get Smart Recommendations'}
-        </Button>
-        
-        {recommendations && (
-          <div className="space-y-4">
-            {/* Drink Recommendations */}
-            <div>
-              <h4 className="font-medium mb-2">Recommended Drinks:</h4>
-              {recommendations.drinks?.map((drink: any, idx: number) => (
-                <div key={idx} className="p-2 border rounded">
-                  <div className="font-medium">{drink.name}</div>
-                  <div className="text-sm text-gray-600">{drink.reason}</div>
-                </div>
-              ))}
-            </div>
-            
-            {/* Meal Recommendations */}
-            <div>
-              <h4 className="font-medium mb-2">Recommended Foods:</h4>
-              {recommendations.meals?.map((meal: any, idx: number) => (
-                <div key={idx} className="p-2 border rounded">
-                  <div className="font-medium">{meal.name}</div>
-                  <div className="text-sm text-gray-600">{meal.reason}</div>
-                </div>
-              ))}
-            </div>
+    <div className="space-y-6">
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center p-8">
+          <Loader2 className="h-8 w-8 animate-spin mr-3" />
+          <div className="text-sm text-muted-foreground">
+            {isLoadingDrinks && "Generating drink recommendations..."}
+            {isLoadingMeals && "Generating meal suggestions..."}
+            {isLoadingImages && "Creating meal images..."}
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+
+      {/* Error State with Retry */}
+      {hasErrors && (
+        <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium text-red-800">Failed to load recommendations</h4>
+              <p className="text-sm text-red-600 mt-1">
+                {drinksError || mealsError}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={retryRecommendations}
+              className="ml-4"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Drinks Section */}
+      {recommendations.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold mb-3">Recommended Drinks</h3>
+          <div className="flex gap-3 overflow-x-auto pb-4">
+            {recommendations.map((product) => (
+              <Card key={product.id} className="min-w-[200px] flex-shrink-0">
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-medium text-sm">{product.name}</h4>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeAndReplace(product.id)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  {product.reason && (
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {product.reason}
+                    </p>
+                  )}
+                  
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Qty: {product.quantity}
+                  </p>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addProduct(product.id, product.quantity, product.name)}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Add All Drinks Button */}
+          <Button
+            onClick={addAllToCart}
+            disabled={isProcessing || recommendations.length === 0}
+            className="w-full mt-4"
+            size="lg"
+          >
+            {isProcessing ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <ShoppingCart className="mr-2 h-4 w-4" />
+            )}
+            Add All Drinks to Cart ({recommendations.length} items)
+          </Button>
+        </div>
+      )}
+
+      {/* Meals Section */}
+      {mealCards.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold mb-3">Recommended Meals</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {mealCards.map((meal, index) => (
+              <Card key={index} className="overflow-hidden">
+                {meal.image_url && (
+                  <div className="aspect-video w-full overflow-hidden">
+                    <img 
+                      src={meal.image_url} 
+                      alt={meal.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <CardContent className="p-4">
+                  <h4 className="font-semibold mb-2">{meal.name}</h4>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {meal.foods.join(', ')}
+                  </p>
+                  {meal.explanation && (
+                    <p className="text-xs text-muted-foreground">
+                      {meal.explanation}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!isLoading && !hasErrors && recommendations.length === 0 && mealCards.length === 0 && (
+        <div className="text-center p-8">
+          <p className="text-muted-foreground">
+            Complete your profile and meal information to get personalized recommendations.
+          </p>
+        </div>
+      )}
+    </div>
   )
 }

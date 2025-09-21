@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Droplets } from "lucide-react"
-import { HydrationAssessmentModal } from "./hydration-assessment-modal"
+import { HydrationAssessmentModal } from "./hydration/HydrationAssessmentNew"
 
 export function HydrationAssessmentButton() {
   const [isModalOpen, setIsModalOpen] = useState(false)

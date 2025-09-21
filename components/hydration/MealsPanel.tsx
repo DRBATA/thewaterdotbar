@@ -25,6 +25,19 @@ export function MealsPanel() {
           <CardTitle>What have you eaten today?</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Allergies Input */}
+          <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+            <Label className="text-red-800 font-medium">Allergies & Dietary Restrictions</Label>
+            <Input
+              className="mt-2"
+              placeholder="e.g., nuts, dairy, gluten, shellfish"
+              value={meals.allergies}
+              onChange={(e) => meals.setAllergies(e.target.value)}
+            />
+            <p className="text-xs text-red-600 mt-1">
+              This will filter meal recommendations to avoid these ingredients
+            </p>
+          </div>
           {/* Breakfast */}
           <div>
             <Label>Breakfast</Label>

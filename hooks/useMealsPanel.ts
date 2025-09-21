@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react'
 import { NutritionalIntake } from '@/types'
-import { combineMealIntakes, fillMissingNutrients } from '@/utils/mealProcessing'
 
 export function useMealsPanel() {
   // Meal inputs
@@ -8,6 +7,7 @@ export function useMealsPanel() {
   const [lunch, setLunch] = useState('')
   const [dinner, setDinner] = useState('')
   const [snacks, setSnacks] = useState('')
+  const [allergies, setAllergies] = useState('')
   
   // Processed meal nutrition
   const [mealNutrition, setMealNutrition] = useState<{
@@ -58,9 +58,8 @@ export function useMealsPanel() {
         return
       }
       
-      // Fill missing nutrients with smart defaults
-      const completeNutrients = fillMissingNutrients(meal, data)
-      setMealNutrition(prev => ({ ...prev, [mealType]: completeNutrients }))
+      // Store the parsed nutrition data
+      setMealNutrition(prev => ({ ...prev, [mealType]: data }))
       
     } catch (error) {
       console.error('Error processing meal:', error)
@@ -69,8 +68,14 @@ export function useMealsPanel() {
     }
   }, [])
   
-  // Get total meal intake
-  const totalMealIntake = combineMealIntakes(mealNutrition)
+  // Get total meal intake (simple combination)
+  const totalMealIntake = {
+    water: (mealNutrition.breakfast?.water || 0) + (mealNutrition.lunch?.water || 0) + (mealNutrition.dinner?.water || 0) + (mealNutrition.snacks?.water || 0),
+    sodium: (mealNutrition.breakfast?.sodium || 0) + (mealNutrition.lunch?.sodium || 0) + (mealNutrition.dinner?.sodium || 0) + (mealNutrition.snacks?.sodium || 0),
+    potassium: (mealNutrition.breakfast?.potassium || 0) + (mealNutrition.lunch?.potassium || 0) + (mealNutrition.dinner?.potassium || 0) + (mealNutrition.snacks?.potassium || 0),
+    protein: (mealNutrition.breakfast?.protein || 0) + (mealNutrition.lunch?.protein || 0) + (mealNutrition.dinner?.protein || 0) + (mealNutrition.snacks?.protein || 0),
+    fiber: (mealNutrition.breakfast?.fiber || 0) + (mealNutrition.lunch?.fiber || 0) + (mealNutrition.dinner?.fiber || 0) + (mealNutrition.snacks?.fiber || 0),
+  }
   
   return {
     // Meal inputs
@@ -78,6 +83,7 @@ export function useMealsPanel() {
     lunch, setLunch,
     dinner, setDinner,
     snacks, setSnacks,
+    allergies, setAllergies,
     
     // Processed nutrition
     mealNutrition,

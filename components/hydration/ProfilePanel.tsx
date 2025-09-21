@@ -7,16 +7,51 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useHydrationContext } from '@/contexts'
+import { useState, useEffect } from 'react'
 
-export function ProfilePanel() {
+interface ProfilePanelProps {
+  venueId?: string
+  onVenueChange?: (venueId: string) => void
+}
+
+export function ProfilePanel({ venueId, onVenueChange }: ProfilePanelProps) {
   const { profile } = useHydrationContext()
+  const [venues, setVenues] = useState<any[]>([])
+  
+  // Fetch venues on mount
+  useEffect(() => {
+    fetch('/api/venues')
+      .then(res => res.json())
+      .then(data => setVenues(data || []))
+      .catch(err => console.error('Error fetching venues:', err))
+  }, [])
   
   return (
     <Card>
       <CardHeader>
         <CardTitle>Your Body Profile</CardTitle>
+        <p className="text-sm text-muted-foreground mt-2">
+          Tell us about your body and what you've already consumed or planned for today. 
+          We'll calculate what gaps remain and recommend drinks/meals to fill them.
+        </p>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Venue Selection */}
+        <div>
+          <Label>Select Venue</Label>
+          <Select value={venueId} onValueChange={onVenueChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Choose your venue" />
+            </SelectTrigger>
+            <SelectContent>
+              {venues.map(venue => (
+                <SelectItem key={venue.id} value={venue.id}>
+                  {venue.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         {/* Input Method Selection */}
         <div>
           <Label>How would you like to input your body composition?</Label>
@@ -111,7 +146,7 @@ export function ProfilePanel() {
             id="weight-training"
             checked={profile.bodyComposition.includesWeightTraining}
             onCheckedChange={(checked) => {
-              // TODO: Need to update this in the hook
+              profile.setIncludesWeightTraining(!!checked)
               console.log('Weight training:', checked)
             }}
           />

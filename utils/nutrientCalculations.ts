@@ -1,4 +1,4 @@
-import { NutrientTargets, ActivityLevel } from '@/types'
+import { NutrientTargets, ActivityLevel, NutritionalIntake } from '@/types'
 
 // Calculate the 4 core nutrient targets from LBM
 export function calculateNutrientTargets(

@@ -11,7 +11,7 @@ export function useProfilePanel() {
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>('moderate')
   const [sweatContext, setSweatContext] = useState<SweatContext>('moderate')
   const [sessionHours, setSessionHours] = useState(1)
-  
+  const [includesWeightTraining, setIncludesWeightTraining] = useState(false)
   // Direct input values
   const [weight, setWeight] = useState(70)
   const [manualBodyFat, setManualBodyFat] = useState(15)
@@ -29,6 +29,7 @@ export function useProfilePanel() {
       weight,
       bodyFat,
       leanBodyMass: lbm,
+      includesWeightTraining,
       ...waterData
     }
   }, [weight, manualBodyFat, bodyType, sex, inputMethod])
@@ -40,8 +41,8 @@ export function useProfilePanel() {
   )
   
   const targets = useMemo(() => 
-    calculateNutrientTargets(bodyComposition.leanBodyMass, activityLevel, sweatLoss),
-    [bodyComposition.leanBodyMass, activityLevel, sweatLoss]
+    calculateNutrientTargets(bodyComposition.leanBodyMass, activityLevel, includesWeightTraining, sweatLoss),
+    [bodyComposition.leanBodyMass, activityLevel, includesWeightTraining, sweatLoss]
   )
   
   return {
@@ -54,6 +55,7 @@ export function useProfilePanel() {
     sessionHours, setSessionHours,
     weight, setWeight,
     manualBodyFat, setManualBodyFat,
+    includesWeightTraining, setIncludesWeightTraining, // ADD THIS LINE
     
     // Computed
     bodyComposition,
