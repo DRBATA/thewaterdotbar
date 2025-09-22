@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { NutritionalIntake } from '@/types'
 
 export function useMealsPanel() {
@@ -73,14 +73,23 @@ export function useMealsPanel() {
     }
   }, [])
   
-  // Get total meal intake (simple combination)
-  const totalMealIntake = {
-    water: (mealNutrition.breakfast?.water || 0) + (mealNutrition.lunch?.water || 0) + (mealNutrition.dinner?.water || 0) + (mealNutrition.snacks?.water || 0),
-    sodium: (mealNutrition.breakfast?.sodium || 0) + (mealNutrition.lunch?.sodium || 0) + (mealNutrition.dinner?.sodium || 0) + (mealNutrition.snacks?.sodium || 0),
-    potassium: (mealNutrition.breakfast?.potassium || 0) + (mealNutrition.lunch?.potassium || 0) + (mealNutrition.dinner?.potassium || 0) + (mealNutrition.snacks?.potassium || 0),
-    protein: (mealNutrition.breakfast?.protein || 0) + (mealNutrition.lunch?.protein || 0) + (mealNutrition.dinner?.protein || 0) + (mealNutrition.snacks?.protein || 0),
-    fiber: (mealNutrition.breakfast?.fiber || 0) + (mealNutrition.lunch?.fiber || 0) + (mealNutrition.dinner?.fiber || 0) + (mealNutrition.snacks?.fiber || 0),
-  }
+ // Get total meal intake (ALL nutrients)
+const totalMealIntake = useMemo(() => {
+  const meals = [mealNutrition.breakfast, mealNutrition.lunch, mealNutrition.dinner, mealNutrition.snacks]
+  const totals: Partial<NutritionalIntake> = {}
+  
+  // Sum ALL nutrients from all meals
+  meals.forEach(meal => {
+    if (meal) {
+      Object.entries(meal).forEach(([nutrient, value]) => {
+        totals[nutrient as keyof NutritionalIntake] = 
+          (totals[nutrient as keyof NutritionalIntake] || 0) + (value || 0)
+      })
+    }
+  })
+  
+  return totals as NutritionalIntake
+}, [mealNutrition])
   
   return {
     // Meal inputs
