@@ -1,127 +1,116 @@
-// app/api/ai/generate-meals/route.ts
-import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
-import OpenAI from "openai"
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    
-    // This now comes from the clean splitter (mealsPayload)
-    const { 
-      deficits,
-      allergies = [],
-      previousMeals = [],
+    const body = await request.json();
+    const {
+      deficits,           // daily remaining nutrient gaps
+      allergies = [],     // array of strings
+      previousMeals = [], // array of meal names already eaten today
       includeSnacks = true,
-      days_requested = 1
-    } = body
-    
+      days_requested = 1,
+    } = body;
+
     if (!deficits) {
-      return NextResponse.json({ meals: [] })
+      return NextResponse.json({
+        meals: [], snacks: [], summary: "No deficits supplied."
+      });
     }
 
-    const supabase = await createClient()
-    
-    // Get all food items from hydration_options
+    // ── 1️⃣ Fetch foods from Supabase
+    const supabase = await createClient();
     const { data: foods, error } = await supabase
       .from("hydration_options")
       .select("*")
-      .not("protein_g", "is", null)
+      .not("protein_g", "is", null);
 
-    if (error) throw error
+    if (error) throw error;
 
-    // Filter out allergens
-    const safeFoods = (foods || []).filter(food => 
-      !allergies.some((allergy: string) => 
-        food.name?.toLowerCase().includes(allergy.toLowerCase())
+    // ── 2️⃣ Remove any allergen matches
+    const safeFoods = (foods || []).filter(food =>
+      !allergies.some((a: string) =>
+        food.name?.toLowerCase().includes(a.toLowerCase())
       )
-    )
+    );
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are a clinical nutrition planner composing **meals + a snack** that close today's remaining **meal-side** gaps.
+    // ── 3️⃣ Build detailed food list including all micronutrients
+    const foodLines = safeFoods.map(f =>
+      `${f.name}: H2O=${f.h2o_ml}mL, Protein=${f.protein_g}g, Na=${f.na_mg}mg,
+       K=${f.k_mg}mg, Mg=${f.mg_mg}mg, Ca=${f.calcium_mg}mg,
+       SolubleFiber=${f.soluble_fiber_g}g, InsolubleFiber=${f.insoluble_fiber_g}g,
+       Probiotics=${f.probiotic_cfu}, Omega3=${f.omega3_mg}mg,
+       Polyphenols=${f.polyphenols_mg}mg, Caffeine=${f.caffeine_mg}mg,
+       B6=${f.b6_mg}mg, B9=${f.b9_ug}µg, B12=${f.b12_ug}µg,
+       Iron=${f.iron_mg}mg, Zinc=${f.zinc_mg}mg, Copper=${f.copper_mg}mg,
+       Choline=${f.choline_mg}mg, VitaminC=${f.vitamin_c_mg}mg, VitaminD=${f.vitamin_d_ug}µg`
+    ).join("\n");
 
-HARD GUARD:
-- Use ONLY foods present in foods[].
-- Respect allergies strictly.
-- Avoid repeating the same core protein/starch from previousMeals[].
-- If a gap cannot be met, say so explicitly (never hallucinate).
+    const systemPrompt = `
+You are a clinical nutrition planner.
 
-Available foods with nutrients per serving:
-${safeFoods.map(f => 
-  `${f.name}: Protein=${f.protein_g}g, Na=${f.na_mg}mg, K=${f.k_mg}mg, Fiber=${(f.soluble_fiber_g||0)+(f.insoluble_fiber_g||0)}g`
-).join('\n')}
+Goal: compose exactly **2 meals and 1 snack** to close ~50% of today's nutrient gaps
+(the remaining 50% will be covered by drinks).
 
-HOW TO REASON:
-1) Identify limiting nutrients: protein_g, fiber_g, iron_mg, zinc_mg, choline_mg, omega3_mg, etc.
-2) Compose 2-3 meals + 1 snack:
-   - Each meal: 1 protein base + 1-2 sides/veg
-   - Distribute coverage across meals (avoid huge portions)
-   - Include 1 snack for gentle top-ups
-3) Microbiome & polyphenols:
-   - If probiotic_cfu == 0: include kefir or kraut/kimchi if present
-   - If polyphenols low: add berries/cocoa/green tea if present
-4) Iron + vitamin C pairing for absorption
-5) Near-threshold flexibility: use snack instead of overbuilding meals
-6) Variety: avoid repeating previousMeals
+Rules:
+- Use ONLY foods listed below.
+- Respect allergies.
+- Avoid repeating any foods from this list of previous meals: ${previousMeals.join(", ") || "none"}.
+- Cover as many of these nutrients as possible:
+  protein, sodium, potassium, magnesium, calcium,
+  total fiber, soluble fiber, insoluble fiber,
+  probiotics, omega3, polyphenols, caffeine,
+  B6, B9, B12, iron, zinc, copper,
+  choline, vitamin C, vitamin D, water.
+- If a perfect match is impossible, choose foods that bring totals as
+  close as possible to each target without overbuilding portions.
 
-OUTPUT JSON:
+Available foods (per serving):
+${foodLines}
+
+Return ONLY valid JSON:
 {
-  "meals": [
-    {
-      "name": "Salmon Bowl",
-      "foods": ["salmon fillet", "quinoa", "spinach"],
-      "nutrients": {
-        "sodium": 300,
-        "potassium": 800,
-        "protein": 35,
-        "fiber": 8
-      },
-      "explanation": "35g protein covers 77% of gap; omega-3 supports membranes"
-    }
-  ],
-  "snacks": [
-    {
-      "name": "Kefir with berries",
-      "nutrients": { "protein": 8, "probiotic_cfu": 1000000 },
-      "explanation": "Microbiome seeding + polyphenols"
-    }
-  ],
-  "total_from_meals": {
-    "sodium": 585,
-    "potassium": 520,
-    "protein": 48,
-    "fiber": 12
-  },
-  "summary": "Balanced protein across meals, kefir for probiotics, avoided nuts per allergy."
-}`
-        },
-        {
-          role: "user",
-          content: `Generate meal suggestions for these deficits.
-Deficits: ${JSON.stringify(deficits)}
-Allergies: ${allergies.join(', ') || 'none'}
-Previous meals to avoid: ${previousMeals.join(', ') || 'none'}
-Include snacks: ${includeSnacks}`
-        }
-      ],
-      temperature: 0.7,
-      response_format: { type: "json_object" }
-    })
+  "meals": [ { "name": string, "foods": string[], "nutrients": object, "explanation": string } ],
+  "snacks": [ { "name": string, "foods": string[], "nutrients": object, "explanation": string } ],
+  "total_from_meals": object,
+  "summary": string
+}`;
 
-    const result = JSON.parse(completion.choices[0].message.content || "{}")
-    
-    return NextResponse.json(result)
-    
+    const userPrompt = `Deficits to cover with meals/snack: ${JSON.stringify(deficits)}
+Allergies: ${allergies.join(", ") || "none"}
+Remember: 2 meals + 1 snack only.`;
+
+    // ── 4️⃣ Responses API call
+    const resp = await openai.responses.create({
+      model: "gpt-4.1-mini",
+      input: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ]
+    });
+
+    // ── 5️⃣ Safe JSON parse
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(resp.output_text || "{}");
+    } catch (err) {
+      console.error("Failed to parse meal JSON:", err, resp.output_text);
+    }
+
+    return NextResponse.json({
+      meals: parsed.meals || [],
+      snacks: parsed.snacks || [],
+      total_from_meals: parsed.total_from_meals || {},
+      summary: parsed.summary || ""
+    });
+
   } catch (error) {
-    console.error("Error generating meal suggestions:", error)
-    return NextResponse.json({ meals: [] })
+    console.error("Error generating meal suggestions:", error);
+    return NextResponse.json({
+      meals: [], snacks: [], summary: "Meal generation failed."
+    });
   }
 }

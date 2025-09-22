@@ -22,8 +22,13 @@ export function useMealsPanel() {
     snacks: null
   })
   
-  // AI processing state
-  const [isProcessing, setIsProcessing] = useState(false)
+  // AI processing state - individual for each meal
+  const [processingStates, setProcessingStates] = useState({
+    breakfast: false,
+    lunch: false,
+    dinner: false,
+    snacks: false
+  })
   const [showClarification, setShowClarification] = useState(false)
   const [clarificationData, setClarificationData] = useState<{
     question: string
@@ -38,9 +43,9 @@ export function useMealsPanel() {
       return
     }
     
-    setIsProcessing(true)
+    setProcessingStates(prev => ({ ...prev, [mealType]: true }))
     try {
-      const response = await fetch('/api/ai/parse-meal', {
+      const response = await fetch('/api/ai/parse-meal-v2', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ meal, mealType })
@@ -64,7 +69,7 @@ export function useMealsPanel() {
     } catch (error) {
       console.error('Error processing meal:', error)
     } finally {
-      setIsProcessing(false)
+      setProcessingStates(prev => ({ ...prev, [mealType]: false }))
     }
   }, [])
   
@@ -90,7 +95,7 @@ export function useMealsPanel() {
     totalMealIntake,
     
     // AI state
-    isProcessing,
+    processingStates,
     showClarification, setShowClarification,
     clarificationData, setClarificationData,
     

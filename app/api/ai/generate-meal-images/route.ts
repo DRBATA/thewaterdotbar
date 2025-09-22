@@ -1,133 +1,108 @@
-// app/api/ai/generate-meal-images/route.ts
-import { NextRequest, NextResponse } from "next/server"
-import OpenAI from "openai"
+import { NextRequest, NextResponse } from "next/server";
+import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(request: NextRequest) {
-  const requestBody = await request.json()
-  const { 
-    meals, 
-    allergies = [], 
+  const body = await request.json();
+  const {
+    meals,
+    allergies = [],
     previousMeals = [],
-    deficitContext = {} // What deficits these meals are addressing
-  } = requestBody
+    keyDeficits = [] as string[] // e.g. ["potassium","magnesium","b12"]
+  } = body;
 
   try {
-    
     if (!meals || meals.length === 0) {
-      return NextResponse.json({ meals: [] })
+      return NextResponse.json({ meals: [] });
     }
 
-    // Filter out meals that contain allergens or repeat recent foods
+    // 1️⃣ Filter meals against allergies & previous meals
     const safeMeals = meals.filter((meal: any) => {
-      const mealFoodsStr = meal.foods.join(" ").toLowerCase()
-      
-      // Check for allergens
-      const hasAllergen = allergies.some((allergy: string) => 
-        mealFoodsStr.includes(allergy.toLowerCase())
-      )
-      
-      // Check for repeated foods
-      const isRepeat = previousMeals.some((prev: string) => 
+      const mealFoodsStr = meal.foods.join(" ").toLowerCase();
+      const hasAllergen = (allergies as string[]).some((a: string) =>
+        mealFoodsStr.includes(a.toLowerCase())
+      );
+      const isRepeat = (previousMeals as string[]).some((prev: string) =>
         mealFoodsStr.includes(prev.toLowerCase())
-      )
-      
-      return !hasAllergen && !isRepeat
-    })
+      );
+      return !hasAllergen && !isRepeat;
+    });
 
-    // Create infographic prompts for each meal
+    // 2️⃣ Build dynamic prompts with only key deficit nutrients
     const prompts = safeMeals.map((meal: any) => {
-      // Build nutrient display text
-      const nutrientLines = []
-      if (meal.nutrients?.sodium) nutrientLines.push(`Sodium: ${meal.nutrients.sodium}mg`)
-      if (meal.nutrients?.potassium) nutrientLines.push(`Potassium: ${meal.nutrients.potassium}mg`)
-      if (meal.nutrients?.protein) nutrientLines.push(`Protein: ${meal.nutrients.protein}g`)
-      if (meal.nutrients?.fiber) nutrientLines.push(`Fiber: ${meal.nutrients.fiber}g`)
-      if (meal.nutrients?.iron) nutrientLines.push(`Iron: ${meal.nutrients.iron}mg`)
-      if (meal.nutrients?.omega3) nutrientLines.push(`Omega-3: ${meal.nutrients.omega3}mg`)
-      
-      // Build the prompt
-      return `Create a clean, modern infographic meal card with these exact specifications:
+      const nutrientLines: string[] = [];
+      (keyDeficits as string[]).forEach((k: string) => {
+        if (meal.nutrients?.[k] !== undefined) {
+          nutrientLines.push(`${k.replace(/_/g, " ")}: ${meal.nutrients[k]}`);
+        }
+      });
 
-MEAL TITLE (large, bold): ${meal.name}
+      return `
+Create a square (1:1) infographic meal card.
 
-MAIN IMAGE: Professional food photograph of ${meal.foods.join(", ")} arranged appetizingly
+TITLE (large bold top): ${meal.name}
+MAIN PHOTO: Professional food photograph of ${meal.foods.join(", ")}.
 
-NUTRITION BOX (translucent overlay or side panel):
-${nutrientLines.join('\n')}
+NUTRITION BOX (right-side, clear text):
+${nutrientLines.join("\n") || "Key nutrients balanced for today's needs."}
 
-BENEFIT CALLOUT: "${meal.explanation || 'Supports your hydration and nutrition goals'}"
+BENEFIT CALLOUT: "${meal.explanation || "Supports hydration and nutrition goals"}"
+${allergies.length ? `ALLERGY WARNING (red box): Contains ${allergies.join(", ")}` : ""}
 
-${allergies.length > 0 ? `ALLERGY WARNING (red accent): Contains/May contain ${allergies.join(", ")}` : ''}
-
-STYLE REQUIREMENTS:
-- Clean, minimal design with maximum readability
-- Bright, appetizing color scheme
-- Professional food styling in the main image
-- Clear hierarchy: Title > Image > Nutrition > Benefits
-- Sans-serif fonts for clarity
-- Consistent template feel across all cards
-- Mobile-friendly layout (works at 1:1 ratio)
+STYLE:
+- Minimal, modern, bright food photography
+- White/cream background, clean sans-serif fonts
+- Clear hierarchy: Title → Image → Nutrition → Callout
 - No watermarks or logos
+      `;
+    });
 
-COLOR PALETTE:
-- Background: Light, clean (white/cream)
-- Nutrition box: Semi-transparent or soft color
-- Text: High contrast for readability
-- Accent: Brand blue/green for benefits
-- Warning: Red for allergies if present`
-    })
+    // 3️⃣ Generate all images in parallel
+    const results = await Promise.all(
+      prompts.map((p: string) =>
+        openai.images.generate({
+          model: "gpt-image-1",
+          prompt: p,
+          size: "1024x1024",
+          n: 1,
+          response_format: "url"
+        })
+      )
+    );
 
-    // Generate all images in parallel
-    const imagePromises = prompts.map((prompt: string) =>
-      openai.images.generate({
-        model: "gpt-image-1",
-        prompt,
-        size: "1024x1024",
-        n: 1,
-        response_format: "url"
-      })
-    )
-
-    const results = await Promise.all(imagePromises)
-    
-    // Attach image URLs back to meal objects
+    // 4️⃣ Attach URLs back to meals
     const mealsWithImages = safeMeals.map((meal: any, idx: number) => ({
       ...meal,
       image_url: results[idx].data[0].url,
       image_type: "infographic_card",
-      filtered_allergies: allergies,
-      avoided_foods: previousMeals
-    }))
+      avoided_foods: previousMeals,
+      filtered_allergies: allergies
+    }));
 
-    // Add placeholder for filtered meals
-    const filteredMeals = meals.filter((meal: any) => 
-      !safeMeals.some((safe: any) => safe.name === meal.name)
-    ).map((meal: any) => ({
-      ...meal,
-      image_url: null,
-      filtered_reason: "Contains allergens or repeats recent meals",
-      image_type: "filtered"
-    }))
+    // 5️⃣ Track filtered-out meals
+    const filteredMeals = (meals as any[])
+      .filter((m: any) => !safeMeals.some((s: any) => s.name === m.name))
+      .map((m: any) => ({
+        ...m,
+        image_url: null,
+        image_type: "filtered",
+        filtered_reason: "Contains allergens or repeats recent meals"
+      }));
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       meals: [...mealsWithImages, ...filteredMeals],
       stats: {
-        total: meals.length,
+        total: (meals as any[]).length,
         generated: mealsWithImages.length,
         filtered: filteredMeals.length
       }
-    })
-    
+    });
   } catch (error) {
-    console.error("Error generating meal infographic cards:", error)
-    // Return meals without images if generation fails
-    return NextResponse.json({ 
+    console.error("Error generating meal infographic cards:", error);
+    return NextResponse.json({
       meals: meals || [],
       error: "Image generation failed, returning text-only meals"
-    })
+    });
   }
 }

@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Check, Plus } from 'lucide-react'
 import { useHydrationContext } from '@/contexts'
 
 export function MealsPanel() {
@@ -28,12 +29,24 @@ export function MealsPanel() {
           {/* Allergies Input */}
           <div className="p-3 bg-red-50 rounded-lg border border-red-200">
             <Label className="text-red-800 font-medium">Allergies & Dietary Restrictions</Label>
-            <Input
-              className="mt-2"
-              placeholder="e.g., nuts, dairy, gluten, shellfish"
-              value={meals.allergies}
-              onChange={(e) => meals.setAllergies(e.target.value)}
-            />
+            <div className="flex gap-2 mt-2">
+              <Input
+                placeholder="e.g., nuts, dairy, gluten, shellfish"
+                value={meals.allergies}
+                onChange={(e) => meals.setAllergies(e.target.value)}
+              />
+              <Button
+                size="sm"
+                variant={meals.allergies.trim() ? "default" : "outline"}
+                className="px-3"
+              >
+                {meals.allergies.trim() ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
             <p className="text-xs text-red-600 mt-1">
               This will filter meal recommendations to avoid these ingredients
             </p>
@@ -50,9 +63,9 @@ export function MealsPanel() {
               <Button 
                 size="sm" 
                 onClick={() => meals.processMealWithAI(meals.breakfast, "breakfast")}
-                disabled={!meals.breakfast.trim() || meals.isProcessing}
+                disabled={!meals.breakfast.trim() || meals.processingStates.breakfast}
               >
-                {meals.isProcessing ? "Processing..." : "Add"}
+                {meals.processingStates.breakfast ? "Processing..." : "Add"}
               </Button>
             </div>
             {meals.mealNutrition.breakfast && (
@@ -80,9 +93,9 @@ export function MealsPanel() {
               <Button 
                 size="sm" 
                 onClick={() => meals.processMealWithAI(meals.lunch, "lunch")}
-                disabled={!meals.lunch.trim() || meals.isProcessing}
+                disabled={!meals.lunch.trim() || meals.processingStates.lunch}
               >
-                {meals.isProcessing ? "Processing..." : "Add"}
+                {meals.processingStates.lunch ? "Processing..." : "Add"}
               </Button>
             </div>
             {meals.mealNutrition.lunch && (
@@ -111,9 +124,9 @@ export function MealsPanel() {
               <Button 
                 size="sm" 
                 onClick={() => meals.processMealWithAI(meals.dinner, "dinner")}
-                disabled={!meals.dinner.trim() || meals.isProcessing}
+                disabled={!meals.dinner.trim() || meals.processingStates.dinner}
               >
-                {meals.isProcessing ? "Processing..." : "Add"}
+                {meals.processingStates.dinner ? "Processing..." : "Add"}
               </Button>
             </div>
             {meals.mealNutrition.dinner && (
@@ -142,9 +155,9 @@ export function MealsPanel() {
               <Button 
                 size="sm" 
                 onClick={() => meals.processMealWithAI(meals.snacks, "snacks")}
-                disabled={!meals.snacks.trim() || meals.isProcessing}
+                disabled={!meals.snacks.trim() || meals.processingStates.snacks}
               >
-                {meals.isProcessing ? "Processing..." : "Add"}
+                {meals.processingStates.snacks ? "Processing..." : "Add"}
               </Button>
             </div>
             {meals.mealNutrition.snacks && (
