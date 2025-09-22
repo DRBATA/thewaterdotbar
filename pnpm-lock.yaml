@@ -111,7 +111,7 @@ importers:
         specifier: latest
         version: 0.7.0(@supabase/supabase-js@2.57.4)
       '@supabase/supabase-js':
-        specifier: latest
+        specifier: ^2.57.4
         version: 2.57.4
       '@types/three':
         specifier: ^0.180.0
@@ -165,8 +165,8 @@ importers:
         specifier: ^0.4.4
         version: 0.4.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       openai:
-        specifier: ^5.5.1
-        version: 5.21.0(ws@8.18.3)(zod@3.25.76)
+        specifier: ^5.22.0
+        version: 5.22.0(ws@8.18.3)(zod@3.25.76)
       pdfkit:
         specifier: ^0.16.0
         version: 0.16.0
@@ -2189,8 +2189,8 @@ packages:
     resolution: {integrity: sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew==}
     engines: {node: '>= 0.4'}
 
-  openai@5.21.0:
-    resolution: {integrity: sha512-E9LuV51vgvwbahPJaZu2x4V6SWMq9g3X6Bj2/wnFiNfV7lmAxYVxPxcQNZqCWbAVMaEoers9HzIxpOp6Vvgn8w==}
+  openai@5.22.0:
+    resolution: {integrity: sha512-uSsYZ+vw9JxUwnMTcT9bj5sGM5qY/4du2BIf1KSqDRZF9nhSlJYsBLPRwBZTOW+HNyjwGviR0SsoDPv5lpPrBw==}
     hasBin: true
     peerDependencies:
       ws: ^8.18.0
@@ -4676,7 +4676,7 @@ snapshots:
 
   object-inspect@1.13.4: {}
 
-  openai@5.21.0(ws@8.18.3)(zod@3.25.76):
+  openai@5.22.0(ws@8.18.3)(zod@3.25.76):
     optionalDependencies:
       ws: 8.18.3
       zod: 3.25.76
