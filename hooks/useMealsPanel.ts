@@ -64,7 +64,7 @@ export function useMealsPanel() {
       }
       
       // Store the parsed nutrition data
-      setMealNutrition(prev => ({ ...prev, [mealType]: data }))
+      setMealNutrition(prev => ({ ...prev, [mealType]: data.nutrition }))
       
     } catch (error) {
       console.error('Error processing meal:', error)
