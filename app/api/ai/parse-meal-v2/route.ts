@@ -1,27 +1,11 @@
-/**
- * FINAL PARSE-MEAL API (Supabase SDK + Responses API)
- *
- * - Accepts a meal as text (string).
- * - Extracts ingredients using GPT Responses API.
- * - Queries Supabase hydration_options with fuzzy search (ILIKE).
- * - Infers grams/portions with GPT.
- * - Totals nutrients server-side.
- * - Falls back to GPT nutrient estimates if DB has no match.
- * - Always returns flat JSON: { ingredients, nutrition, source }.
- */
-
 import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
 import { supabase } from "@/lib/supabase"
 
-// ──────────────────────────────────────────────
-// CONFIG
-// ──────────────────────────────────────────────
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 })
 
-// Nutrient shape
 type Nutrition = {
   water: number; sodium: number; potassium: number; magnesium: number; calcium: number;
   fiber: number; protein: number; probiotics: number; omega3: number; polyphenols: number;
@@ -38,9 +22,6 @@ const EMPTY: Nutrition = {
   soluble_fiber: 0, insoluble_fiber: 0,
 }
 
-// ──────────────────────────────────────────────
-// HELPERS
-// ──────────────────────────────────────────────
 function num(x: any) { const n = Number(x); return Number.isFinite(n) ? n : 0 }
 function cloneEmpty(): Nutrition { return JSON.parse(JSON.stringify(EMPTY)) }
 function sum(into: Nutrition, part: Partial<Nutrition>) {
@@ -53,46 +34,11 @@ function baseGramsFromName(name: string): number {
   return m ? Number(m[1]) : 100
 }
 
-// Extract `output_text` safely from OpenAI responses
-function getTextFromOutput(output: any): string {
-  if (!output) return ""
-  if (Array.isArray(output.content)) {
-    const textPart = output.content.find((c: any) => c.type === "output_text")
-    return textPart?.text ?? ""
-  }
-  return ""
+// Safely extract JSON from GPT
+function safeJSON(text: string) {
+  try { return JSON.parse(text) } catch { return {} }
 }
 
-// ──────────────────────────────────────────────
-// SUPABASE QUERY
-// ──────────────────────────────────────────────
-async function fetchCandidatesFor(terms: string[]): Promise<any[]> {
-  if (!terms.length) return []
-
-  const { data, error } = await supabase
-    .from("hydration_options")
-    .select(`
-      id, name,
-      h2o_ml, na_mg, k_mg, mg_mg, calcium_mg,
-      soluble_fiber_g, insoluble_fiber_g, protein_g,
-      probiotic_cfu, omega3_mg, polyphenols_mg, caffeine_mg,
-      b6_mg, b9_ug, b12_ug, iron_mg, zinc_mg, copper_mg,
-      choline_mg, vitamin_c_mg, vitamin_d_ug
-    `)
-    .or(terms.map(t => `name.ilike.%${t}%`).join(","))
-    .limit(100)
-
-  if (error) {
-    console.error("Supabase query error:", error)
-    return []
-  }
-
-  return data || []
-}
-
-// ──────────────────────────────────────────────
-// MAIN HANDLER
-// ──────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}))
@@ -103,55 +49,61 @@ export async function POST(req: NextRequest) {
     }
 
     // 1) INGREDIENT EXTRACTION
-    const extract = await openai.responses.create({
+    const extract = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      input: [
-        { role: "system", content: `Return ONLY JSON: {"ingredients": string[]}.` },
+      messages: [
+        { role: "system", content: "Return ONLY JSON: {\"ingredients\": string[]}" },
         { role: "user", content: `Extract the main food ingredients from: "${meal}"` },
       ],
+      response_format: { type: "json_object" }
     })
 
-    const rawExtract = getTextFromOutput(extract.output[0])
-    const ingredients: string[] = JSON.parse(rawExtract || "{}").ingredients ?? []
+    const ingredients: string[] =
+      safeJSON(extract.choices[0].message?.content ?? "{}").ingredients ?? []
 
     if (!ingredients.length) {
       return NextResponse.json({ ingredients: [], nutrition: cloneEmpty(), source: "supabase" })
     }
 
-    // 2) CANDIDATE FETCH FROM SUPABASE
-    const candidates = await fetchCandidatesFor(ingredients)
+    // 2) FETCH CANDIDATES FROM SUPABASE
+    const ors = ingredients.map((i) => `name.ilike.%${i}%`).join(",")
+    const { data: candidates } = await supabase
+      .from("hydration_options")
+      .select("*")
+      .or(ors)
+      .limit(100)
 
     // 3) PORTION INFERENCE
-    const mapResp = await openai.responses.create({
+    const mapResp = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      input: [
+      messages: [
         {
           role: "system",
           content: `Map foods to DB names and infer grams.
 Return ONLY JSON:
-{"mapped":[{"ingredient":string,"db_name":string,"grams":number}], "unmatched": string[]}`,
+{"mapped":[{"ingredient":string,"db_name":string,"grams":number}], "unmatched": string[]}`
         },
         {
           role: "user",
           content: JSON.stringify({
             meal,
             ingredients,
-            candidate_db_names: candidates.map((r) => r.name),
+            candidate_db_names: (candidates ?? []).map((r: { name: any }) => r.name),
           }),
         },
       ],
+      response_format: { type: "json_object" }
     })
 
-    const rawMap = getTextFromOutput(mapResp.output[0])
-    const plan = JSON.parse(rawMap || "{}")
+    const plan = safeJSON(mapResp.choices[0].message?.content ?? "{}")
 
     // 4) AGGREGATE NUTRIENTS
     const totals = cloneEmpty()
     const usedDbMap = Array.isArray(plan?.mapped) ? plan.mapped : []
 
     for (const entry of usedDbMap) {
-      const row = candidates.find(
-        (r) => r.name.toLowerCase() === entry.db_name.toLowerCase()
+      const row = (candidates ?? []).find(
+        (r: { name: string }) => r.name.toLowerCase() === entry.db_name.toLowerCase()
       )
       if (!row) continue
 
@@ -188,20 +140,19 @@ Return ONLY JSON:
     // 5) FALLBACK FOR UNMATCHED
     let fallbackAdded = false
     if (plan?.unmatched?.length) {
-      const fb = await openai.responses.create({
+      const fb = await openai.chat.completions.create({
         model: "gpt-4o-mini",
-        input: [
+        messages: [
           {
             role: "system",
             content: `Return ONLY JSON with estimated nutrition for unmatched foods:
-{"items":[{"name":string,"grams":number,"water":number,"sodium":number,"potassium":number,"magnesium":number,"calcium":number,"fiber":number,"protein":number,"probiotics":number,"omega3":number,"polyphenols":number,"caffeine":number,"b6":number,"b9":number,"b12":number,"iron":number,"zinc":number,"copper":number,"choline":number,"vitamin_c":number,"vitamin_d":number,"soluble_fiber":number,"insoluble_fiber":number}]}`,
-          },
-          { role: "user", content: `Meal: ${meal}, Missing ingredients: ${plan.unmatched.join(", ")}` },
+{"items":[{"name":string,"grams":number,"water":number,"sodium":number,"potassium":number,"magnesium":number,"calcium":number,"fiber":number,"protein":number,"probiotics":number,"omega3":number,"polyphenols":number,"caffeine":number,"b6":number,"b9":number,"b12":number,"iron":number,"zinc":number,"copper":number,"choline":number,"vitamin_c":number,"vitamin_d":number,"soluble_fiber":number,"insoluble_fiber":number}]}` },
+          { role: "user", content: `Meal: ${meal}, Missing: ${plan.unmatched.join(", ")}` },
         ],
+        response_format: { type: "json_object" }
       })
 
-      const rawFallback = getTextFromOutput(fb.output[0])
-      const items = JSON.parse(rawFallback || "{}")?.items ?? []
+      const items = safeJSON(fb.choices[0].message?.content ?? "{}")?.items ?? []
       for (const it of items) sum(totals, it)
       fallbackAdded = items.length > 0
     }
