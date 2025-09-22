@@ -72,7 +72,7 @@ Return format: {"ingredients": ["ingredient1", "ingredient2"]}`
     
     // First extract ingredients using AI
     const ingredientExtraction = await openai.chat.completions.create({
-      model: "gpt-4o-nano",
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
@@ -143,7 +143,7 @@ Return format: {"ingredients": ["ingredient1", "ingredient2"]}`
 
     // Now use AI to calculate portions with only the relevant foods
     const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini",
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system",

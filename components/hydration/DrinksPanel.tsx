@@ -25,7 +25,7 @@ export function DrinksPanel() {
       }
     }
     loadDrinks()
-  }, [drinks])
+  }, [])
 
   // Handle adding a drink
   const handleAddDrink = (drink: any) => {
