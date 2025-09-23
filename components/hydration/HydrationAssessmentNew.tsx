@@ -13,18 +13,18 @@ import { HydrationProvider } from '@/contexts/HydrationContext'
 
 interface HydrationAssessmentModalProps {
   isOpen: boolean
-  onClose: () => void
+  onCloseAction: () => void
 }
 
 export function HydrationAssessmentModal({ 
   isOpen, 
-  onClose 
+  onCloseAction 
 }: HydrationAssessmentModalProps) {
   const [activeTab, setActiveTab] = useState('profile')
   const [selectedVenue, setSelectedVenue] = useState<string>('')
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={onCloseAction}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>AI Hydration Assessment</DialogTitle>
@@ -53,11 +53,15 @@ export function HydrationAssessmentModal({
             </TabsContent>
             
             <TabsContent value="review">
-              <ReviewPanel />
+              <ReviewPanel 
+                activeTab={activeTab} 
+                setActiveTab={setActiveTab}
+                venueId={selectedVenue}
+              />
             </TabsContent>
             
             <TabsContent value="recommendations">
-              <RecommendationEngine venueId={selectedVenue} />
+              <RecommendationEngine />
             </TabsContent>
           </Tabs>
         </HydrationProvider>

@@ -62,7 +62,7 @@ STYLE:
     const results = await Promise.all(
       prompts.map((p: string) =>
         openai.images.generate({
-          model: "gpt-image-1",
+          model: "dall-e-3",
           prompt: p,
           size: "1024x1024",
           n: 1,

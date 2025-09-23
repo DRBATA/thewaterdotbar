@@ -1,7 +1,7 @@
 // components/hydration/ReviewPanel.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -9,10 +9,21 @@ import { Badge } from '@/components/ui/badge'
 import { useHydrationContext } from '@/contexts'
 import { Loader2, ShoppingCart, Droplet, Zap } from 'lucide-react'
 
-export function ReviewPanel() {
+export function ReviewPanel({ activeTab, setActiveTab, venueId }: { 
+  activeTab?: string, 
+  setActiveTab?: (tab: string) => void,
+  venueId?: string 
+}) {
   const { profile, totalIntake, deficits, vitaminStatus } = useHydrationContext()
   const [loading, setLoading] = useState(false)
   const [recommendations, setRecommendations] = useState<any>(null)
+
+  // AUTO-GENERATE when entering Review tab (Option B)
+  useEffect(() => {
+    if (activeTab === 'review' && !recommendations && !loading) {
+      handleGenerateRecommendations()
+    }
+  }, [activeTab, recommendations, loading])
 
   // Calculate achievement percentages
   const achievements = {
@@ -71,6 +82,13 @@ export function ReviewPanel() {
       const meals = await mealsRes.json()
 
       setRecommendations({ drinks, meals })
+      
+      // AUTO-NAVIGATE to AI Plan tab (Option A)
+      if (setActiveTab) {
+        setTimeout(() => {
+          setActiveTab('recommendations')
+        }, 500) // Small delay to show loading state
+      }
     } catch (error) {
       console.error('Failed to generate recommendations:', error)
     } finally {
@@ -79,8 +97,24 @@ export function ReviewPanel() {
   }
 
   const handleAddToCart = async (item: any) => {
-    // TODO: Implement cart addition
-    console.log('Adding to cart:', item)
+    try {
+      const response = await fetch('/api/cart/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemId: item.id,
+          qty: item.quantity || 1,
+          venue_id: venueId // Pass the venue along!
+        })
+      })
+      
+      if (response.ok) {
+        console.log('Added to cart:', item.name)
+        // TODO: Show success toast
+      }
+    } catch (error) {
+      console.error('Failed to add to cart:', error)
+    }
   }
 
   return (
