@@ -277,7 +277,7 @@ export function RecommendationEngine() {
   const hasErrors = drinksError || mealsError
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full overflow-hidden">
       {/* Loading State */}
       {isLoading && (
         <div className="flex items-center justify-center p-8">
@@ -317,24 +317,24 @@ export function RecommendationEngine() {
       {recommendations.length > 0 && (
         <div>
           <h3 className="text-lg font-semibold mb-3">Recommended Drinks</h3>
-          <div className="flex gap-3 overflow-x-auto pb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {recommendations.map((product) => (
-              <Card key={product.id} className="min-w-[200px] flex-shrink-0">
+              <Card key={product.id} className="w-full">
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-medium text-sm">{product.name}</h4>
+                    <h4 className="font-medium text-sm line-clamp-2">{product.name}</h4>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => removeAndReplace(product.id)}
-                      className="h-6 w-6 p-0"
+                      className="h-6 w-6 p-0 ml-2 flex-shrink-0"
                     >
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
                   
                   {product.reason && (
-                    <p className="text-xs text-muted-foreground mb-2">
+                    <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
                       {product.reason}
                     </p>
                   )}
@@ -350,7 +350,7 @@ export function RecommendationEngine() {
                     className="w-full"
                   >
                     <Plus className="h-4 w-4 mr-1" />
-                    Add
+                    ADD
                   </Button>
                 </CardContent>
               </Card>
@@ -378,11 +378,11 @@ export function RecommendationEngine() {
       {mealCards.length > 0 && (
         <div>
           <h3 className="text-lg font-semibold mb-3">Recommended Meals</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             {mealCards.map((meal, index) => (
-              <Card key={index} className="overflow-hidden">
+              <Card key={index} className="overflow-hidden w-full">
                 {meal.image_url && (
-                  <div className="aspect-video w-full overflow-hidden">
+                  <div className="relative w-full h-48 sm:h-56 overflow-hidden">
                     <img 
                       src={meal.image_url} 
                       alt={meal.name}
@@ -391,12 +391,12 @@ export function RecommendationEngine() {
                   </div>
                 )}
                 <CardContent className="p-4">
-                  <h4 className="font-semibold mb-2">{meal.name}</h4>
-                  <p className="text-sm text-muted-foreground mb-2">
+                  <h4 className="font-semibold mb-2 line-clamp-1">{meal.name}</h4>
+                  <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
                     {meal.foods.join(', ')}
                   </p>
                   {meal.explanation && (
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground line-clamp-3">
                       {meal.explanation}
                     </p>
                   )}

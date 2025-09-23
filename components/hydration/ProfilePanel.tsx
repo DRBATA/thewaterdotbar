@@ -181,7 +181,7 @@ export function ProfilePanel({ venueId, onVenueChange }: ProfilePanelProps) {
             step="0.25"
             value={profile.sessionHours || ''}
             onChange={(e) => profile.setSessionHours(e.target.value === '' ? 0 : Number(e.target.value))}
-            placeholder="0.25"
+            placeholder="0"
             className={styles.input}
           />
         </div>
