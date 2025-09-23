@@ -67,7 +67,8 @@ export function ReviewPanel({ activeTab, setActiveTab, venueId }: {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             deficits: drinkDeficits,
-            vitaminStatus 
+            vitaminStatus,
+            venueId 
           })
         }),
         fetch('/api/ai/generate-meals', {

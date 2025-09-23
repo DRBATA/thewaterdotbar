@@ -26,7 +26,7 @@ export function HydrationAssessmentModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onCloseAction}>
-      <DialogContent className={`max-w-4xl max-h-[90vh] overflow-y-auto ${styles.assessmentModal}`}>
+      <DialogContent className={`w-[95vw] max-w-4xl h-[85vh] md:h-[90vh] overflow-y-auto overflow-x-hidden ${styles.assessmentModal}`}>
         <DialogHeader>
           <DialogTitle>AI Hydration Assessment</DialogTitle>
         </DialogHeader>

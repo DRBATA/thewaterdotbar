@@ -16,7 +16,8 @@ export async function POST(request: NextRequest) {
       deficits,
       vitaminStatus,
       sessionDrinks = [],
-      days_requested = 1
+      days_requested = 1,
+      venueId
     } = body
     
     if (!deficits) {
@@ -25,12 +26,34 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient()
     
-    // Get products with nutritional data (excluding mocktails)
-    const { data: products, error } = await supabase
+    // Get products with nutritional data that are in stock at the venue
+    let productsQuery = supabase
       .from("products")
       .select("*")
       .neq("category", "drink") // Exclude mocktails
       .or("sodium_mg.not.is.null,potassium_mg.not.is.null,water_content_ml.not.is.null,fiber_g.not.is.null,magnesium_mg.not.is.null")
+    
+    // If venueId provided, only get products in stock at that venue
+    if (venueId) {
+      productsQuery = supabase
+        .from("products")
+        .select(`
+          *,
+          venue_stock!inner(qty_on_hand, venue_id)
+        `)
+        .neq("category", "drink")
+        .or("sodium_mg.not.is.null,potassium_mg.not.is.null,water_content_ml.not.is.null,fiber_g.not.is.null,magnesium_mg.not.is.null")
+        .eq("venue_stock.venue_id", venueId)
+        .gt("venue_stock.qty_on_hand", 0)
+    }
+    
+    const { data: productsRaw, error } = await productsQuery
+    
+    // Clean up products to remove venue_stock nested object
+    const products = productsRaw?.map(p => {
+      const { venue_stock, ...product } = p as any
+      return product
+    })
 
     if (error) throw error
 

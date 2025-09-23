@@ -1,19 +1,43 @@
 /* Glass morphism container */
 .assessmentModal {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    position: relative;
-    z-index: 50;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  position: fixed !important;
+  top: 5vh !important;
+  left: 2.5vw !important;
+  transform: none !important;
+  width: 95vw !important;
+  height: 90vh !important;
+  max-width: none !important;
+  max-height: none !important;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+ 
+/* Desktop adjustments */
+@media (min-width: 768px) {
+  .assessmentModal {
+    top: 5vh !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 90vw !important;
+    max-width: 1024px !important;
+    height: 85vh !important;
   }
-  
-  /* Tabs styling */
-  .tabsList {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+ 
+  .assessmentModal * {
+    max-width: 100%;
+    box-sizing: border-box;
   }
-  
+
+ /* Tabs styling */
+ .tabsList {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
   .tabTrigger {
     color: rgba(255, 255, 255, 0.7);
     transition: all 0.2s;
