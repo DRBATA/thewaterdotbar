@@ -1,13 +1,18 @@
+// components/hydration/ReviewPanel.tsx
 'use client'
 
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { useHydrationContext } from '@/contexts'
+import { Loader2, ShoppingCart, Droplet, Zap } from 'lucide-react'
 
 export function ReviewPanel() {
   const { profile, totalIntake, deficits, vitaminStatus } = useHydrationContext()
+  const [loading, setLoading] = useState(false)
+  const [recommendations, setRecommendations] = useState<any>(null)
 
   // Calculate achievement percentages
   const achievements = {
@@ -23,170 +28,194 @@ export function ReviewPanel() {
      achievements.protein + achievements.fiber) / 5
   )
 
-  const handleAddToCart = async () => {
-    // This will integrate with your cart system
-    console.log('Adding hydration plan to cart:', {
-      profile: profile.bodyComposition,
-      targets: profile.targets,
-      totalIntake,
-      deficits,
-      vitaminStatus
-    })
-    
-    // TODO: Call your cart API
-    // await fetch('/api/cart/add-hydration-plan', { ... })
+  const handleGenerateRecommendations = async () => {
+    setLoading(true)
+    try {
+      // Split deficits 65/35 with null safety
+      const drinkDeficits = {
+        water: (deficits.water || 0) * 0.65,
+        sodium: (deficits.sodium || 0) * 0.65,
+        potassium: (deficits.potassium || 0) * 0.65,
+        magnesium: (deficits.magnesium || 0) * 0.65,
+        fiber: (deficits.fiber || 0) * 0.65,
+      }
+  
+      const mealDeficits = {
+        water: (deficits.water || 0) * 0.35,
+        sodium: (deficits.sodium || 0) * 0.35,
+        potassium: (deficits.potassium || 0) * 0.35,
+        protein: (deficits.protein || 0) * 0.35,
+        fiber: (deficits.fiber || 0) * 0.35,
+      }
+
+      // Call both endpoints in parallel
+      const [drinksRes, mealsRes] = await Promise.all([
+        fetch('/api/ai/generate-drinks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            deficits: drinkDeficits,
+            vitaminStatus 
+          })
+        }),
+        fetch('/api/ai/generate-meals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            deficits: mealDeficits 
+          })
+        })
+      ])
+
+      const drinks = await drinksRes.json()
+      const meals = await mealsRes.json()
+
+      setRecommendations({ drinks, meals })
+    } catch (error) {
+      console.error('Failed to generate recommendations:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleGenerateRecommendations = async () => {
-    // This will call your AI recommendation endpoints
-    console.log('Generating AI recommendations based on deficits:', deficits)
-    
-    // TODO: Call your AI endpoints
-    // await fetch('/api/ai/recommend-drinks', { body: JSON.stringify(deficits) })
-    // await fetch('/api/ai/recommend-meals', { body: JSON.stringify(deficits) })
+  const handleAddToCart = async (item: any) => {
+    // TODO: Implement cart addition
+    console.log('Adding to cart:', item)
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          Your Hydration Summary
-          <Badge variant={overallScore >= 80 ? "default" : overallScore >= 60 ? "secondary" : "destructive"}>
-            {overallScore}% Complete
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Overall Progress */}
-        <div>
-          <div className="flex justify-between text-sm mb-2">
-            <span>Overall Progress</span>
-            <span>{overallScore}%</span>
+    <div className="space-y-4">
+      {/* Summary Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Your Hydration Summary</CardTitle>
+          <Badge className="w-fit">{overallScore}% Complete</Badge>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <div className="text-sm font-medium">Overall Progress</div>
+            <Progress value={overallScore} className="h-2" />
           </div>
-          <Progress value={overallScore} className="h-3" />
+
+          <div className="space-y-2">
+            <div className="text-sm font-medium">Nutrient Targets:</div>
+            {Object.entries(achievements).map(([nutrient, percent]) => (
+              <div key={nutrient} className="flex items-center justify-between text-sm">
+                <span className="capitalize">{nutrient}</span>
+                <div className="flex items-center gap-2">
+                  <Progress value={percent} className="w-24 h-2" />
+                  <span className="text-xs w-10">{percent}%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Still Need Section */}
+{Object.values(deficits).some(d => (d || 0) > 0) && (
+  <div className="pt-4 border-t">
+    <div className="text-sm font-medium mb-2">Still Need:</div>
+    <div className="space-y-1">
+      {(deficits.water || 0) > 0 && (
+        <div className="flex items-center gap-2 text-sm">
+          <Droplet className="h-3 w-3" />
+          <span>Water: {Math.round(deficits.water || 0)}ml</span>
         </div>
-
-        {/* Individual Nutrient Progress */}
-        <div className="space-y-3">
-          <h4 className="font-medium">Nutrient Targets:</h4>
-          
-          {/* Water */}
-          <div>
-            <div className="flex justify-between text-sm mb-1">
-              <span>Water</span>
-              <span>{totalIntake.water}ml / {profile.targets.water}ml</span>
-            </div>
-            <Progress value={Math.min(achievements.water, 100)} className="h-2" />
-          </div>
-
-          {/* Sodium */}
-          <div>
-            <div className="flex justify-between text-sm mb-1">
-              <span>Sodium</span>
-              <span>{totalIntake.sodium}mg / {profile.targets.sodium}mg</span>
-            </div>
-            <Progress value={Math.min(achievements.sodium, 100)} className="h-2" />
-          </div>
-
-          {/* Potassium */}
-          <div>
-            <div className="flex justify-between text-sm mb-1">
-              <span>Potassium</span>
-              <span>{totalIntake.potassium}mg / {profile.targets.potassium}mg</span>
-            </div>
-            <Progress value={Math.min(achievements.potassium, 100)} className="h-2" />
-          </div>
-
-          {/* Protein */}
-          <div>
-            <div className="flex justify-between text-sm mb-1">
-              <span>Protein</span>
-              <span>{totalIntake.protein}g / {profile.targets.protein}g</span>
-            </div>
-            <Progress value={Math.min(achievements.protein, 100)} className="h-2" />
-          </div>
-
-          {/* Fiber */}
-          <div>
-            <div className="flex justify-between text-sm mb-1">
-              <span>Fiber</span>
-              <span>{totalIntake.fiber}g / {profile.targets.fiber}g</span>
-            </div>
-            <Progress value={Math.min(achievements.fiber, 100)} className="h-2" />
-          </div>
+      )}
+      {(deficits.sodium || 0) > 0 && (
+        <div className="flex items-center gap-2 text-sm">
+          <Zap className="h-3 w-3" />
+          <span>Sodium: {Math.round(deficits.sodium || 0)}mg</span>
         </div>
+      )}
+      {(deficits.potassium || 0) > 0 && (
+        <div className="flex items-center gap-2 text-sm">
+          <Zap className="h-3 w-3" />
+          <span>Potassium: {Math.round(deficits.potassium || 0)}mg</span>
+        </div>
+      )}
+    </div>
+  </div>
+)}
 
-        {/* Remaining Deficits */}
-        {(deficits.water || 0) + (deficits.sodium || 0) + (deficits.potassium || 0) > 0 && (
-          <div className="p-4 bg-orange-50 rounded-lg">
-            <h4 className="font-medium text-orange-800 mb-2">Still Need:</h4>
-            <div className="text-sm text-orange-700 space-y-1">
-              {deficits.water && deficits.water > 0 && (
-                <div>💧 Water: {deficits.water}ml</div>
-              )}
-              {deficits.sodium && deficits.sodium > 0 && (
-                <div>🧂 Sodium: {deficits.sodium}mg</div>
-              )}
-              {deficits.potassium && deficits.potassium > 0 && (
-                <div>🍌 Potassium: {deficits.potassium}mg</div>
-              )}
-              {deficits.protein && deficits.protein > 0 && (
-                <div>🥩 Protein: {deficits.protein}g</div>
-              )}
-              {deficits.fiber && deficits.fiber > 0 && (
-                <div>🥬 Fiber: {deficits.fiber}g</div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Vitamin Status */}
-        {vitaminStatus.needsGreens || vitaminStatus.needsPoppi && (
-          <div className="p-4 bg-blue-50 rounded-lg">
-            <h4 className="font-medium text-blue-800 mb-2">Recommendations:</h4>
-            <div className="text-sm text-blue-700 space-y-1">
-              {vitaminStatus.needsGreens && (
-                <div>🌿 Consider Rite Greens for vitamin deficiencies</div>
-              )}
-              {vitaminStatus.needsPoppi && (
-                <div>🦠 Consider Poppi for gut health (low fiber)</div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="space-y-3 pt-4">
           <Button 
             onClick={handleGenerateRecommendations}
             className="w-full"
-            size="lg"
+            disabled={loading}
           >
-            🤖 Get AI Recommendations
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating Recommendations...
+              </>
+            ) : (
+              'GET AI RECOMMENDATIONS'
+            )}
           </Button>
-          
-          <Button 
-            onClick={handleAddToCart}
-            variant="outline"
-            className="w-full"
-            size="lg"
-          >
-            🛒 Add Plan to Cart
-          </Button>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Body Composition Summary */}
-        <div className="p-4 bg-gray-50 rounded-lg text-sm">
-          <h4 className="font-medium text-gray-800 mb-2">Your Profile:</h4>
-          <div className="text-gray-600 space-y-1">
-            <div>Weight: {profile.bodyComposition.weight}kg</div>
-            <div>Body Fat: {profile.bodyComposition.bodyFat}%</div>
-            <div>Lean Body Mass: {profile.bodyComposition.leanBodyMass.toFixed(1)}kg</div>
-            <div>Activity: {profile.activityLevel}</div>
-            <div>Sweat Loss: {profile.sweatLoss.toFixed(1)}L</div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      {/* Recommendations Display */}
+      {recommendations && (
+        <>
+          {/* Drinks Recommendations */}
+          {recommendations.drinks?.drinks?.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Recommended Drinks</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {recommendations.drinks.drinks.map((drink: any) => (
+                  <div key={drink.id} className="border rounded-lg p-3">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="font-medium">{drink.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Quantity: {drink.quantity}
+                        </div>
+                        <div className="text-xs mt-1">{drink.reason}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-medium">{drink.price_aed} AED</div>
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleAddToCart(drink)}
+                          className="mt-2"
+                        >
+                          <ShoppingCart className="h-3 w-3 mr-1" />
+                          Add
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div className="pt-2 border-t font-medium">
+                  Total: {recommendations.drinks.total_cost} AED
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Meals Recommendations */}
+          {recommendations.meals?.meals?.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Recommended Meals</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {recommendations.meals.meals.map((meal: any, idx: number) => (
+                  <div key={idx} className="border rounded-lg p-3">
+                    <div className="font-medium">{meal.name}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {meal.foods.join(', ')}
+                    </div>
+                    <div className="text-xs mt-1">{meal.explanation}</div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+    </div>
   )
 }
