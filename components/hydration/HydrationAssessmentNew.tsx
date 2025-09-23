@@ -25,7 +25,12 @@ export function HydrationAssessmentModal({
   const [selectedVenue, setSelectedVenue] = useState<string>('')
 
   return (
-    <Dialog open={isOpen} onOpenChange={onCloseAction}>
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={(open) => {
+        if (!open) onCloseAction();  // only fire when closing
+      }}
+    >
       <DialogContent className={`w-[95vw] max-w-4xl h-[85vh] md:h-[90vh] overflow-y-auto overflow-x-hidden ${styles.assessmentModal}`}>
         <DialogHeader>
           <DialogTitle>AI Hydration Assessment</DialogTitle>
