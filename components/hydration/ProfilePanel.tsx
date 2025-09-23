@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useHydrationContext } from '@/contexts'
 import { useState, useEffect } from 'react'
+import styles from './hydration-assessment.module.css'
 
 interface ProfilePanelProps {
   venueId?: string
@@ -27,7 +28,7 @@ export function ProfilePanel({ venueId, onVenueChange }: ProfilePanelProps) {
   }, [])
   
   return (
-    <Card>
+    <Card className={styles.panelCard}>
       <CardHeader>
         <CardTitle>Your Body Profile</CardTitle>
         <p className="text-sm text-muted-foreground mt-2">
@@ -74,9 +75,10 @@ export function ProfilePanel({ venueId, onVenueChange }: ProfilePanelProps) {
           <Label>Weight (kg)</Label>
           <Input
             type="number"
-            value={profile.weight}
-            onChange={(e) => profile.setWeight(Number(e.target.value))}
+            value={profile.weight || ''}
+            onChange={(e) => profile.setWeight(e.target.value === '' ? 0 : Number(e.target.value))}
             placeholder="70"
+            className={styles.input}
           />
         </div>
 
@@ -100,9 +102,10 @@ export function ProfilePanel({ venueId, onVenueChange }: ProfilePanelProps) {
             <Label>Body Fat %</Label>
             <Input
               type="number"
-              value={profile.manualBodyFat}
-              onChange={(e) => profile.setManualBodyFat(Number(e.target.value))}
+              value={profile.manualBodyFat || ''}
+              onChange={(e) => profile.setManualBodyFat(e.target.value === '' ? 0 : Number(e.target.value))}
               placeholder="15"
+              className={styles.input}
             />
           </div>
         )}
@@ -134,8 +137,8 @@ export function ProfilePanel({ venueId, onVenueChange }: ProfilePanelProps) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="light">Light (desk job)</SelectItem>
-              <SelectItem value="moderate">Moderate (hot yoga, cardio)</SelectItem>
-              <SelectItem value="heavy">Heavy (HIIT, intense cardio)</SelectItem>
+              <SelectItem value="moderate">Moderate (gym, sports)</SelectItem>
+              <SelectItem value="heavy">Heavy (HIIT, powerlifting)</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -163,8 +166,8 @@ export function ProfilePanel({ venueId, onVenueChange }: ProfilePanelProps) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="cool">Cool environment</SelectItem>
-              <SelectItem value="moderate">Moderate heat</SelectItem>
+              <SelectItem value="cool">Cool environment (gym) </SelectItem>
+              <SelectItem value="moderate">Moderate heat (rooftop pool)</SelectItem>
               <SelectItem value="hot">Hot environment (sauna, hot yoga)</SelectItem>
             </SelectContent>
           </Select>
@@ -175,15 +178,16 @@ export function ProfilePanel({ venueId, onVenueChange }: ProfilePanelProps) {
           <Label>Session Duration (hours)</Label>
           <Input
             type="number"
-            step="0.5"
-            value={profile.sessionHours}
-            onChange={(e) => profile.setSessionHours(Number(e.target.value))}
-            placeholder="1"
+            step="0.15"
+            value={profile.sessionHours || ''}
+            onChange={(e) => profile.setSessionHours(e.target.value === '' ? 0 : Number(e.target.value))}
+            placeholder="0.15"
+            className={styles.input}
           />
         </div>
 
         {/* Calculated Results */}
-        <div className="p-4 bg-blue-50 rounded-lg">
+        <div className={styles.resultsBox}>
           <h4 className="font-medium text-blue-800 mb-2">Your Targets:</h4>
           <div className="text-sm text-blue-700 space-y-1">
             <div>Lean Body Mass: {profile.bodyComposition.leanBodyMass.toFixed(1)}kg</div>

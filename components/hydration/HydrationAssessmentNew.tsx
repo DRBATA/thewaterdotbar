@@ -10,6 +10,7 @@ import { MealsPanel } from './MealsPanel'
 import { ReviewPanel } from './ReviewPanel'
 import { RecommendationEngine } from './RecommendationEngine'
 import { HydrationProvider } from '@/contexts/HydrationContext'
+import styles from './hydration-assessment.module.css'
 
 interface HydrationAssessmentModalProps {
   isOpen: boolean
@@ -25,19 +26,19 @@ export function HydrationAssessmentModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onCloseAction}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className={`max-w-4xl max-h-[90vh] overflow-y-auto ${styles.assessmentModal}`}>
         <DialogHeader>
           <DialogTitle>AI Hydration Assessment</DialogTitle>
         </DialogHeader>
         
         <HydrationProvider>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="profile">Profile</TabsTrigger>
-              <TabsTrigger value="drinks">Drinks</TabsTrigger>
-              <TabsTrigger value="meals">Meals</TabsTrigger>
-              <TabsTrigger value="review">Review</TabsTrigger>
-              <TabsTrigger value="recommendations">AI Plan</TabsTrigger>
+            <TabsList className={`grid w-full grid-cols-5 ${styles.tabsList}`}>
+            <TabsTrigger value="profile" className={styles.tabTrigger}>Profile</TabsTrigger>
+<TabsTrigger value="drinks" className={styles.tabTrigger}>Drinks</TabsTrigger>
+<TabsTrigger value="meals" className={styles.tabTrigger}>Meals</TabsTrigger>
+<TabsTrigger value="review" className={styles.tabTrigger}>Review</TabsTrigger>
+<TabsTrigger value="recommendations" className={styles.tabTrigger}>AI Plan</TabsTrigger>
             </TabsList>
             
             <TabsContent value="profile">

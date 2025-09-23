@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { useHydrationContext } from '@/contexts'
 import { Loader2, ShoppingCart, Droplet, Zap } from 'lucide-react'
+import styles from './hydration-assessment.module.css'
 
 export function ReviewPanel({ activeTab, setActiveTab, venueId }: { 
   activeTab?: string, 
@@ -120,7 +121,7 @@ export function ReviewPanel({ activeTab, setActiveTab, venueId }: {
   return (
     <div className="space-y-4">
       {/* Summary Card */}
-      <Card>
+      <Card className={styles.panelCard}>
         <CardHeader>
           <CardTitle>Your Hydration Summary</CardTitle>
           <Badge className="w-fit">{overallScore}% Complete</Badge>
@@ -173,7 +174,7 @@ export function ReviewPanel({ activeTab, setActiveTab, venueId }: {
 
           <Button 
             onClick={handleGenerateRecommendations}
-            className="w-full"
+            className={`w-full ${styles.primaryButton}`}
             disabled={loading}
           >
             {loading ? (
@@ -193,7 +194,7 @@ export function ReviewPanel({ activeTab, setActiveTab, venueId }: {
         <>
           {/* Drinks Recommendations */}
           {recommendations.drinks?.drinks?.length > 0 && (
-            <Card>
+            <Card className={styles.panelCard}>
               <CardHeader>
                 <CardTitle>Recommended Drinks</CardTitle>
               </CardHeader>
@@ -213,7 +214,7 @@ export function ReviewPanel({ activeTab, setActiveTab, venueId }: {
                         <Button 
                           size="sm" 
                           onClick={() => handleAddToCart(drink)}
-                          className="mt-2"
+                          className={`mt-2 ${styles.primaryButton}`}
                         >
                           <ShoppingCart className="h-3 w-3 mr-1" />
                           Add
@@ -231,7 +232,7 @@ export function ReviewPanel({ activeTab, setActiveTab, venueId }: {
 
           {/* Meals Recommendations */}
           {recommendations.meals?.meals?.length > 0 && (
-            <Card>
+            <Card className={styles.panelCard}>
               <CardHeader>
                 <CardTitle>Recommended Meals</CardTitle>
               </CardHeader>

@@ -55,8 +55,7 @@ export function useProfilePanel() {
     sessionHours, setSessionHours,
     weight, setWeight,
     manualBodyFat, setManualBodyFat,
-    includesWeightTraining, setIncludesWeightTraining, // ADD THIS LINE
-    
+    includesWeightTraining, setIncludesWeightTraining,     
     // Computed
     bodyComposition,
     sweatLoss,
