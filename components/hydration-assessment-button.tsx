@@ -26,7 +26,7 @@ export function HydrationAssessmentButton() {
   return (
     <HydrationAssessmentModal 
       isOpen={isModalOpen}
-      onClose={() => setIsModalOpen(false)}
+      onCloseAction={() => setIsModalOpen(false)}
     />
   )
 }
