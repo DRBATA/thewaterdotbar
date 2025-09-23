@@ -32,7 +32,7 @@ export function useProfilePanel() {
       includesWeightTraining,
       ...waterData
     }
-  }, [weight, manualBodyFat, bodyType, sex, inputMethod])
+  }, [weight, manualBodyFat, bodyType, sex, inputMethod, includesWeightTraining])
   
   // Calculate sweat loss and targets
   const sweatLoss = useMemo(() => 

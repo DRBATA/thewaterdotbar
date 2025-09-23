@@ -178,10 +178,10 @@ export function ProfilePanel({ venueId, onVenueChange }: ProfilePanelProps) {
           <Label>Session Duration (hours)</Label>
           <Input
             type="number"
-            step="0.15"
+            step="0.25"
             value={profile.sessionHours || ''}
             onChange={(e) => profile.setSessionHours(e.target.value === '' ? 0 : Number(e.target.value))}
-            placeholder="0.15"
+            placeholder="0.25"
             className={styles.input}
           />
         </div>
