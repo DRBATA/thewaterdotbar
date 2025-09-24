@@ -26,7 +26,11 @@ interface MealCard {
   image_type?: string
 }
 
-export function RecommendationEngine() {
+interface RecommendationEngineProps {
+  venueId?: string
+}
+
+export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
   const { profile, totalIntake, deficits, meals } = useHydrationContext()
   const { toast } = useToast()
   
@@ -84,13 +88,14 @@ export function RecommendationEngine() {
         }
       )
 
-      setDrinkInputs(drinksPayload)
+      // Add venueId to drinks payload for stock filtering
+      setDrinkInputs({ ...drinksPayload, venueId })
       setMealInputs(mealsPayload)
       
     } catch (err) {
       console.error('Failed to prepare AI inputs:', err)
     }
-  }, [deficits, totalIntake, meals?.allergies, meals?.breakfast, meals?.lunch, meals?.dinner, meals?.snacks])
+  }, [deficits, totalIntake, meals?.allergies, meals?.breakfast, meals?.lunch, meals?.dinner, meals?.snacks, venueId])
 
   // Generate recommendations using our new APIs
   const generateRecommendations = async () => {

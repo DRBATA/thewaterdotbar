@@ -1,15 +1,22 @@
 'use client'
 
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Check, Plus } from 'lucide-react'
+import { Check, Plus, ChevronRight } from 'lucide-react'
 import { useHydrationContext } from '@/contexts'
 
-export function MealsPanel() {
+interface MealsPanelProps {
+  onNext?: () => void
+}
+
+export function MealsPanel({ onNext }: MealsPanelProps) {
   const { meals } = useHydrationContext()
+  const [tempAllergies, setTempAllergies] = useState<string>(meals.allergies || '')
+  const [allergiesSet, setAllergiesSet] = useState<boolean>(!!meals.allergies)
 
   const handleClarificationSubmit = async (clarifiedMeal: string) => {
     if (meals.clarificationData) {
@@ -27,30 +34,38 @@ export function MealsPanel() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Allergies Input */}
-          <div className="p-3 bg-red-50 rounded-lg border border-red-200">
-            <Label className="text-red-800 font-medium">Allergies & Dietary Restrictions</Label>
-            <div className="flex gap-2 mt-2">
-              <Input
-                placeholder="e.g., nuts, dairy, gluten, shellfish"
-                value={meals.allergies}
-                onChange={(e) => meals.setAllergies(e.target.value)}
-              />
-              <Button
-                size="sm"
-                variant={meals.allergies.trim() ? "default" : "outline"}
-                className="px-3"
-              >
-                {meals.allergies.trim() ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <Plus className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-            <p className="text-xs text-red-600 mt-1">
-              This will filter meal recommendations to avoid these ingredients
-            </p>
-          </div>
+<div className="p-3 bg-red-50 rounded-lg border border-red-200">
+  <Label className="text-red-800 font-medium">Allergies & Dietary Restrictions</Label>
+  <div className="flex gap-2 mt-2">
+    <Input
+      placeholder="e.g., nuts, dairy, gluten, shellfish"
+      value={tempAllergies}
+      onChange={(e) => {
+        setTempAllergies(e.target.value)
+        setAllergiesSet(false)  // Reset the "set" state when typing
+      }}
+    />
+    <Button
+      size="sm"
+      variant={allergiesSet ? "default" : "outline"}
+      onClick={() => {
+        meals.setAllergies(tempAllergies)
+        setAllergiesSet(true)
+      }}
+      className="px-3"
+    >
+      {allergiesSet ? (
+        <Check className="h-4 w-4" />
+      ) : (
+        <span>Add</span>
+      )}
+    </Button>
+  </div>
+  <p className="text-xs text-red-600 mt-1">
+    This will filter meal recommendations to avoid these ingredients
+  </p>
+</div>
+
           {/* Breakfast */}
           <div>
             <Label>Breakfast</Label>
@@ -184,6 +199,18 @@ export function MealsPanel() {
               <div>Protein: {meals.totalMealIntake.protein}g</div>
             </div>
           </div>
+
+          {/* Navigation Button */}
+          {onNext && (
+            <Button 
+              onClick={onNext}
+              variant="outline"
+              className="w-full mt-6 bg-white/5 backdrop-blur border-teal-500/20 hover:bg-teal-500/10 hover:border-teal-500/40 transition-all"
+            >
+              Continue to Review
+              <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
+          )}
         </CardContent>
       </Card>
 

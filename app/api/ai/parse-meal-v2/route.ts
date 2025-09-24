@@ -158,7 +158,7 @@ Return ONLY JSON like:
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: `Estimate nutrients for the given foods (100g if unspecified).
-Return ONLY JSON: {"items":[{name:string,grams:number,...nutrients}]}` },
+Return ONLY JSON with WHOLE NUMBERS (no decimals): {"items":[{name:string,grams:number,...nutrients}]}` },
           { role: "user", content: `Foods: ${fallbackNeeded.join(", ")}` },
         ],
       })
@@ -171,6 +171,11 @@ Return ONLY JSON: {"items":[{name:string,grams:number,...nutrients}]}` },
       fallbackNeeded.length && candidates.length ? "supabase+gpt_fallback"
       : fallbackNeeded.length ? "gpt_fallback"
       : "supabase"
+
+    // Round all values to whole numbers
+    for (const key of Object.keys(totals) as (keyof Nutrition)[]) {
+      totals[key] = Math.round(totals[key])
+    }
 
     return NextResponse.json({ ingredients, nutrition: totals, source })
   } catch (err) {

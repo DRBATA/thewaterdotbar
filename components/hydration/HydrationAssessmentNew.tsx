@@ -47,15 +47,19 @@ export function HydrationAssessmentModal({
             </TabsList>
             
             <TabsContent value="profile">
-              <ProfilePanel venueId={selectedVenue} onVenueChange={setSelectedVenue} />
+              <ProfilePanel 
+                venueId={selectedVenue} 
+                onVenueChange={setSelectedVenue}
+                onNext={() => setActiveTab('drinks')} 
+              />
             </TabsContent>
             
             <TabsContent value="drinks">
-              <DrinksPanel />
+              <DrinksPanel onNext={() => setActiveTab('meals')} />
             </TabsContent>
             
             <TabsContent value="meals">
-              <MealsPanel />
+              <MealsPanel onNext={() => setActiveTab('review')} />
             </TabsContent>
             
             <TabsContent value="review">
@@ -67,7 +71,7 @@ export function HydrationAssessmentModal({
             </TabsContent>
             
             <TabsContent value="recommendations">
-              <RecommendationEngine />
+              <RecommendationEngine venueId={selectedVenue} />
             </TabsContent>
           </Tabs>
         </HydrationProvider>

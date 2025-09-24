@@ -27,9 +27,17 @@ export function getBodyFatFromType(bodyType: BodyType, sex: Sex): number {
 // Calculate total body water and compartments
 export function calculateBodyWater(weight: number, bodyFat: number, sex: Sex) {
   const lbm = calculateLBM(weight, bodyFat)
-  const tbw = sex === 'male' ? weight * 0.6 : weight * 0.5
-  const icw = lbm * 0.7  // Intracellular water
-  const ecw = tbw - icw  // Extracellular water
+  
+  // More accurate TBW calculation when body fat is known
+  // Uses the fact that lean mass is ~73% water, fat mass is ~10% water
+  const fatMass = weight * (bodyFat / 100)
+  const tbw = bodyFat > 0 
+    ? (lbm * 0.73) + (fatMass * 0.10)  // Precise calculation with body fat
+    : (sex === 'male' ? weight * 0.6 : weight * 0.5)  // Fallback estimation
+    
+  // Water compartments: ICW ≈ 2/3 of TBW, ECW ≈ 1/3 of TBW
+  const icw = tbw * (2/3)  // Intracellular water (~66.7% of TBW)
+  const ecw = tbw * (1/3)  // Extracellular water (~33.3% of TBW)
   
   return {
     tbw,

@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button'
+import { ChevronRight } from 'lucide-react'
 import { useHydrationContext } from '@/contexts'
 import { useState, useEffect } from 'react'
 import styles from './hydration-assessment.module.css'
@@ -13,11 +14,16 @@ import styles from './hydration-assessment.module.css'
 interface ProfilePanelProps {
   venueId?: string
   onVenueChange?: (venueId: string) => void
+  onNext?: () => void
 }
 
-export function ProfilePanel({ venueId, onVenueChange }: ProfilePanelProps) {
+export function ProfilePanel({ venueId, onVenueChange, onNext }: ProfilePanelProps) {
   const { profile } = useHydrationContext()
   const [venues, setVenues] = useState<any[]>([])
+  const [editingField, setEditingField] = useState<string | null>(null)
+  const [tempWeight, setTempWeight] = useState<string>(String(profile.weight || ''))
+  const [tempBodyFat, setTempBodyFat] = useState<string>(String(profile.manualBodyFat || ''))
+  const [sessionMinutes, setSessionMinutes] = useState<number>(Math.round((profile.sessionHours || 0) * 60))
   
   // Fetch venues on mount
   useEffect(() => {
@@ -73,40 +79,82 @@ export function ProfilePanel({ venueId, onVenueChange }: ProfilePanelProps) {
         {/* Weight Input */}
         <div>
           <Label>Weight (kg)</Label>
-          <Input
-            type="number"
-            value={profile.weight || ''}
-            onChange={(e) => profile.setWeight(e.target.value === '' ? 0 : Number(e.target.value))}
-            placeholder="70"
-            className={styles.input}
-          />
+          <div className="flex gap-2">
+            <Input
+              type="number"
+              value={editingField === 'weight' ? tempWeight : profile.weight || ''}
+              onChange={(e) => {
+                setEditingField('weight')
+                setTempWeight(e.target.value)
+              }}
+              onFocus={() => {
+                setEditingField('weight')
+                setTempWeight(String(profile.weight || ''))
+              }}
+              placeholder="70"
+              className={`${styles.input} flex-1`}
+            />
+            {editingField === 'weight' && (
+              <Button
+                size="sm"
+                onClick={() => {
+                  profile.setWeight(tempWeight === '' ? 0 : Number(tempWeight))
+                  setEditingField(null)
+                }}
+              >
+                Set
+              </Button>
+            )}
+          </div>
         </div>
 
-        {/* Sex Selection */}
-        <div>
-          <Label>Sex</Label>
-          <Select value={profile.sex} onValueChange={(value) => profile.setSex(value as any)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="male">Male</SelectItem>
-              <SelectItem value="female">Female</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Sex Selection - Only needed when using body type estimation */}
+        {profile.inputMethod === 'bodytype' && (
+          <div>
+            <Label>Sex</Label>
+            <Select value={profile.sex} onValueChange={(value) => profile.setSex(value as any)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="male">Male</SelectItem>
+                <SelectItem value="female">Female</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {/* Body Fat Input (conditional) */}
         {profile.inputMethod === 'direct' && (
           <div>
             <Label>Body Fat %</Label>
-            <Input
-              type="number"
-              value={profile.manualBodyFat || ''}
-              onChange={(e) => profile.setManualBodyFat(e.target.value === '' ? 0 : Number(e.target.value))}
-              placeholder="15"
-              className={styles.input}
-            />
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                value={editingField === 'bodyfat' ? tempBodyFat : profile.manualBodyFat || ''}
+                onChange={(e) => {
+                  setEditingField('bodyfat')
+                  setTempBodyFat(e.target.value)
+                }}
+                onFocus={() => {
+                  setEditingField('bodyfat')
+                  setTempBodyFat(String(profile.manualBodyFat || ''))
+                }}
+                placeholder="15"
+                className={`${styles.input} flex-1`}
+              />
+              {editingField === 'bodyfat' && (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    profile.setManualBodyFat(tempBodyFat === '' ? 0 : Number(tempBodyFat))
+                    setEditingField(null)
+                  }}
+                >
+                  Set
+                </Button>
+              )}
+            </div>
           </div>
         )}
 
@@ -175,15 +223,25 @@ export function ProfilePanel({ venueId, onVenueChange }: ProfilePanelProps) {
 
         {/* Session Duration */}
         <div>
-          <Label>Session Duration (hours)</Label>
-          <Input
-            type="number"
-            step="0.25"
-            value={profile.sessionHours || ''}
-            onChange={(e) => profile.setSessionHours(e.target.value === '' ? 0 : Number(e.target.value))}
-            placeholder="0"
-            className={styles.input}
-          />
+          <Label>Session Duration (minutes)</Label>
+          <div className="flex gap-2">
+            <Input
+              type="number"
+              step="15"
+              min="0"
+              value={sessionMinutes}
+              onChange={(e) => {
+                const minutes = Number(e.target.value) || 0
+                setSessionMinutes(minutes)
+                profile.setSessionHours(minutes / 60)
+              }}
+              placeholder="0"
+              className={`${styles.input} flex-1`}
+            />
+            <span className="text-sm text-muted-foreground self-center">
+              {sessionMinutes > 0 && `(${(sessionMinutes / 60).toFixed(1)}h)`}
+            </span>
+          </div>
         </div>
 
         {/* Calculated Results */}
@@ -198,6 +256,18 @@ export function ProfilePanel({ venueId, onVenueChange }: ProfilePanelProps) {
             <div>Fiber: {profile.targets.fiber}g</div>
           </div>
         </div>
+
+        {/* Navigation Button */}
+        {onNext && (
+          <Button 
+            onClick={onNext}
+            variant="outline"
+            className="w-full mt-6 bg-white/5 backdrop-blur border-teal-500/20 hover:bg-teal-500/10 hover:border-teal-500/40 transition-all"
+          >
+            Continue to Drinks
+            <ChevronRight className="ml-2 h-4 w-4" />
+          </Button>
+        )}
       </CardContent>
     </Card>
   )

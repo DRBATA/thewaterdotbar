@@ -1,17 +1,24 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ChevronRight } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useHydrationContext } from '@/contexts'
 
-export function DrinksPanel() {
+interface DrinksPanelProps {
+  onNext?: () => void
+}
+
+export function DrinksPanel({ onNext }: DrinksPanelProps) {
   const { drinks, deficits } = useHydrationContext()
   const { toast } = useToast()
+  const [selectedDrink, setSelectedDrink] = useState<any>(null)
+  const [addedDrinks, setAddedDrinks] = useState<any[]>([])
 
   // Load available drinks from database
   useEffect(() => {
@@ -55,6 +62,7 @@ export function DrinksPanel() {
     }
 
     drinks.addDrink(nutrients)
+    setAddedDrinks([...addedDrinks, drink]) // Track added drinks
     
     toast({
       title: `Added ${drink.name}`,
@@ -145,37 +153,93 @@ export function DrinksPanel() {
           </Select>
         </div>
 
+        {/* Selected Drink Preview */}
+        {selectedDrink && (
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="font-semibold text-blue-900">{selectedDrink.name}</div>
+            <div className="text-sm text-blue-700 mt-1">
+              {selectedDrink.h2o_ml}ml water
+              {selectedDrink.na_mg > 0 && ` • ${selectedDrink.na_mg}mg sodium`}
+              {selectedDrink.k_mg > 0 && ` • ${selectedDrink.k_mg}mg potassium`}
+              {selectedDrink.caffeine_mg > 0 && ` • ${selectedDrink.caffeine_mg}mg caffeine`}
+            </div>
+            <Button 
+              size="sm" 
+              className="mt-2 w-full"
+              onClick={() => {
+                handleAddDrink(selectedDrink)
+                setSelectedDrink(null)
+              }}
+            >
+              Add to Today's Intake
+            </Button>
+          </div>
+        )}
+
         {/* Drinks Grid */}
-        <div className="h-48 overflow-y-auto border rounded-lg p-2">
-          <div className="grid grid-cols-3 gap-2">
-            {filteredDrinks.map((drink, idx) => (
-              <Button
-                key={idx}
-                variant="outline"
-                size="sm"
-                className="text-xs h-auto py-2 px-1"
-                onClick={() => handleAddDrink(drink)}
-              >
-                <div className="text-center w-full">
-                  <div className="font-medium truncate">{drink.name}</div>
-                  <div className="text-gray-500">
-                    {drink.h2o_ml ? `${drink.h2o_ml}ml` : ""}
+        <div>
+          <p className="text-xs text-gray-500 mb-2">Tap to preview drink details</p>
+          <div className="h-48 overflow-y-auto border rounded-lg p-2">
+            <div className="grid grid-cols-3 gap-2">
+              {filteredDrinks.map((drink, idx) => (
+                <Button
+                  key={idx}
+                  variant={selectedDrink?.id === drink.id ? "default" : "outline"}
+                  size="sm"
+                  className="text-xs h-auto py-2 px-1"
+                  onClick={() => setSelectedDrink(drink)}
+                >
+                  <div className="text-center w-full">
+                    <div className="font-medium truncate">{drink.name}</div>
+                    <div className="text-gray-500">
+                      {drink.h2o_ml ? `${drink.h2o_ml}ml` : ""}
+                    </div>
                   </div>
-                </div>
-              </Button>
-            ))}
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
+
+        {/* Added Drinks List */}
+        {addedDrinks.length > 0 && (
+          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+            <Label className="text-green-800 font-medium">Today's Drinks:</Label>
+            <div className="text-sm text-green-700 space-y-1 mt-2 max-h-24 overflow-y-auto">
+              {addedDrinks.map((d, i) => (
+                <div key={i} className="flex justify-between">
+                  <span>{d.name}</span>
+                  <span className="text-xs">{d.h2o_ml}ml</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Reset Button */}
         <Button 
           variant="destructive" 
           size="sm" 
-          onClick={drinks.resetIntake}
+          onClick={() => {
+            drinks.resetIntake()
+            setAddedDrinks([])
+          }}
           className="w-full"
         >
           Reset All Drinks
         </Button>
+
+        {/* Navigation Button */}
+        {onNext && (
+          <Button 
+            onClick={onNext}
+            variant="outline"
+            className="w-full mt-6 bg-white/5 backdrop-blur border-teal-500/20 hover:bg-teal-500/10 hover:border-teal-500/40 transition-all"
+          >
+            Continue to Meals
+            <ChevronRight className="ml-2 h-4 w-4" />
+          </Button>
+        )}
       </CardContent>
     </Card>
   )
