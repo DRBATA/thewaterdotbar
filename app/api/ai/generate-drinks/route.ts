@@ -103,20 +103,31 @@ VARIETY RULES:
 3. Mix categories: Don't just pick all sachets or all juices
 
 SMART SELECTION:
-- Morning + Low Energy? → Art of Implosion Coffee (400ml water + energy)
+- Morning + Low Energy? → Art of Implosion Coffee (400ml water + energy + 400mg polyphenols)
 - Post-workout? → Humantra sachet (balanced recovery)
-- Afternoon slump? → METÉ (natural energy) or Kombucha (probiotics)
+- Afternoon slump? → METÉ (200mg polyphenols + natural energy) 
+- NO CAFFEINE but want polyphenols? → Kombucha (150mg polyphenols + probiotics!)
 - Need fizz? → Maison Perrier varieties (330ml hydration + enjoyment)
-- Fiber needed? → Alternate between Poppi (tasty) and Rite Gut (powerful)
+- Fiber needed? → Small deficit (1-3g): Poppi (2.3g, tasty) | Large deficit (4g+): Rite Gut (5g, powerful)
 - Pure hydration? → Mix Prana Water with flavored options
+
+POLYPHENOL PRIORITY:
+If customer has NO caffeine intake, ALWAYS recommend at least one:
+- Kombucha (150mg polyphenols, NO caffeine, bonus probiotics)
+- METÉ (200mg polyphenols, natural caffeine alternative)
+These provide antioxidants without coffee!
 
 CONTEXTUAL PICKS:
 -  sodium deficit + hate celery? → Once Upon A Coconut (also has 280mg sodium!)
 - Want something fun? → Include a Ginger Shot boost
 
+QUANTITY LOGIC:
+- Large water deficit (1L+)? → Increase quantities! (e.g., "quantity": 2 for Prana Water)
+- 500ml deficit → 1x 500ml drink
+- 1000ml deficit → 2x 500ml drinks or multiple smaller ones
+- 2000ml deficit → Mix of sizes with higher quantities
 
-Be creative! Users want variety, not the same 4 products every time.
-Maximum 3-4 products, but make them INTERESTING
+Be creative! Max 3-4 different products, but USE QUANTITIES (1-3 per item) to meet large deficits
 
 EXPLANATION FORMAT for 'reason' field - MUST include multiple benefits:
 1. FLUID: Always state "Contributes Xml to your daily water goal"
