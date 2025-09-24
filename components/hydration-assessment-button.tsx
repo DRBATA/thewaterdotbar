@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Droplets } from "lucide-react"
 import { HydrationAssessmentModal } from "./hydration/HydrationAssessmentNew"
+import { HydrationProvider } from "@/contexts/HydrationContext"
 
 export function HydrationAssessmentButton() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -24,9 +25,11 @@ export function HydrationAssessmentButton() {
   }, [])
 
   return (
-    <HydrationAssessmentModal 
-      isOpen={isModalOpen}
-      onCloseAction={() => setIsModalOpen(false)}
-    />
+    <HydrationProvider>
+      <HydrationAssessmentModal 
+        isOpen={isModalOpen}
+        onCloseAction={() => setIsModalOpen(false)}
+      />
+    </HydrationProvider>
   )
 }

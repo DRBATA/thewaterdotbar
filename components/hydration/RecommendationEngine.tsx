@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { X, Plus, ShoppingCart, Loader2, RefreshCw } from 'lucide-react'
+import { Loader2, Plus, X, RefreshCw, ShoppingCart } from 'lucide-react'
 import { useHydrationContext } from '@/contexts'
 import { useToast } from '@/hooks/use-toast'
 import { splitDeficitsForAI } from '@/utils/recommendationSplitter'
@@ -37,11 +37,15 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
   const { profile, totalIntake, deficits, meals } = useHydrationContext()
   const { toast } = useToast()
   
-  // Loading states for each API
+  // Loading states
   const [isLoadingDrinks, setIsLoadingDrinks] = useState(false)
   const [isLoadingMeals, setIsLoadingMeals] = useState(false)
   const [isLoadingImages, setIsLoadingImages] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  
+  // Error states
+  const [drinksError, setDrinksError] = useState<string | null>(null)
+  const [mealsError, setMealsError] = useState<string | null>(null)
   
   // Results state
   const [recommendations, setRecommendations] = useState<Product[]>([])
@@ -51,10 +55,9 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
   const [drinkInputs, setDrinkInputs] = useState<any | null>(null)
   const [mealInputs, setMealInputs] = useState<any | null>(null)
   
-  // Error states
-  const [drinksError, setDrinksError] = useState<string | null>(null)
-  const [mealsError, setMealsError] = useState<string | null>(null)
-
+  // Generation control
+  const [hasGenerated, setHasGenerated] = useState(false)
+  
   // Auto-prepare inputs when component mounts (AI Plan tab opens)
   useEffect(() => {
     if (!deficits || !totalIntake) return
@@ -102,11 +105,18 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
 
   // Generate recommendations using our new APIs
   const generateRecommendations = async () => {
-    if (!drinkInputs || !mealInputs) return
+    if (!drinkInputs || !mealInputs) {
+      toast({
+        title: "Please complete profile and meals",
+        description: "Fill in your profile and meal information first",
+      })
+      return
+    }
     
     // Reset errors
     setDrinksError(null)
     setMealsError(null)
+    setHasGenerated(true)
     
     try {
       // Step 1: Call generate-drinks API
@@ -197,11 +207,10 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
     }
   }
 
-  // Auto-generate recommendations when inputs are ready
+  // NO AUTO-GENERATION - User must click button
   useEffect(() => {
-    if (drinkInputs && mealInputs) {
-      generateRecommendations()
-    }
+    // Only prepare inputs, don't generate
+    // User will explicitly click to generate
   }, [drinkInputs, mealInputs])
 
   // Retry mechanism
@@ -303,6 +312,23 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
 
   return (
     <div className="space-y-6 max-w-full overflow-hidden">
+      {/* Generate Button - Show when no results or user wants to regenerate */}
+      {!isLoading && (
+        <div className="flex justify-center">
+          <Button
+            onClick={() => {
+              generateRecommendations()
+            }}
+            disabled={!drinkInputs || !mealInputs}
+            size="lg"
+            className="min-w-[200px]"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            {hasGenerated ? "Regenerate AI Plan" : "Generate AI Plan"}
+          </Button>
+        </div>
+      )}
+
       {/* Loading State */}
       {isLoading && (
         <div className="flex items-center justify-center p-8">
