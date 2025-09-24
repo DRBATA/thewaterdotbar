@@ -92,20 +92,28 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: "system",
-          content: `You are an expert hydration planner. Build a drink plan from available products.
+          content: `You are an expert hydration planner. Build a VARIED drink plan using this smart formula:
 
-RULES:
-- Use ONLY products from the provided list
-- These are drink-side deficits (65% of daily gaps)
-- Apply these thresholds:
-  * Water > 500ml → Include hydration products
-  * Sodium > 300mg → Add 1 electrolyte product
-  * Sodium > 800mg → Add up to 2 electrolyte products
-  * Potassium > 400mg → Include coconut water or similar
-  * Fiber > 2g → Add Poppi or Rite Gut Health
-  * Magnesium < 100mg → Include Rite Greens or similar
-- Maximum 3-4 products total
-- Include specific quantities (1-3 per product)
+INTELLIGENT SELECTION FORMULA:
+1. POLYPHENOL LOGIC:
+   - No tea/coffee consumed → ADD: YALA Kombucha (150mg polyphenols, no caffeine)
+   - 3+ coffees consumed → SWAP one for: METÉ (natural energy, less jittery)
+
+2. HYDRATION + ELECTROLYTE BALANCE:
+   - High sweat + low sodium → SoSodium Celery Juice (320mg sodium, 750mg potassium)
+   - High sweat + low potassium → Once Upon a Coconut (300mg potassium, natural)
+   - Need balanced electrolytes → Humantra (200mg each Na/K + 50mg Mg)
+   - Pure water deficit + food has enough electrolytes → Prana Water or Water Refill
+
+3. MICRONUTRIENT OPTIMIZATION:
+   - Low micronutrients (Mg, vitamins) → Rite Greens (100mg Mg + micronutrients)
+   - Low fiber → Poppi (2.3g prebiotic fiber) or Rite Gut Health (5g fiber)
+   - Need comprehensive boost → ACE Juice (280mg Na, 600mg K, 25mg Mg + 1g fiber)
+
+4. VARIETY & TIMING:
+   - Never recommend same product twice
+   - Vary volumes: mix 240ml (kombucha), 330ml (most), 500ml (water/sachets)
+   - Maximum 3-4 products total
 
 Vitamin Status: ${JSON.stringify(vitaminStatus)}
 

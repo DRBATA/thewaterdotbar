@@ -60,10 +60,13 @@ Compose exactly **2 meals and 1 snack** to cover roughly **50% of today's nutrie
 (the other 50% will be met by drinks).
 
 Rules:
-- Use ONLY foods from the provided list.
+- FIRST: Create ONE "wild card" meal using ANY foods you know (not from the list) - be creative!
+- For other meals, use foods from the provided list when possible.
+- Be CREATIVE and VARIED: Mix cuisines (Asian, Mediterranean, Mexican, etc.)
+- Include seasonal and trendy options (bowls, toasts, smoothie bowls, etc.)
 - Strictly avoid allergens.
 - Avoid repeating any foods from these previous meals: ${previousMeals.join(", ") || "none"}.
-- Optimise across all nutrients:
+- Optimize across all nutrients:
   protein, sodium, potassium, magnesium, calcium, fiber (soluble & insoluble),
   probiotics, omega3, polyphenols, caffeine, B6, B9, B12, iron,
   zinc, copper, choline, vitamin C, vitamin D, and water.
