@@ -92,8 +92,10 @@ export async function POST(req: NextRequest) {
       model: "gpt-4o-mini",
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: `Expand the meal into explicit ingredients and infer portions in grams.
-Return ONLY JSON like:
+        { role: "system", content: `Expand the meal into explicit food items (not recipes). 
+          Treat packaged or common prepared foods (e.g., croissant, pizza slice) 
+          as a single ingredient unless the user specifies raw recipe details. 
+          Infer portions in grams. Return ONLY JSON like:
 {"ingredients":[{"name":string,"grams":number,"cooking":string}]}` },
         { role: "user", content: meal },
       ],

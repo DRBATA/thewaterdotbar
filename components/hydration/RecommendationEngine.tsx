@@ -15,6 +15,7 @@ interface Product {
   price_aed?: number
   nutrients?: any
   reason?: string
+  image_url?: string
 }
 
 interface MealCard {
@@ -322,26 +323,37 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
       {recommendations.length > 0 && (
         <div>
           <h3 className="text-lg font-semibold mb-3">Recommended Drinks</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {recommendations.map((product) => (
-              <Card key={product.id} className="w-full">
+              <Card key={product.id} className="w-full overflow-hidden hover:shadow-lg transition-shadow">
+                {product.image_url && (
+                  <div className="relative w-full h-32 bg-gray-100">
+                    <img 
+                      src={product.image_url} 
+                      alt={product.name}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                )}
                 <CardContent className="p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-medium text-sm line-clamp-2">{product.name}</h4>
+                  <div className="flex justify-between items-start mb-3">
+                    <h4 className="font-semibold text-base">{product.name}</h4>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => removeAndReplace(product.id)}
-                      className="h-6 w-6 p-0 ml-2 flex-shrink-0"
+                      className="h-6 w-6 p-0 ml-2 flex-shrink-0 hover:bg-red-50"
                     >
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
                   
                   {product.reason && (
-                    <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
-                      {product.reason}
-                    </p>
+                    <div className="bg-blue-50 border-l-2 border-blue-400 p-2 mb-3">
+                      <p className="text-xs text-blue-700">
+                        {product.reason}
+                      </p>
+                    </div>
                   )}
                   
                   <p className="text-xs text-muted-foreground mb-3">

@@ -65,10 +65,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Build product list for GPT
-    const productList = products.map((p: { id: any; name: any; category: any; water_content_ml: any; sodium_mg: any; potassium_mg: any; magnesium_mg: any; calcium_mg: any; fiber_g: any; soluble_fiber_g: any; vitamin_b6_mg: any; vitamin_b9_folate_mcg: any; vitamin_c_mg: any; polyphenols_mg: any; probiotic_cfu: any; price_aed: any; stripe_price_id: any }) => ({
+    const productList = products.map((p: { id: any; name: any; category: any; image_url: any; water_content_ml: any; sodium_mg: any; potassium_mg: any; magnesium_mg: any; calcium_mg: any; fiber_g: any; soluble_fiber_g: any; vitamin_b6_mg: any; vitamin_b9_folate_mcg: any; vitamin_c_mg: any; polyphenols_mg: any; probiotic_cfu: any; price_aed: any; stripe_price_id: any }) => ({
       id: p.id,
       name: p.name,
       category: p.category,
+      image_url: p.image_url,
       nutrient_profile: {
         water_ml: Number(p.water_content_ml) || 0,
         sodium_mg: Number(p.sodium_mg) || 0,
@@ -92,28 +93,36 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: "system",
-          content: `You are an expert hydration planner. Build a VARIED drink plan using this smart formula:
+          content: `You are an expert hydration planner. CREATE INTERESTING, VARIED recommendations!
 
-INTELLIGENT SELECTION FORMULA:
-1. POLYPHENOL LOGIC:
-   - No tea/coffee consumed → ADD: YALA Kombucha (150mg polyphenols, no caffeine)
-   - 3+ coffees consumed → SWAP one for: METÉ (natural energy, less jittery)
+STOP being predictable! Mix it up based on context:
 
-2. HYDRATION + ELECTROLYTE BALANCE:
-   - High sweat + low sodium → SoSodium Celery Juice (320mg sodium, 750mg potassium)
-   - High sweat + low potassium → Once Upon a Coconut (300mg potassium, natural)
-   - Need balanced electrolytes → Humantra (200mg each Na/K + 50mg Mg)
-   - Pure water deficit + food has enough electrolytes → Prana Water or Water Refill
+VARIETY RULES:
+1. NEVER default to: Celery Juice + Coconut Water + Rite Gut + Rite Greens
+2. Consider TIME OF DAY and ACTIVITY CONTEXT
+3. Mix categories: Don't just pick all sachets or all juices
 
-3. MICRONUTRIENT OPTIMIZATION:
-   - Low micronutrients (Mg, vitamins) → Rite Greens (100mg Mg + micronutrients)
-   - Low fiber → Poppi (2.3g prebiotic fiber) or Rite Gut Health (5g fiber)
-   - Need comprehensive boost → ACE Juice (280mg Na, 600mg K, 25mg Mg + 1g fiber)
+SMART SELECTION:
+- Morning + Low Energy? → Art of Implosion Coffee (400ml water + energy)
+- Post-workout? → Humantra sachet (balanced recovery)
+- Afternoon slump? → METÉ (natural energy) or Kombucha (probiotics)
+- Need fizz? → Maison Perrier varieties (330ml hydration + enjoyment)
+- Fiber needed? → Alternate between Poppi (tasty) and Rite Gut (powerful)
+- Pure hydration? → Mix Prana Water with flavored options
 
-4. VARIETY & TIMING:
-   - Never recommend same product twice
-   - Vary volumes: mix 240ml (kombucha), 330ml (most), 500ml (water/sachets)
-   - Maximum 3-4 products total
+CONTEXTUAL PICKS:
+-  sodium deficit + hate celery? → Once Upon A Coconut (also has 280mg sodium!)
+- Want something fun? → Include a Ginger Shot boost
+
+
+Be creative! Users want variety, not the same 4 products every time.
+Maximum 3-4 products, but make them INTERESTING
+
+EXPLANATION FORMAT for 'reason' field:
+- Be specific: "Tackles X% of your Y deficit (provides Zmg)"
+- Context matters: "Perfect for morning energy boost" or "Ideal post-workout recovery"
+- Benefits: "Also includes bonus probiotics for gut health"
+- Make it personal and motivating!
 
 Vitamin Status: ${JSON.stringify(vitaminStatus)}
 
@@ -124,13 +133,14 @@ Return JSON:
       "id": "product-uuid",
       "name": "Product Name",
       "quantity": 1,
+      "image_url": "product image url from data",
       "nutrients": {
         "water": 330,
         "sodium": 200,
         "potassium": 100
       },
       "price": 55,
-      "reason": "Provides 200mg sodium (30% of deficit) for electrolyte balance"
+      "reason": "Addresses 40% of your sodium deficit (200mg of 500mg needed) while adding 330ml hydration. Perfect for post-workout recovery."
     }
   ],
   "summary": "Start with Humantra for electrolytes, then coconut water for potassium."
