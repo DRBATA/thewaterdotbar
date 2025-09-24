@@ -22,7 +22,7 @@ export function HydrationAssessmentModal({
   onCloseAction 
 }: HydrationAssessmentModalProps) {
   const [activeTab, setActiveTab] = useState('profile')
-  const [selectedVenue, setSelectedVenue] = useState<string>('')
+  const [selectedVenue, setSelectedVenue] = useState<string>('f4ce6693-dac2-4010-a4f0-9ebb2bdaafbd')
 
   return (
     <Dialog 

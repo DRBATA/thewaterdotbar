@@ -20,11 +20,13 @@ interface Product {
 
 interface MealCard {
   name: string
-  foods: string[]
+  foods?: string[]
+  items?: Array<{ name: string; grams?: number; ml?: number }>
   nutrients?: any
   explanation?: string
   image_url?: string
   image_type?: string
+  wild_card?: boolean
 }
 
 interface RecommendationEngineProps {
@@ -135,11 +137,22 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
       // Step 3: Call generate-meal-images API with meal results
       if (mealsData.meals && mealsData.meals.length > 0) {
         setIsLoadingImages(true)
+        
+        // Transform new format to old format for image API
+        const mealsForImages = mealsData.meals.map((meal: any) => ({
+          name: meal.name,
+          foods: meal.items 
+            ? meal.items.map((item: any) => item.name)
+            : meal.foods || [],
+          nutrients: meal.nutrients,
+          explanation: meal.explanation
+        }))
+        
         const mealImagesResponse = await fetch('/api/ai/generate-meal-images', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            meals: mealsData.meals,
+            meals: mealsForImages,
             allergies: mealInputs.allergies || [],
             previousMeals: mealInputs.previousMeals || []
           })
@@ -147,7 +160,13 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
         
         if (mealImagesResponse.ok) {
           const mealImagesData = await mealImagesResponse.json()
-          setMealCards(mealImagesData.meals || [])
+          // Merge image data with original meal data
+          const mealsWithImages = mealsData.meals.map((meal: any, idx: number) => ({
+            ...meal,
+            image_url: mealImagesData.meals?.[idx]?.image_url,
+            image_type: mealImagesData.meals?.[idx]?.image_type
+          }))
+          setMealCards(mealsWithImages)
         } else {
           // If images fail, still show meals without images
           setMealCards(mealsData.meals || [])
@@ -323,15 +342,15 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
       {recommendations.length > 0 && (
         <div>
           <h3 className="text-lg font-semibold mb-3">Recommended Drinks</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {recommendations.map((product) => (
               <Card key={product.id} className="w-full overflow-hidden hover:shadow-lg transition-shadow">
                 {product.image_url && (
-                  <div className="relative w-full h-32 bg-gray-100">
+                  <div className="relative w-full h-40 bg-gray-100">
                     <img 
                       src={product.image_url} 
                       alt={product.name}
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-cover"
                     />
                   </div>
                 )}
@@ -408,9 +427,17 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
                   </div>
                 )}
                 <CardContent className="p-4">
-                  <h4 className="font-semibold mb-2 line-clamp-1">{meal.name}</h4>
+                  <h4 className="font-semibold mb-2 line-clamp-1">
+                    {meal.name}
+                    {meal.wild_card && <span className="ml-2 text-xs text-purple-600">(Creative)</span>}
+                  </h4>
                   <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                    {meal.foods.join(', ')}
+                    {meal.items 
+                      ? meal.items.map(item => 
+                          `${item.name}${item.grams ? ` (${item.grams}g)` : ''}${item.ml ? ` (${item.ml}ml)` : ''}`
+                        ).join(', ')
+                      : meal.foods?.join(', ') || ''
+                    }
                   </p>
                   {meal.explanation && (
                     <p className="text-xs text-muted-foreground line-clamp-3">
