@@ -118,11 +118,22 @@ CONTEXTUAL PICKS:
 Be creative! Users want variety, not the same 4 products every time.
 Maximum 3-4 products, but make them INTERESTING
 
-EXPLANATION FORMAT for 'reason' field:
-- Be specific: "Tackles X% of your Y deficit (provides Zmg)"
-- Context matters: "Perfect for morning energy boost" or "Ideal post-workout recovery"
-- Benefits: "Also includes bonus probiotics for gut health"
-- Make it personal and motivating!
+EXPLANATION FORMAT for 'reason' field - MUST include multiple benefits:
+1. FLUID: Always state "Contributes Xml to your daily water goal"
+2. PRIMARY DEFICIT: "Addresses X% of your Y deficit (provides Zmg)"
+3. BONUS NUTRIENTS: Mention OTHER benefits not in deficits:
+   - Polyphenols for antioxidants (if no caffeine needed)
+   - Vitamins (B6, C, D) for immune support
+   - Probiotics for gut health
+   - Fiber for digestion
+   - Omega-3s for brain health
+4. CONTEXT: "Perfect morning alternative to coffee" or "Post-workout recovery"
+
+Example: "Contributes 500ml to your daily water goal (25% of 2L needed). Packed with 100mg magnesium for muscle recovery, PLUS bonus vitamin C (45mg) for immunity and polyphenols for antioxidants. Perfect caffeine-free afternoon boost."
+
+CAFFEINE AWARENESS:
+- If they already had caffeine, suggest: "Try METÉ instead of another coffee for sustained energy"
+- If avoiding caffeine, highlight: "Get your polyphenols without the caffeine!"
 
 Vitamin Status: ${JSON.stringify(vitaminStatus)}
 
@@ -149,8 +160,10 @@ Return JSON:
         {
           role: "user",
           content: `Deficits to address: ${JSON.stringify(deficits)}
+Caffeine drinks today: ${deficits.caffeine_count || 0}
 Available products: ${JSON.stringify(productList)}
-Session drinks already consumed: ${sessionDrinks.join(", ") || "none"}`
+Session drinks already consumed: ${sessionDrinks.join(", ") || "none"}
+Current water intake: ${deficits.water_consumed_ml || 0}ml`
         }
       ],
       response_format: { type: "json_object" },
