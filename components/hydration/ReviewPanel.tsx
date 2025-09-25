@@ -8,13 +8,56 @@ import { Badge } from '@/components/ui/badge'
 import { useHydrationContext } from '@/contexts'
 import { Droplet, Zap } from 'lucide-react'
 import styles from './hydration-assessment.module.css'
+import { useToast } from '@/hooks/use-toast'
+import { splitDeficitsForAI } from '@/utils/recommendationSplitter'
+import { useState, useEffect } from 'react'
 
 export function ReviewPanel({ activeTab, setActiveTab, venueId }: { 
   activeTab?: string, 
   setActiveTab?: (tab: string) => void,
   venueId?: string 
 }) {
-  const { profile, totalIntake, deficits } = useHydrationContext()
+  const { profile, totalIntake, deficits, meals } = useHydrationContext()
+  const [isGenerating, setIsGenerating] = useState(false)
+  const { toast } = useToast()
+
+  // ADD THIS useEffect HERE:
+useEffect(() => {
+  const startBackgroundGeneration = async () => {
+    if (isGenerating) return // Prevent double calls
+    
+    setIsGenerating(true)
+    try {
+      const { drinksPayload, mealsPayload } = splitDeficitsForAI(deficits, totalIntake, {
+        allergies: Array.isArray(meals?.allergies) ? meals.allergies : [],
+        // Add other options if needed
+      })
+      
+      // Call both APIs in background
+      const [drinksResponse, mealsResponse] = await Promise.all([
+        fetch('/api/ai/generate-drinks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(drinksPayload)  // ← Changed from drinkInputs
+        }),
+        fetch('/api/ai/generate-meals', {
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(mealsPayload)   // ← Changed from mealInputs
+        })
+      ])
+      
+      console.log('Background generation complete!')
+      
+    } catch (error) {
+      console.error('Background generation failed:', error)
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+  
+  startBackgroundGeneration()
+}, [deficits, totalIntake, venueId]) // Dependencies
 
   // Calculate achievement percentages
   const achievements = {

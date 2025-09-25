@@ -64,8 +64,10 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Build product list for GPT
-    const productList = products.map((p: { id: any; name: any; category: any; image_url: any; water_content_ml: any; sodium_mg: any; potassium_mg: any; magnesium_mg: any; calcium_mg: any; fiber_g: any; soluble_fiber_g: any; vitamin_b6_mg: any; vitamin_b9_folate_mcg: any; vitamin_c_mg: any; polyphenols_mg: any; probiotic_cfu: any; price_aed: any; stripe_price_id: any }) => ({
+    // Build product list for GPT with slight randomization for variety
+    const productList = products
+      .sort(() => Math.random() - 0.2) // Slight shuffle, keeps best products near top
+      .map((p: { id: any; name: any; category: any; image_url: any; water_content_ml: any; sodium_mg: any; potassium_mg: any; magnesium_mg: any; calcium_mg: any; fiber_g: any; soluble_fiber_g: any; vitamin_b6_mg: any; vitamin_b9_folate_mcg: any; vitamin_c_mg: any; polyphenols_mg: any; probiotic_cfu: any; vitamin_b12_mcg: any; iron_mg: any; price_aed: any; stripe_price_id: any }) => ({
       id: p.id,
       name: p.name,
       category: p.category,
@@ -80,6 +82,8 @@ export async function POST(request: NextRequest) {
         soluble_fiber_g: Number(p.soluble_fiber_g) || 0,
         vitamin_b6_mg: Number(p.vitamin_b6_mg) || 0,
         vitamin_b9_folate_mcg: Number(p.vitamin_b9_folate_mcg) || 0,
+        vitamin_b12_mcg: Number(p.vitamin_b12_mcg) || 0,
+        iron_mg: Number(p.iron_mg) || 0,
         vitamin_c_mg: Number(p.vitamin_c_mg) || 0,
         polyphenols_mg: Number(p.polyphenols_mg) || 0,
         probiotic_cfu: Number(p.probiotic_cfu) || 0,
@@ -93,60 +97,44 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: "system",
-          content: `You are an expert hydration planner. CREATE INTERESTING, VARIED recommendations!
+          content: `You are an expert hydration planner. Select drinks based on ACTUAL nutrient content.
 
-STOP being predictable! Mix it up based on context:
+CURRENT STATUS:
+- Caffeine today: ${deficits.caffeine_count || 0} drinks
+- Heavy sweater: ${deficits.sweat_flag ? 'YES' : 'NO'}
+
+EXACT DEFICITS TO MEET:
+- Water: ${deficits.water_ml}ml
+- Sodium: ${Math.round(deficits.sodium_mg || 0)}mg ${deficits.sweat_flag ? '(PRIORITY - heavy sweater)' : ''}
+- Potassium: ${Math.round(deficits.potassium_mg || 0)}mg
+- Magnesium: ${Math.round(deficits.magnesium_mg || 0)}mg
+- B6: ${(deficits.b6_mg || 0).toFixed(1)}mg
+- B9/Folate: ${Math.round(deficits.b9_folate_mcg || 0)}mcg
+- Fiber: ${(deficits.soluble_fiber_g || 0).toFixed(1)}g
+- Polyphenols: ${Math.round(deficits.polyphenols_mg || 0)}mg
 
 VARIETY RULES:
-1. NEVER default to: Celery Juice + Coconut Water + Rite Gut + Rite Greens
-2. Consider TIME OF DAY and ACTIVITY CONTEXT
-3. Mix categories: Don't just pick all sachets or all juices
+1. Mix categories - not all sachets or all juices
+2. Rotate between options when deficits allow
+3. Consider taste variety (sweet/savory/neutral)
+4. Use quantities (2x) instead of always new products
 
-SMART SELECTION:
-- Morning + Low Energy? → Art of Implosion Coffee (400ml water + energy + 400mg polyphenols)
-- Post-workout? → Humantra sachet (balanced recovery)
-- Afternoon slump? → METÉ (200mg polyphenols + natural energy) 
-- NO CAFFEINE but want polyphenols? → Kombucha (150mg polyphenols + probiotics!)
-- Need fizz? → Maison Perrier varieties (330ml hydration + enjoyment)
-- Fiber needed? → Small deficit (1-3g): Poppi (2.3g, tasty) | Large deficit (4g+): Rite Gut (5g, powerful)
-- Pure hydration? → Mix Prana Water with flavored options
+SMART MATCHING:
+- Sodium >200mg needed? → Celery (320mg) or 2x Coconut (130mg total)
+- Potassium high? → Celery (750mg) beats Coconut (300mg)
+- Magnesium deficit? → Check products for mg content
+- B vitamins low? → Rite Greens has B6, B9, B12 (comprehensive support)
+- Fiber 0-2g? → Skip fiber drinks
+- Fiber 2-4g? → Poppi (2.3g)
+- Fiber 5g+? → Rite Gut (5g)
+- Polyphenols needed + no caffeine? → Kombucha (150mg)
+- Polyphenols + OK with caffeine? → Coffee (400mg) or METÉ (200mg)
 
-POLYPHENOL PRIORITY:
-If customer has NO caffeine intake, ALWAYS recommend at least one:
-- Kombucha (150mg polyphenols, NO caffeine, bonus probiotics)
-- METÉ (200mg polyphenols, natural caffeine alternative)
-These provide antioxidants without coffee!
+ALREADY HAD: ${sessionDrinks.join(", ") || "none"}
+Don't repeat these.
 
-CONTEXTUAL PICKS:
--  sodium deficit + hate celery? → Once Upon A Coconut (also has 280mg sodium!)
-- Want something fun? → Include a Ginger Shot boost
-
-QUANTITY LOGIC:
-- Large water deficit (1L+)? → Increase quantities! (e.g., "quantity": 2 for Prana Water)
-- 500ml deficit → 1x 500ml drink
-- 1000ml deficit → 2x 500ml drinks or multiple smaller ones
-- 2000ml deficit → Mix of sizes with higher quantities
-
-Be creative! Max 3-4 different products, but USE QUANTITIES (1-3 per item) to meet large deficits
-
-EXPLANATION FORMAT for 'reason' field - MUST include multiple benefits:
-1. FLUID: Always state "Contributes Xml to your daily water goal"
-2. PRIMARY DEFICIT: "Addresses X% of your Y deficit (provides Zmg)"
-3. BONUS NUTRIENTS: Mention OTHER benefits not in deficits:
-   - Polyphenols for antioxidants (if no caffeine needed)
-   - Vitamins (B6, C, D) for immune support
-   - Probiotics for gut health
-   - Fiber for digestion
-   - Omega-3s for brain health
-4. CONTEXT: "Perfect morning alternative to coffee" or "Post-workout recovery"
-
-Example: "Contributes 500ml to your daily water goal (25% of 2L needed). Packed with 100mg magnesium for muscle recovery, PLUS bonus vitamin C (45mg) for immunity and polyphenols for antioxidants. Perfect caffeine-free afternoon boost."
-
-CAFFEINE AWARENESS:
-- If they already had caffeine, suggest: "Try METÉ instead of another coffee for sustained energy"
-- If avoiding caffeine, highlight: "Get your polyphenols without the caffeine!"
-
-Vitamin Status: ${JSON.stringify(vitaminStatus)}
+Select 3-5 drinks that EXACTLY meet the deficits. Use the nutrient_profile in each product.
+Vary your selections - don't always pick the same combo!
 
 Return JSON:
 {
@@ -155,71 +143,84 @@ Return JSON:
       "id": "product-uuid",
       "name": "Product Name",
       "quantity": 1,
-      "image_url": "product image url from data",
-      "nutrients": {
-        "water": 330,
-        "sodium": 200,
-        "potassium": 100
-      },
-      "price": 55,
-      "reason": "Addresses 40% of your sodium deficit (200mg of 500mg needed) while adding 330ml hydration. Perfect for post-workout recovery."
+      "reason": "Brief explanation of why this helps"
     }
   ],
-  "summary": "Start with Humantra for electrolytes, then coconut water for potassium."
+  "summary": "Overall strategy for hydration"
 }`
         },
         {
           role: "user",
-          content: `Deficits to address: ${JSON.stringify(deficits)}
-Caffeine drinks today: ${deficits.caffeine_count || 0}
-Available products: ${JSON.stringify(productList)}
-Session drinks already consumed: ${sessionDrinks.join(", ") || "none"}
-Current water intake: ${deficits.water_consumed_ml || 0}ml`
+          content: JSON.stringify({
+            deficits,
+            vitaminStatus,
+            availableProducts: productList,
+            sessionDrinks,
+            days_requested
+          })
         }
       ],
       response_format: { type: "json_object" },
-      temperature: 0.7,
     })
 
-    const aiResponse = JSON.parse(completion.choices[0]?.message?.content || '{}')
+    const result = JSON.parse(completion.choices[0]?.message?.content || '{}')
     
-    // Map AI recommendations to full product details for UI
-    const drinks = (aiResponse.drinks || []).map((rec: any) => {
-      const product = products.find((p: { id: any }) => p.id === rec.id)
+    // Add full product details and calculate totals
+    const enhancedDrinks = (result.drinks || []).map((rec: any) => {
+      const product = productList.find((p: any) => p.id === rec.id)
       if (!product) return null
       
       return {
-        id: product.id,
+        id: rec.id,
         name: product.name,
         quantity: rec.quantity || 1,
-        category: product.category,
-        nutrients: {
-          water: Number(product.water_content_ml) || 0,
-          sodium: Number(product.sodium_mg) || 0,
-          potassium: Number(product.potassium_mg) || 0,
-          magnesium: Number(product.magnesium_mg) || 0,
-          fiber: Number(product.fiber_g) || 0,
-        },
+        image_url: product.image_url,
+        nutrients: product.nutrient_profile,
         price_aed: product.price_aed,
-        stripe_price_id: product.stripe_price_id,
-        reason: rec.reason,
-        image_url: product.image_url
+        reason: rec.reason
       }
     }).filter(Boolean)
-
-    return NextResponse.json({
-      drinks,
-      summary: aiResponse.summary || "Hydration plan generated",
-      total_cost: drinks.reduce((sum: number, d: any) => 
-        sum + (Number(d.price_aed) || 0) * d.quantity, 0
-      )
+    
+    // Calculate total coverage
+    const totalWater = enhancedDrinks.reduce((sum: number, d: any) => 
+      sum + (d.nutrients.water_ml * d.quantity), 0)
+    
+    const totalSodium = enhancedDrinks.reduce((sum: number, d: any) => 
+      sum + (d.nutrients.sodium_mg * d.quantity), 0)
+    
+    const totalPotassium = enhancedDrinks.reduce((sum: number, d: any) => 
+      sum + (d.nutrients.potassium_mg * d.quantity), 0)
+    
+    const totalFiber = enhancedDrinks.reduce((sum: number, d: any) => 
+      sum + (d.nutrients.fiber_g * d.quantity), 0)
+    
+    const totalPolyphenols = enhancedDrinks.reduce((sum: number, d: any) => 
+      sum + (d.nutrients.polyphenols_mg * d.quantity), 0)
+    
+    const enhancedSummary = `${result.summary || ''}\n\n📊 Coverage: ${Math.round(totalWater)}ml water (${Math.round(deficits.water_ml || 0)}ml needed), ${Math.round(totalSodium)}mg sodium (${Math.round(deficits.sodium_mg || 0)}mg needed), ${Math.round(totalFiber)}g fiber`
+    
+    return NextResponse.json({ 
+      drinks: enhancedDrinks,
+      summary: enhancedSummary,
+      totalNutrients: {
+        water_ml: totalWater,
+        sodium_mg: totalSodium,
+        potassium_mg: totalPotassium,
+        fiber_g: totalFiber,
+        polyphenols_mg: totalPolyphenols
+      },
+      total_cost: enhancedDrinks.reduce((sum: number, d: any) => 
+        sum + (Number(d.price_aed) || 0) * d.quantity, 0)
     })
 
   } catch (error) {
-    console.error("Error generating drinks:", error)
-    return NextResponse.json({ 
-      drinks: [], 
-      summary: "Failed to generate recommendations" 
-    }, { status: 500 })
+    console.error('Error generating drink recommendations:', error)
+    return NextResponse.json(
+      { 
+        drinks: [], 
+        summary: "Failed to generate recommendations" 
+      },
+      { status: 500 }
+    )
   }
 }

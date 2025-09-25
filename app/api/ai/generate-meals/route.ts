@@ -247,32 +247,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 1) GPT defines the search plan (which nutrients to fetch top foods for).
-    //    We still map deficit keys to DB columns in code (don't rely on GPT for column names).
-    const planSys = `
-Given a deficits object, pick the most important nutrients (largest gaps) and
-return a JSON plan of what to fetch from the database: up to 5 foods per nutrient.
-Only include nutrients that have a positive deficit. Prefer at most 6 nutrients total.
-Return: {"queries":[{"nutrient":"<deficit_key>", "top":5}]}
-`;
-    const planResp = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: planSys },
-        { role: "user", content: JSON.stringify(deficits) },
-      ],
-    });
-
-    const plan = JSON.parse(planResp.choices[0].message?.content || "{}");
-    let queries: { nutrient: string; top: number }[] = Array.isArray(plan?.queries) ? plan.queries : [];
-
-    // Guardrail: if GPT returned nothing, fall back to top N of active deficits.
-    if (!queries.length) {
-      const FALLBACK_TOP = 5;
-      const MAX_NUTS = Math.min(6, activeKeys.length);
-      queries = activeKeys.slice(0, MAX_NUTS).map((k) => ({ nutrient: k, top: FALLBACK_TOP }));
-    }
+    // 1) SIMPLIFIED: Direct targeting of top deficits (no GPT planning)
+    const queries = activeKeys.slice(0, 6).map(nutrient => ({
+      nutrient,
+      top: 15  // Get top 15, will randomly select from them
+    }));
 
     // 2) Run Supabase queries per selected nutrient.
     const supabase = await createClient();
@@ -294,12 +273,21 @@ Return: {"queries":[{"nutrient":"<deficit_key>", "top":5}]}
               soluble_fiber_g, insoluble_fiber_g, protein_g,
               probiotic_cfu, omega3_mg, polyphenols_mg, caffeine_mg,
               b6_mg, b9_ug, b12_ug, iron_mg, zinc_mg, copper_mg,
-              choline_mg, vitamin_c_mg, vitamin_d_ug
+              choline_mg, vitamin_c_mg, vitamin_d_ug, category
               `
             )
+            .in('category', ['food', 'noodle dish', 'vegetable', 'fruit', 'baked breakfast', 'protein bar'])
             .order(col, { ascending: false })
-            .limit(q.top);
-          if (!error && data) candidateFoods.push(...(data as FoodRow[]));
+            .limit(15);
+          
+          if (data && data.length > 5) {
+            // HYBRID: Keep top 2 best sources + random 3 for variety
+            const best = data.slice(0, 2);
+            const variety = data.slice(2).sort(() => Math.random() - 0.5).slice(0, 3);
+            candidateFoods.push(...[...best, ...variety] as FoodRow[]);
+          } else if (data) {
+            candidateFoods.push(...(data as FoodRow[]));
+          }
         }
         continue;
       }
@@ -314,17 +302,26 @@ Return: {"queries":[{"nutrient":"<deficit_key>", "top":5}]}
           soluble_fiber_g, insoluble_fiber_g, protein_g,
           probiotic_cfu, omega3_mg, polyphenols_mg, caffeine_mg,
           b6_mg, b9_ug, b12_ug, iron_mg, zinc_mg, copper_mg,
-          choline_mg, vitamin_c_mg, vitamin_d_ug
+          choline_mg, vitamin_c_mg, vitamin_d_ug, category
           `
         )
+        .in('category', ['food', 'noodle dish', 'vegetable', 'fruit', 'baked breakfast', 'protein bar'])
         .order(orderBy, { ascending: false })
-        .limit(q.top);
+        .limit(15);
 
       if (error) {
         console.error("Supabase query error:", error);
         continue;
       }
-      if (data) candidateFoods.push(...(data as FoodRow[]));
+      
+      if (data && data.length > 5) {
+        // HYBRID APPROACH: Top 2 guaranteed + Random 3 for variety
+        const best = data.slice(0, 2);
+        const variety = data.slice(2).sort(() => Math.random() - 0.5).slice(0, 3);
+        candidateFoods.push(...[...best, ...variety] as FoodRow[]);
+      } else if (data) {
+        candidateFoods.push(...(data as FoodRow[]));
+      }
     }
 
     // Deduplicate by name
@@ -353,34 +350,61 @@ Return: {"queries":[{"nutrient":"<deficit_key>", "top":5}]}
     // 3) GPT assembles meals/snacks from shortlist.
     //    Keep creative variety: include exactly ONE wild-card meal that may use foods outside shortlist.
     const cuisineHints =
-      "Mix cuisines (e.g., Asian, Mediterranean, Mexican). Include seasonal or trendy options (bowls, toasts, smoothie bowls).";
+      "Mix cuisines (e.g., Asian, Mediterranean, Mexican). Include seasonal or trendy options (grain bowls, toasts, salad bowls).";
     const avoidList = previousMeals?.length ? previousMeals.join(", ") : "none";
     const biggestFirst = activeDeficits.map(([k, v]) => `${k}: ${Math.round(num(v))}` ).join(", ");
 
     const composeSys = `
-You are a clinical nutrition planner.
-
-Goal:
-- Design exactly 2 meals and ${includeSnacks ? "1 snack" : "0 snacks"} that cover ~50% of today's deficits.
-- Prioritise the biggest gaps first (see order below).
-- STRICT: Use only foods from the provided shortlist, EXCEPT exactly ONE meal marked "wild_card": true which may use any foods.
-- Avoid allergens. Avoid repeating foods from previous meals.
-- Keep ${cuisineHints}
-- If some nutrients are zero-deficit (e.g., protein_g=0), do NOT deliberately add foods for those nutrients.
-
-Quantities:
-- For each item, provide grams or mL. Keep portions realistic.
-
-Output JSON ONLY:
+    You are a clinical nutrition planner.
+    
+    Goal:
+    - Design exactly 2 meals and ${includeSnacks ? "1 snack" : "0 snacks"} that cover ~50% of today's deficits.
+    - Prioritise the biggest gaps first (see order below).
+    - STRICT: Use only foods from the provided shortlist, EXCEPT exactly ONE meal marked "wild_card": true which may use any foods.
+    - Avoid allergens. Avoid repeating foods from previous meals.
+    - Keep ${cuisineHints}
+    - If some nutrients are zero-deficit (e.g., protein_g=0), do NOT deliberately add foods for those nutrients.
+    
+    MEAL REQUIREMENTS (CRITICAL):
+    - A "meal" MUST contain at least 2 different food groups (e.g., protein + vegetable, grain + legume)
+    - A "meal" MUST be primarily solid foods that require chewing
+    - A "meal" MUST make culinary sense (foods that are commonly eaten together)
+    - NEVER create a "meal" that is just condiments, supplements, or single items
+    - Examples of VALID meals: "Chickpea curry with rice", "Greek salad with feta and olives"
+    - Examples of INVALID meals: "3 pickles", "Protein powder smoothie", "Olives and salt"
+    
+    Quantities:
+    - For each item, provide grams or mL. Keep portions realistic.
+    - A meal should total 200-600g of solid food.
+    
+   Output JSON ONLY:
 {
   "meals": [
-    { "name": string, "items": [ { "name": string, "grams": number } | { "name": string, "ml": number } ], "explanation": string, "wild_card": boolean }
+    { 
+      "name": "Descriptive meal name",
+      "items": [
+        { "name": "Food item name", "grams": 150 }
+      ],
+      "explanation": "Targets sodium and potassium deficits",
+      "wild_card": false
+    }
   ],
   "snacks": [
-    { "name": string, "items": [ { "name": string, "grams": number } | { "name": string, "ml": number } ], "explanation": string }
+    { 
+      "name": "Snack name",
+      "items": [
+        { "name": "Food item", "grams": 50 }
+      ],
+      "explanation": "Quick energy boost"
+    }
   ],
-  "summary": string
+  "summary": "Overall plan summary"
 }
+
+NOTES:
+- Always use "grams" for solid foods (never "ml")
+- Liquids (if any) should still use grams for consistency
+- Each item must have both "name" and "grams" fields
 Explanations must explicitly mention which TOP deficits (largest first) the foods address.
 `;
 
@@ -410,7 +434,7 @@ Explanations must explicitly mention which TOP deficits (largest first) the food
     }));
 
     const composeUser = JSON.stringify({
-      deficits,
+      deficits: Object.fromEntries(activeDeficits),  // Only pass positive deficits
       active_deficits_ordered: biggestFirst,
       previousMeals: avoidList,
       shortlist: shortlistForLLM,
@@ -488,7 +512,7 @@ Explanations must explicitly mention which TOP deficits (largest first) the food
       total_from_meals: totalFromMeals,
       summary: planOut.summary || "",
       shortlist: shortlistForLLM,
-      queries, // what GPT asked us to fetch
+      queries, // what we fetched
     });
   } catch (error) {
     console.error("Error generating meal suggestions:", error);

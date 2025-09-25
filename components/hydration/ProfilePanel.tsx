@@ -24,7 +24,7 @@ export function ProfilePanel({ venueId, onVenueChange, onNext }: ProfilePanelPro
   const [tempWeight, setTempWeight] = useState<string>(String(profile.weight || ''))
   const [tempBodyFat, setTempBodyFat] = useState<string>(String(profile.manualBodyFat || ''))
   const [sessionMinutes, setSessionMinutes] = useState<number>(Math.round((profile.sessionHours || 0) * 60))
-  
+  const [tempSessionMinutes, setTempSessionMinutes] = useState<number>(sessionMinutes)
   // Fetch venues on mount
   useEffect(() => {
     fetch('/api/venues')
@@ -222,27 +222,42 @@ export function ProfilePanel({ venueId, onVenueChange, onNext }: ProfilePanelPro
         </div>
 
         {/* Session Duration */}
-        <div>
-          <Label>Session Duration (minutes)</Label>
-          <div className="flex gap-2">
-            <Input
-              type="number"
-              step="15"
-              min="0"
-              value={sessionMinutes}
-              onChange={(e) => {
-                const minutes = Number(e.target.value) || 0
-                setSessionMinutes(minutes)
-                profile.setSessionHours(minutes / 60)
-              }}
-              placeholder="0"
-              className={`${styles.input} flex-1`}
-            />
-            <span className="text-sm text-muted-foreground self-center">
-              {sessionMinutes > 0 && `(${(sessionMinutes / 60).toFixed(1)}h)`}
-            </span>
-          </div>
-        </div>
+<div>
+  <Label>Session Duration (minutes)</Label>
+  <div className="flex gap-2">
+    <Input
+      type="number"
+      step="15"
+      min="0"
+      value={editingField === 'session' ? tempSessionMinutes : sessionMinutes}
+      onChange={(e) => {
+        setEditingField('session')
+        setTempSessionMinutes(Number(e.target.value) || 0)
+      }}
+      onFocus={() => {
+        setEditingField('session')
+        setTempSessionMinutes(sessionMinutes)
+      }}
+      placeholder="0"
+      className={`${styles.input} flex-1`}
+    />
+    {editingField === 'session' && (
+      <Button
+        size="sm"
+        onClick={() => {
+          setSessionMinutes(tempSessionMinutes)
+          profile.setSessionHours(tempSessionMinutes / 60)
+          setEditingField(null)
+        }}
+      >
+        Set
+      </Button>
+    )}
+    <span className="text-sm text-muted-foreground self-center">
+      {sessionMinutes > 0 && `(${(sessionMinutes / 60).toFixed(1)}h)`}
+    </span>
+  </div>
+</div>
 
         {/* Calculated Results */}
         <div className={styles.resultsBox}>

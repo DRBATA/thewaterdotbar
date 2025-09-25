@@ -312,23 +312,7 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
 
   return (
     <div className="space-y-6 max-w-full overflow-hidden">
-      {/* Generate Button - Show when no results or user wants to regenerate */}
-      {!isLoading && (
-        <div className="flex justify-center">
-          <Button
-            onClick={() => {
-              generateRecommendations()
-            }}
-            disabled={!drinkInputs || !mealInputs}
-            size="lg"
-            className="min-w-[200px]"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            {hasGenerated ? "Regenerate AI Plan" : "Generate AI Plan"}
-          </Button>
-        </div>
-      )}
-
+     
       {/* Loading State */}
       {isLoading && (
         <div className="flex items-center justify-center p-8">
