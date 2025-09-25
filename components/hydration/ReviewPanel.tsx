@@ -24,6 +24,12 @@ export function ReviewPanel({ activeTab, setActiveTab, venueId }: {
   // ADD THIS useEffect HERE:
 useEffect(() => {
   const startBackgroundGeneration = async () => {
+    // Check if we have valid data
+    if (!deficits || !totalIntake || Object.keys(deficits).length === 0) {
+      console.log('Skipping generation - missing deficits or totalIntake')
+      return
+    }
+    
     if (isGenerating) return // Prevent double calls
     
     setIsGenerating(true)
