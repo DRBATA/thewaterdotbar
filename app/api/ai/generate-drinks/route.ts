@@ -102,6 +102,7 @@ export async function POST(request: NextRequest) {
 CURRENT STATUS:
 - Caffeine today: ${deficits.caffeine_count || 0} drinks
 - Heavy sweater: ${deficits.sweat_flag ? 'YES' : 'NO'}
+${deficits.caffeine_count >= 2 ? '⚠️ HIGH CAFFEINE: Consider METÉ as a gentler alternative!' : ''}
 
 EXACT DEFICITS TO MEET:
 - Water: ${deficits.water_ml}ml
@@ -127,8 +128,9 @@ SMART MATCHING:
 - Fiber 0-2g? → Skip fiber drinks
 - Fiber 2-4g? → Poppi (2.3g)
 - Fiber 5g+? → Rite Gut (5g)
-- Polyphenols needed + no caffeine? → Kombucha (150mg)
-- Polyphenols + OK with caffeine? → Coffee (400mg) or METÉ (200mg)
+- Had 2+ coffees? → PRIORITIZE METÉ (200mg polyphenols, gentler caffeine) 
+- No caffeine yet + need polyphenols? → Kombucha (150mg) or Coffee (400mg)
+- ALWAYS include METÉ if caffeine_count ≥ 2!
 
 ALREADY HAD: ${sessionDrinks.join(", ") || "none"}
 Don't repeat these.

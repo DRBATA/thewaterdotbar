@@ -38,7 +38,7 @@ export function MealsPanel({ onNext }: MealsPanelProps) {
   <Label className="text-red-800 font-medium">Allergies & Dietary Restrictions</Label>
   <div className="flex gap-2 mt-2">
     <Input
-      placeholder="e.g., nuts, dairy, gluten, shellfish"
+      placeholder="e.g., nuts, dairy, vegetarian, vegan, gluten-free"
       value={tempAllergies}
       onChange={(e) => {
         setTempAllergies(e.target.value)

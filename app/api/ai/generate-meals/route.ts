@@ -361,9 +361,10 @@ export async function POST(request: NextRequest) {
     - Design exactly 2 meals and ${includeSnacks ? "1 snack" : "0 snacks"} that cover ~50% of today's deficits.
     - Prioritise the biggest gaps first (see order below).
     - STRICT: Use only foods from the provided shortlist, EXCEPT exactly ONE meal marked "wild_card": true which may use any foods.
-    - Avoid allergens. Avoid repeating foods from previous meals.
+    - CRITICAL: ALL meals (including wild_card) MUST avoid allergens/restrictions. NEVER suggest meat/fish to vegetarians.
+    - Avoid repeating foods from previous meals.
     - Keep ${cuisineHints}
-    - If some nutrients are zero-deficit (e.g., protein_g=0), do NOT deliberately add foods for those nutrients.
+    - PROTEIN RULE: If protein_g deficit is 0 or negative, AVOID high-protein foods. Focus on other deficits instead.
     
     MEAL REQUIREMENTS (CRITICAL):
     - A "meal" MUST contain at least 2 different food groups (e.g., protein + vegetable, grain + legume)
@@ -405,6 +406,7 @@ NOTES:
 - Always use "grams" for solid foods (never "ml")
 - Liquids (if any) should still use grams for consistency
 - Each item must have both "name" and "grams" fields
+- SODIUM PRIORITY: If sodium deficit exists, at least ONE meal MUST target sodium-rich foods (>600mg)
 Explanations must explicitly mention which TOP deficits (largest first) the foods address.
 `;
 
