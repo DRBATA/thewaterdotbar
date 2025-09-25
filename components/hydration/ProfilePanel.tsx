@@ -24,7 +24,7 @@ export function ProfilePanel({ venueId, onVenueChange, onNext }: ProfilePanelPro
   const [tempWeight, setTempWeight] = useState<string>(String(profile.weight || ''))
   const [tempBodyFat, setTempBodyFat] = useState<string>(String(profile.manualBodyFat || ''))
   const [sessionMinutes, setSessionMinutes] = useState<number>(Math.round((profile.sessionHours || 0) * 60))
-  const [tempSessionMinutes, setTempSessionMinutes] = useState<number>(sessionMinutes)
+  const [tempSessionMinutes, setTempSessionMinutes] = useState<string>(String(sessionMinutes || ''))
   // Fetch venues on mount
   useEffect(() => {
     fetch('/api/venues')
@@ -229,14 +229,14 @@ export function ProfilePanel({ venueId, onVenueChange, onNext }: ProfilePanelPro
       type="number"
       step="15"
       min="0"
-      value={editingField === 'session' ? tempSessionMinutes : sessionMinutes}
+      value={editingField === 'session' ? tempSessionMinutes : sessionMinutes || ''}
       onChange={(e) => {
         setEditingField('session')
-        setTempSessionMinutes(Number(e.target.value) || 0)
+        setTempSessionMinutes(e.target.value)
       }}
       onFocus={() => {
         setEditingField('session')
-        setTempSessionMinutes(sessionMinutes)
+        setTempSessionMinutes(String(sessionMinutes || ''))
       }}
       placeholder="0"
       className={`${styles.input} flex-1`}
@@ -245,8 +245,9 @@ export function ProfilePanel({ venueId, onVenueChange, onNext }: ProfilePanelPro
       <Button
         size="sm"
         onClick={() => {
-          setSessionMinutes(tempSessionMinutes)
-          profile.setSessionHours(tempSessionMinutes / 60)
+          const minutes = tempSessionMinutes === '' ? 0 : Number(tempSessionMinutes)
+          setSessionMinutes(minutes)
+          profile.setSessionHours(minutes / 60)
           setEditingField(null)
         }}
       >
