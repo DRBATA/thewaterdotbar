@@ -380,7 +380,7 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
             )}
           </Button>
         </SheetTrigger>
-        <SheetContent className="flex flex-col w-full sm:max-w-md bg-white/10 backdrop-blur-xl text-white border-l border-white/30">
+        <SheetContent className="flex flex-col w-full sm:max-w-md bg-white/10 backdrop-blur-xl text-white border-l border-white/30" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 1.5rem))' }}>
           <SheetHeader>
             <SheetTitle className="text-2xl font-bold text-white">Your Order</SheetTitle>
           </SheetHeader>
@@ -477,9 +477,10 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
           )}
           <Button 
             size="lg" 
-            className="w-full mt-6 bg-teal-500 text-white hover:bg-teal-600 h-12 text-lg" 
+            className="w-full mt-6 mb-4 bg-teal-500 text-white hover:bg-teal-600 h-12 text-lg" 
             onClick={() => tier ? setConfirmationModalOpen(true) : handleCheckout()}
             disabled={loading || cartItems.length === 0}
+            style={{ marginBottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))' }}
           >
             {loading ? "Processing..." : selectedVenue ? "Generate QR Code" : "Proceed to Checkout"}
           </Button>
