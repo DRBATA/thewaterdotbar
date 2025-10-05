@@ -17,19 +17,41 @@ interface OrderItem {
 export default function SuccessPage({ searchParams }: Props) {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [emailSent, setEmailSent] = useState(false)
 
   useEffect(() => {
-    // Fetch order details if session ID provided
+    // Complete checkout and send email
     if (searchParams.session) {
+      // Get assessment data from sessionStorage (if available)
+      const assessmentData = typeof window !== 'undefined' && sessionStorage.getItem('hydrationAssessment')
+        ? JSON.parse(sessionStorage.getItem('hydrationAssessment')!)
+        : null;
+      
+      // Complete checkout (creates order + sends email with optional assessment)
+      fetch('/api/checkout/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          session_id: searchParams.session,
+          assessmentData // Pass assessment data if available
+        })
+      })
+        .then(res => res.json())
+        .then(data => {
+          setEmailSent(data.emailSent || false)
+          setLoading(false)
+        })
+        .catch(() => setLoading(false))
+
+      // Fetch order details for display
       fetch(`/api/orders/get?session_id=${searchParams.session}`)
         .then(res => res.json())
         .then(data => {
           if (data.items) {
             setOrderItems(data.items)
           }
-          setLoading(false)
         })
-        .catch(() => setLoading(false))
+        .catch(() => {})
     } else {
       setLoading(false)
     }
@@ -69,8 +91,15 @@ export default function SuccessPage({ searchParams }: Props) {
         )}
 
         <div className="text-center">
+          {emailSent && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+              <p className="text-sm text-green-700">
+                ✉️ Receipt email sent! Check your inbox for your personalized hydration plan.
+              </p>
+            </div>
+          )}
           <p className="text-sm text-gray-500 mb-4">
-            Staff has been notified of your order
+            Show this screen to staff to collect your order
           </p>
           <button
             onClick={() => window.close()}

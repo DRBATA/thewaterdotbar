@@ -218,12 +218,22 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
     generateRecommendations()
   }
 
-  const addProduct = async (productId: string, quantity: number, productName: string) => {
+  const addProduct = async (productId: string, quantity: number, productName: string, reason?: string, nutrients?: any) => {
     try {
+      const payload: any = { itemId: productId, qty: quantity };
+      
+      // Add AI recommendation context if available
+      if (reason || nutrients) {
+        payload.ai_recommendation = {
+          reason: reason || '',
+          nutrients_provided: nutrients || {}
+        };
+      }
+      
       const response = await fetch('/api/cart/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itemId: productId, qty: quantity })
+        body: JSON.stringify(payload)
       })
       
       if (response.ok) {
@@ -259,12 +269,25 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
     setIsProcessing(true)
     
     try {
-      // Add all products to cart
+      // Add all products to cart with AI recommendation context
       for (const product of recommendations) {
+        const payload: any = {
+          itemId: product.id,
+          qty: product.quantity
+        };
+        
+        // Include AI recommendation data
+        if (product.reason || product.nutrients) {
+          payload.ai_recommendation = {
+            reason: product.reason || '',
+            nutrients_provided: product.nutrients || {}
+          };
+        }
+        
         await fetch('/api/cart/add', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ itemId: product.id, qty: product.quantity })
+          body: JSON.stringify(payload)
         })
       }
 
@@ -408,7 +431,7 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => addProduct(product.id, product.quantity, product.name)}
+                    onClick={() => addProduct(product.id, product.quantity, product.name, product.reason, product.nutrients)}
                     className="w-full"
                   >
                     <Plus className="h-4 w-4 mr-1" />

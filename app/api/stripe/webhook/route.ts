@@ -14,7 +14,8 @@ export async function POST(req: Request) {
     const buf = await req.arrayBuffer();
   const sig = req.headers.get("stripe-signature") as string;
   const rawBody = Buffer.from(buf);
-  const secret = process.env.STRIPE_WEBHOOK_SECRET!;
+  // Use ORDERS secret for this endpoint (charming-bigboy, adventurous-rhythm)
+  const secret = process.env.STRIPE_WEBHOOK_SECRET_ORDERS!;
 
   let event: Stripe.Event;
   try {

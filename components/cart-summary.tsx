@@ -332,29 +332,91 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
     if (loading) return
     setLoading(true)
     try {
-      // If venue is selected, generate QR code instead of redirect
-      if (selectedVenue) {
-        const res = await fetch("/api/stripe/checkout", { 
-          method: "POST",
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ venue_id: selectedVenue.id })
-        })
-        const data = await res.json()
-        if (data.url) {
-          setPaymentUrl(data.url)
-          setShowQR(true)
-        } else {
-          alert(data.error || "Unable to generate QR code")
-        }
-      } else {
-        // Default behavior - redirect to Stripe
-        const res = await fetch("/api/stripe/checkout", { method: "POST" })
-        const data = await res.json()
-        if (data.url) window.location.href = data.url
-        else alert(data.error || "Unable to start checkout")
-      }
+      // Flow 1: Pay on This Device - redirect to Stripe
+      const res = await fetch("/api/stripe/checkout", { method: "POST" })
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+      else alert(data.error || "Unable to start checkout")
     } catch (err) {
       alert("Network error starting checkout")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGenerateCustomerQR = async () => {
+    logEvent({
+      event_name: "generate_customer_qr",
+      step_name: "checkout",
+      metadata: { cartTotal: total },
+    })
+    if (loading) return
+    setLoading(true)
+    try {
+      // Flow 2: Generate QR for Customer to Pay
+      // Include assessment data from sessionStorage
+      const assessmentData = typeof window !== 'undefined' && sessionStorage.getItem('hydrationAssessment')
+        ? JSON.parse(sessionStorage.getItem('hydrationAssessment')!)
+        : null
+
+      const res = await fetch("/api/stripe/checkout", { 
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          venue_id: selectedVenue?.id,
+          assessmentData // Include assessment for customer's device
+        })
+      })
+      const data = await res.json()
+      if (data.url) {
+        setPaymentUrl(data.url)
+        setShowQR(true)
+        // Clear staff device Dexie after QR generated
+        if (typeof window !== 'undefined' && sessionStorage.getItem('hydrationAssessment')) {
+          sessionStorage.removeItem('hydrationAssessment')
+        }
+      } else {
+        alert(data.error || "Unable to generate QR code")
+      }
+    } catch (err) {
+      alert("Network error generating QR code")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSharePlanQR = async () => {
+    logEvent({
+      event_name: "share_plan_qr",
+      step_name: "cart_transfer",
+      metadata: { cartTotal: total },
+    })
+    if (loading) return
+    setLoading(true)
+    try {
+      // Flow 3: Share Plan Only (No Payment)
+      // Get assessment data from sessionStorage
+      const assessmentData = typeof window !== 'undefined' && sessionStorage.getItem('hydrationAssessment')
+        ? JSON.parse(sessionStorage.getItem('hydrationAssessment')!)
+        : null
+
+      const res = await fetch("/api/cart/create-transfer", { 
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          venue_id: selectedVenue?.id || 'AOI',
+          assessmentData
+        })
+      })
+      const data = await res.json()
+      if (data.transferUrl) {
+        setPaymentUrl(data.transferUrl)
+        setShowQR(true)
+      } else {
+        alert(data.error || "Unable to create plan transfer")
+      }
+    } catch (err) {
+      alert("Network error creating plan transfer")
     } finally {
       setLoading(false)
     }
@@ -475,15 +537,37 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
               {clearingCart ? "Clearing..." : "Clear Cart"}
             </Button>
           )}
-          <Button 
-            size="lg" 
-            className="w-full mt-6 mb-4 bg-teal-500 text-white hover:bg-teal-600 h-12 text-lg" 
-            onClick={() => tier ? setConfirmationModalOpen(true) : handleCheckout()}
-            disabled={loading || cartItems.length === 0}
-            style={{ marginBottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))' }}
-          >
-            {loading ? "Processing..." : selectedVenue ? "Generate QR Code" : "Proceed to Checkout"}
-          </Button>
+          {/* Payment Options */}
+          <div className="space-y-3 mt-6" style={{ marginBottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))' }}>
+            <Button 
+              size="lg" 
+              className="w-full bg-teal-500 text-white hover:bg-teal-600 h-12 text-lg" 
+              onClick={() => tier ? setConfirmationModalOpen(true) : handleCheckout()}
+              disabled={loading || cartItems.length === 0}
+            >
+              {loading ? "Processing..." : "💳 Pay on This Device"}
+            </Button>
+            
+            <Button 
+              size="lg" 
+              variant="outline"
+              className="w-full border-teal-500 text-teal-300 hover:bg-teal-500/20 h-12 text-lg" 
+              onClick={() => handleGenerateCustomerQR()}
+              disabled={loading || cartItems.length === 0}
+            >
+              📱 Generate QR for Customer
+            </Button>
+            
+            <Button 
+              size="lg" 
+              variant="outline"
+              className="w-full border-purple-500 text-purple-300 hover:bg-purple-500/20 h-12 text-lg" 
+              onClick={() => handleSharePlanQR()}
+              disabled={loading || cartItems.length === 0}
+            >
+              🔗 Share Plan Only (No Payment)
+            </Button>
+          </div>
         {isConfirmationModalOpen && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100]">
             <div className="bg-gray-800 border border-teal-500/50 p-8 rounded-2xl shadow-2xl text-white max-w-md w-full mx-4">

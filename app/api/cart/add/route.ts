@@ -4,8 +4,8 @@ import { cookies } from "next/headers"
 import { getSessionId } from "@/lib/session"
 
 export async function POST(req: Request) {
-  const { itemId, qty = 1, bundle_components, venue_id } = await req.json()
-  console.log(`🛒 ADD: Received request - itemId=${itemId}, qty=${qty}, venue_id=${venue_id}`)
+  const { itemId, qty = 1, bundle_components, venue_id, ai_recommendation } = await req.json()
+  console.log(`🛒 ADD: Received request - itemId=${itemId}, qty=${qty}, venue_id=${venue_id}, hasAI=${!!ai_recommendation}`)
   
   if (!itemId) {
     return NextResponse.json({ error: "Missing itemId" }, { status: 400 })
@@ -72,6 +72,13 @@ export async function POST(req: Request) {
       console.log(`🛒 ADD: Updating existing item ${itemId} from qty ${existingItem.qty} to ${existingItem.qty + qty}`)
       // Update quantity if item already exists
       const updateData: any = { qty: existingItem.qty + qty };
+      
+      // Update ai_recommendation if provided (replace existing)
+      if (ai_recommendation) {
+        updateData.ai_recommendation = ai_recommendation;
+        console.log(`🛒 ADD: Updating AI recommendation for item ${itemId}`)
+      }
+      
       const { error: updateError } = await supabase
         .from("cart_items")
         .update(updateData)
@@ -86,14 +93,24 @@ export async function POST(req: Request) {
     } else {
       console.log(`🛒 ADD: Inserting new item ${itemId} with qty ${qty}`)
       // Insert new item
+      const insertData: any = {
+        cart_id: cartId,
+        item_id: itemId,
+        qty,
+      };
+      
+      if (bundle_components) {
+        insertData.bundle_components = bundle_components;
+      }
+      
+      if (ai_recommendation) {
+        insertData.ai_recommendation = ai_recommendation;
+        console.log(`🛒 ADD: Storing AI recommendation:`, ai_recommendation.reason)
+      }
+      
       const { error: insertError } = await supabase
         .from("cart_items")
-        .insert({
-          cart_id: cartId,
-          item_id: itemId,
-          qty,
-          bundle_components
-        });
+        .insert(insertData);
         
       if (insertError) {
         console.error(`🛒 ADD: Insert error:`, insertError)
