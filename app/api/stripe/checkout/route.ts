@@ -17,10 +17,10 @@ export async function POST(req: Request) {
   console.log(`🛒 CHECKOUT: Using session_id=${sessionId}`)
 
   // Fetch cart items from the normalized cart structure
-  // 1. Find cart header for this session
+  // 1. Find cart header for this session (include venue_id!)
   const { data: cartHeader, error: headerError } = await supabase
     .from("cart_headers")
-    .select("id")
+    .select("id, venue_id")
     .eq("session_id", sessionId)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -143,7 +143,7 @@ export async function POST(req: Request) {
       metadata: {
         session_id: sessionId,
         utm_campaign,
-        venue_id: venue_id || "",
+        venue_id: cartHeader.venue_id || venue_id || "",
       },
     });
     return NextResponse.json({ url: checkout.url });
