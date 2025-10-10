@@ -49,17 +49,18 @@ export interface HydrationAssessment {
 /**
  * DRINK LOG
  * Records each drink consumed (from email or manual add)
- * Append-only, linked to assessment
+ * Append-only, optionally linked to assessment
  */
 export interface DrinkLog {
   id?: number;
-  assessment_id: number; // Links to HydrationAssessment
+  assessment_id?: number; // Optional - links to HydrationAssessment if user has one
   product_id: string;
   name: string;
   quantity: number;
   timestamp: Date;
   nutrients: NutritionalIntake; // All 24 nutrients from this drink
-  source: 'email' | 'manual' | 'purchase'; // How it was logged
+  source: 'email' | 'manual' | 'purchase' | 'email_tracking'; // How it was logged
+  hydration_date: string; // YYYY-MM-DD for 24-hour period grouping (REQUIRED)
 }
 
 /**
@@ -78,7 +79,7 @@ class WaterBarHydrationDB extends Dexie {
     this.version(1).stores({
       user_profile: '++id, updatedAt',
       hydration_assessments: '++id, profile_id, timestamp, expiresAt',
-      drink_logs: '++id, assessment_id, timestamp, source'
+      drink_logs: '++id, assessment_id, timestamp, source, hydration_date' // Index by date!
     });
   }
 }
@@ -216,87 +217,49 @@ export const assessmentHelpers = {
 // Drink Log Helpers
 export const drinkLogHelpers = {
   /**
-   * Log consumed drinks (from email or manual)
+   * Log consumed drinks (simple tracking - NO assessment required!)
    */
   async logDrinks(drinks: Array<{
     product_id: string;
     name: string;
     quantity: number;
     nutrients: NutritionalIntake;
-  }>, source: 'email' | 'manual' | 'purchase' = 'email'): Promise<void> {
-    // Get or create assessment
-    let assessment = await assessmentHelpers.getCurrentAssessment();
+  }>, source: 'email' | 'manual' | 'purchase' | 'email_tracking' = 'email'): Promise<void> {
     
-    if (!assessment) {
-      console.warn('⚠️ No active assessment - creating default');
-      
-      const emptyIntake: NutritionalIntake = {
-        water: 0, sodium: 0, potassium: 0, protein: 0, fiber: 0,
-        soluble_fiber: 0, insoluble_fiber: 0, magnesium: 0, calcium: 0,
-        iron: 0, zinc: 0, copper: 0, choline: 0, b6: 0, b9: 0, b12: 0,
-        vitamin_c: 0, vitamin_d: 0, caffeine: 0, probiotics: 0,
-        omega3: 0, polyphenols: 0
-      };
-      
-      // Create minimal assessment for logging
-      const assessmentId = await assessmentHelpers.saveAssessment({
-        profile: {
-          weight: 70,
-          bodyFat: 20,
-          sex: 'male',
-          allergies: ''
-        },
-        activityLevel: 'moderate',
-        sweatContext: 'moderate',
-        sessionHours: 1,
-        targets: {
-          water: 2500,
-          sodium: 1890,
-          potassium: 2940,
-          protein: 84,
-          fiber: 20
-        },
-        meals: {
-          breakfast: '',
-          lunch: '',
-          dinner: '',
-          snacks: '',
-          parsed: emptyIntake
-        }
-      });
-      assessment = await db.hydration_assessments.get(assessmentId) || null;
-    }
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     
-    if (!assessment) {
-      throw new Error('Failed to create assessment');
-    }
+    // Optionally link to assessment if one exists
+    const assessment = await assessmentHelpers.getCurrentAssessment();
     
-    // Add each drink to log
+    // Add each drink to log (assessment_id is OPTIONAL now!)
     for (const drink of drinks) {
       await db.drink_logs.add({
-        assessment_id: assessment.id!,
+        assessment_id: assessment?.id, // Optional - only if user has done "Generate Plan"
         product_id: drink.product_id,
         name: drink.name,
         quantity: drink.quantity,
         timestamp: new Date(),
         nutrients: drink.nutrients,
-        source
+        source,
+        hydration_date: today // Required - for daily grouping
       });
     }
     
-    console.log(`✅ Logged ${drinks.length} drinks to assessment ${assessment.id}`);
+    const msg = assessment 
+      ? `✅ Logged ${drinks.length} drinks to assessment ${assessment.id}`
+      : `✅ Logged ${drinks.length} drinks (simple tracking - no assessment yet)`;
+    console.log(msg);
   },
 
   /**
-   * Get all drinks for current assessment
+   * Get all drinks for today (by date, not assessment)
    */
   async getTodaysDrinks(): Promise<DrinkLog[]> {
-    const assessment = await assessmentHelpers.getCurrentAssessment();
-    if (!assessment) return [];
+    const today = new Date().toISOString().split('T')[0];
     
     return await db.drink_logs
-      .where('assessment_id')
-      .equals(assessment.id!)
+      .where('hydration_date')
+      .equals(today)
       .toArray();
   },
 
@@ -321,5 +284,16 @@ export const drinkLogHelpers = {
       });
       return total;
     }, emptyIntake);
+  },
+
+  /**
+   * Check if user is tracking drinks without an assessment
+   */
+  async hasTrackedDrinksWithoutAssessment(): Promise<boolean> {
+    const assessment = await assessmentHelpers.getCurrentAssessment();
+    if (assessment) return false; // Has assessment, all good
+    
+    const todaysDrinks = await this.getTodaysDrinks();
+    return todaysDrinks.length > 0; // Has drinks but no assessment
   }
 };

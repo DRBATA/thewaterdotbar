@@ -22,18 +22,18 @@ export default function SuccessPage({ searchParams }: Props) {
   useEffect(() => {
     // Complete checkout and send email
     if (searchParams.session) {
-      // Get assessment data from sessionStorage (if available)
-      const assessmentData = typeof window !== 'undefined' && sessionStorage.getItem('hydrationAssessment')
-        ? JSON.parse(sessionStorage.getItem('hydrationAssessment')!)
+      // Get OUTPUT recommendations from sessionStorage (for email)
+      const recommendations = typeof window !== 'undefined' && sessionStorage.getItem('hydrationOutputRecommendations')
+        ? JSON.parse(sessionStorage.getItem('hydrationOutputRecommendations')!)
         : null;
       
-      // Complete checkout (creates order + sends email with optional assessment)
+      // Complete checkout (creates order + sends email with recommendations)
       fetch('/api/checkout/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           session_id: searchParams.session,
-          assessmentData // Pass assessment data if available
+          assessmentData: recommendations // Pass OUTPUT recommendations for email
         })
       })
         .then(res => res.json())

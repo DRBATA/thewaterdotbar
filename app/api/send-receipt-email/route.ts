@@ -121,8 +121,9 @@ export async function POST(req: NextRequest) {
         total: order.total,
         assessment,
         colors,
-        updateTrackerUrl: assessment 
-          ? `https://thewater.bar/tracker/update?order_id=${order.id}`
+        updateTrackerUrl: `https://thewater.bar/?track_order=${order.id}`,
+        downloadAssessmentUrl: assessmentData
+          ? `https://thewater.bar/?track_order=${order.id}`
           : undefined,
       })
     );

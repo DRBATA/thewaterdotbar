@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { NutritionalIntake } from '@/types'
 
 export function useMealsPanel() {
@@ -90,6 +90,53 @@ const totalMealIntake = useMemo(() => {
   
   return totals as NutritionalIntake
 }, [mealNutrition])
+  
+  // Auto-save allergies to sessionStorage and Dexie
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    // Save to sessionStorage
+    sessionStorage.setItem('hydrationAllergies', allergies)
+    console.log('💾 Allergies auto-saved to sessionStorage')
+    
+    // Save to Dexie user_profile
+    const saveToDexie = async () => {
+      try {
+        const { db } = await import('@/lib/dexie-db')
+        
+        // Update or create profile with allergies
+        const existing = await db.user_profile.get(1)
+        if (existing) {
+          await db.user_profile.update(1, {
+            allergies,
+            updatedAt: new Date()
+          })
+          console.log('💾 Allergies auto-saved to Dexie')
+        }
+      } catch (err) {
+        console.warn('Failed to save allergies to Dexie:', err)
+      }
+    }
+    
+    if (allergies) saveToDexie()
+  }, [allergies])
+  
+  // Auto-save meal inputs to sessionStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    const mealData = {
+      breakfast,
+      lunch,
+      dinner,
+      snacks,
+      mealNutrition,
+      totalMealIntake
+    }
+    
+    sessionStorage.setItem('hydrationMeals', JSON.stringify(mealData))
+    console.log('💾 Meals auto-saved to sessionStorage')
+  }, [breakfast, lunch, dinner, snacks, mealNutrition, totalMealIntake])
   
   return {
     // Meal inputs

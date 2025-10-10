@@ -60,6 +60,9 @@ interface WaterBarReceiptProps {
   
   // Update tracker URL
   updateTrackerUrl?: string;
+  
+  // Download assessment URL
+  downloadAssessmentUrl?: string;
 }
 
 // Helper to get colors
@@ -84,6 +87,7 @@ export default function WaterBarReceipt({
   assessment,
   colors: colorsProp,
   updateTrackerUrl,
+  downloadAssessmentUrl,
 }: WaterBarReceiptProps) {
   const colors = getColors(colorsProp);
   const hasAssessment = !!(assessment && (assessment.deficits || assessment.recommended_drinks || assessment.recommended_meals));
@@ -172,22 +176,47 @@ export default function WaterBarReceipt({
                 />
               )}
               
-              {/* Update Tracker Button */}
-              {updateTrackerUrl && (
+              {/* Download Assessment Button */}
+              {downloadAssessmentUrl && (
                 <Section style={ctaSection}>
                   <Button 
-                    href={updateTrackerUrl}
-                    style={{ ...button, backgroundColor: colors.primary }}
+                    href={downloadAssessmentUrl}
+                    style={{ ...button, backgroundColor: colors.accent }}
                   >
-                    📱 Update My Tracker
+                    📋 Download My Assessment
                   </Button>
                   <Text style={ctaHelper}>
-                    Log this purchase to your personal hydration timeline
+                    Save your hydration context to your device for ongoing tracking
                   </Text>
-                </Section>
-              )}
-            </>
-          )}
+                  <Text style={{ ...ctaHelper, fontSize: '11px', color: '#9CA3AF', marginTop: '8px' }}>
+                    Note: This assessment is accurate as of {new Date(orderDate).toLocaleDateString()}. 
+                    Update your tracker if you've consumed more since then.
+                  </Text>
+                  </Section>
+            )}
+          </>
+        )}
+
+        {/* Update Tracker Button - ALWAYS show when URL provided */}
+        {updateTrackerUrl && (
+          <>
+            <Hr style={sectionDivider} />
+            <Section style={ctaSection}>
+              <Button 
+                href={updateTrackerUrl}
+                style={{ ...button, backgroundColor: colors.primary }}
+              >
+                📱 {hasAssessment ? 'Update My Tracker' : 'Start Your Hydration Journey'}
+              </Button>
+              <Text style={ctaHelper}>
+                {hasAssessment 
+                  ? 'Log this purchase to your personal hydration timeline'
+                  : 'Begin tracking your hydration and get personalized recommendations'
+                }
+              </Text>
+            </Section>
+          </>
+        )}
 
           <Hr style={sectionDivider} />
 

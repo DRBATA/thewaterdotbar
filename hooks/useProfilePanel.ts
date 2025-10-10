@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { BodyComposition, Sex, BodyType, ActivityLevel, InputMethod, SweatContext } from '@/types'
 import { calculateLBM, getBodyFatFromType, calculateBodyWater } from '@/utils/bodyCalculations'
 import { calculateNutrientTargets, calculateSweatLoss } from '@/utils/nutrientCalculations'
@@ -12,7 +12,6 @@ export function useProfilePanel() {
   const [sweatContext, setSweatContext] = useState<SweatContext>('moderate')
   const [sessionHours, setSessionHours] = useState(1)
   const [includesWeightTraining, setIncludesWeightTraining] = useState(false)
-  // Direct input values
   const [weight, setWeight] = useState(70)
   const [manualBodyFat, setManualBodyFat] = useState(15)
   
@@ -44,6 +43,56 @@ export function useProfilePanel() {
     calculateNutrientTargets(bodyComposition.leanBodyMass, activityLevel, includesWeightTraining, sweatLoss),
     [bodyComposition.leanBodyMass, activityLevel, includesWeightTraining, sweatLoss]
   )
+  
+  // Auto-save profile to sessionStorage as user types
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    const profileData = {
+      inputMethod,
+      sex,
+      bodyType,
+      weight,
+      bodyFat: bodyComposition.bodyFat, // Use calculated bodyFat
+      activityLevel,
+      sweatContext,
+      sessionHours,
+      includesWeightTraining,
+      targets,
+      sweatLoss
+    }
+    
+    sessionStorage.setItem('hydrationProfile', JSON.stringify(profileData))
+    console.log('💾 Profile auto-saved to sessionStorage')
+    
+  }, [inputMethod, sex, bodyType, weight, bodyComposition.bodyFat, activityLevel, sweatContext, sessionHours, includesWeightTraining, targets, sweatLoss])
+  
+  // Auto-save profile to Dexie user_profile (persistent, basic info only)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    const saveToDexie = async () => {
+      try {
+        const { db } = await import('@/lib/dexie-db')
+        
+        // Save to user_profile table (persistent, survives browser close)
+        await db.user_profile.put({
+          id: 1, // Single profile per device
+          weight,
+          bodyFat: bodyComposition.bodyFat,
+          sex,
+          allergies: '', // Will be set by meals panel
+          updatedAt: new Date()
+        })
+        
+        console.log('💾 Profile basics auto-saved to Dexie user_profile')
+      } catch (err) {
+        console.warn('Failed to save profile to Dexie:', err)
+      }
+    }
+    
+    saveToDexie()
+  }, [weight, bodyComposition.bodyFat, sex])
   
   return {
     // State

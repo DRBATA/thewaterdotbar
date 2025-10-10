@@ -75,6 +75,56 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
     }
     fetchVenues()
   }, [])
+  
+  // Poll for payment completion (Flow 2)
+  useEffect(() => {
+    if (!showQR || !paymentUrl || paymentStatus === 'paid') return
+    
+    // Extract session_id from Stripe checkout URL
+    const sessionIdMatch = paymentUrl.match(/\/pay\/([^?]+)/)
+    if (!sessionIdMatch) return
+    
+    const stripeSessionId = sessionIdMatch[1]
+    
+    const pollPayment = setInterval(async () => {
+      try {
+        // Check Stripe session status
+        const res = await fetch(`/api/stripe/check-session?session_id=${stripeSessionId}`)
+        const data = await res.json()
+        
+        if (data.payment_status === 'paid' && data.order_id) {
+          clearInterval(pollPayment)
+          setPaymentStatus('paid')
+          
+          // Send email using OUTPUT recommendations from sessionStorage
+          const recommendations = sessionStorage.getItem('hydrationOutputRecommendations')
+          if (recommendations) {
+            try {
+              await fetch('/api/send-receipt-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  orderId: data.order_id,
+                  customerEmail: data.customer_email,
+                  assessmentData: JSON.parse(recommendations)
+                })
+              })
+              console.log('✅ Email sent with recommendations')
+            } catch (emailError) {
+              console.error('Failed to send email:', emailError)
+            }
+          }
+          
+          // Now clear OUTPUT recommendations
+          sessionStorage.removeItem('hydrationOutputRecommendations')
+        }
+      } catch (error) {
+        console.error('Payment poll error:', error)
+      }
+    }, 2000) // Poll every 2 seconds
+    
+    return () => clearInterval(pollPayment)
+  }, [showQR, paymentUrl, paymentStatus])
 
   useEffect(() => {
     const prevMinItems = prevTierRef.current?.minItems ?? 0
@@ -354,9 +404,9 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
     setLoading(true)
     try {
       // Flow 2: Generate QR for Customer to Pay
-      // Include assessment data from sessionStorage
-      const assessmentData = typeof window !== 'undefined' && sessionStorage.getItem('hydrationAssessment')
-        ? JSON.parse(sessionStorage.getItem('hydrationAssessment')!)
+      // Get INPUT context from sessionStorage (for cart_headers transfer)
+      const inputContext = typeof window !== 'undefined' && sessionStorage.getItem('hydrationInputContext')
+        ? JSON.parse(sessionStorage.getItem('hydrationInputContext')!)
         : null
 
       const res = await fetch("/api/stripe/checkout", { 
@@ -364,16 +414,36 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           venue_id: selectedVenue?.id,
-          assessmentData // Include assessment for customer's device
+          assessmentData: inputContext // INPUT context for customer's device download
         })
       })
       const data = await res.json()
       if (data.url) {
         setPaymentUrl(data.url)
         setShowQR(true)
-        // Clear staff device Dexie after QR generated
-        if (typeof window !== 'undefined' && sessionStorage.getItem('hydrationAssessment')) {
-          sessionStorage.removeItem('hydrationAssessment')
+        
+        // FLOW 2 CLEANUP: Clear staff device after successful transfer to cloud
+        if (typeof window !== 'undefined') {
+          // 1. Clear sessionStorage (INPUT context transferred to cart_headers)
+          sessionStorage.removeItem('hydrationInputContext')
+          sessionStorage.removeItem('hydrationProfile')
+          sessionStorage.removeItem('hydrationMeals')
+          sessionStorage.removeItem('hydrationAllergies')
+          // Keep OUTPUT recommendations for email webhook
+          // sessionStorage.removeItem('hydrationOutputRecommendations') - DON'T clear yet
+          
+          // 2. Clear Dexie (staff device doesn't need this data anymore)
+          try {
+            const { db } = await import('@/lib/dexie-db')
+            await db.hydration_assessments.clear()
+            await db.drink_logs.clear()
+            console.log('✅ Cleared staff device Dexie after transfer')
+          } catch (err) {
+            console.warn('Failed to clear Dexie:', err)
+          }
+          
+          // 3. Cart will be cleared after payment completes
+          // (webhook will handle cleanup when customer pays)
         }
       } else {
         alert(data.error || "Unable to generate QR code")
@@ -395,22 +465,33 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
     setLoading(true)
     try {
       // Flow 3: Share Plan Only (No Payment)
-      // Get assessment data from sessionStorage
-      const assessmentData = typeof window !== 'undefined' && sessionStorage.getItem('hydrationAssessment')
-        ? JSON.parse(sessionStorage.getItem('hydrationAssessment')!)
-        : null
+      // First, get the current cart session ID
+      const cartRes = await fetch("/api/cart", {
+        method: "GET",
+        credentials: "include"
+      })
+      const cartData = await cartRes.json()
+      
+      if (!cartData.sessionId) {
+        alert("Unable to get cart session")
+        setLoading(false)
+        return
+      }
 
-      const res = await fetch("/api/cart/create-transfer", { 
+      // Generate booking QR with cart_id
+      // (AI recommendations already stored in cart_items)
+      const res = await fetch("/api/cart/generate-booking-qr", { 
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          venue_id: selectedVenue?.id || 'AOI',
-          assessmentData
+          sessionId: cartData.sessionId
         })
       })
       const data = await res.json()
-      if (data.transferUrl) {
-        setPaymentUrl(data.transferUrl)
+      
+      if (data.qrCode) {
+        // Use the QR code data URL directly
+        setPaymentUrl(data.qrCode) // Store QR data URL
         setShowQR(true)
       } else {
         alert(data.error || "Unable to create plan transfer")
@@ -421,6 +502,37 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
       setLoading(false)
     }
   }
+// Determine which buttons to show based on venue
+const getButtonsForVenue = () => {
+  const venueName = selectedVenue?.name || '';
+  
+  // F45 venues: Checkout + QR Payment
+  if (venueName.includes('F45')) {
+    return {
+      showCheckout: true,
+      showQRPayment: true,
+      showSharePlan: false
+    };
+  }
+  
+  // AOI: Checkout + Share Plan
+  if (venueName.includes('Art of Implosion')) {
+    return {
+      showCheckout: true,
+      showQRPayment: false,
+      showSharePlan: true
+    };
+  }
+  
+  // All other venues (Ice House, Armani, Online): Checkout only
+  return {
+    showCheckout: true,
+    showQRPayment: false,
+    showSharePlan: false
+  };
+};
+
+const buttons = getButtonsForVenue();
 
   return (
     <>
@@ -472,9 +584,9 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
               className="w-full p-3 bg-white/20 border border-white/30 rounded-lg text-white focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 transition-all"
               style={{ WebkitAppearance: 'menulist', appearance: 'menulist' }}
             >
-              <option value="">Online Order (Delivery)</option>
+              <option value="">Select a venue...</option>
               {venues.map(venue => (
-                <option key={venue.id} value={venue.id} className="bg-gray-800 text-white">
+                <option key={venue.id} value={venue.id}>
                   {venue.name}
                 </option>
               ))}
@@ -537,37 +649,46 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
               {clearingCart ? "Clearing..." : "Clear Cart"}
             </Button>
           )}
-          {/* Payment Options */}
-          <div className="space-y-3 mt-6" style={{ marginBottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))' }}>
-            <Button 
-              size="lg" 
-              className="w-full bg-teal-500 text-white hover:bg-teal-600 h-12 text-lg" 
-              onClick={() => tier ? setConfirmationModalOpen(true) : handleCheckout()}
-              disabled={loading || cartItems.length === 0}
-            >
-              {loading ? "Processing..." : "💳 Pay on This Device"}
-            </Button>
-            
-            <Button 
-              size="lg" 
-              variant="outline"
-              className="w-full border-teal-500 text-teal-300 hover:bg-teal-500/20 h-12 text-lg" 
-              onClick={() => handleGenerateCustomerQR()}
-              disabled={loading || cartItems.length === 0}
-            >
-              📱 Generate QR for Customer
-            </Button>
-            
-            <Button 
-              size="lg" 
-              variant="outline"
-              className="w-full border-purple-500 text-purple-300 hover:bg-purple-500/20 h-12 text-lg" 
-              onClick={() => handleSharePlanQR()}
-              disabled={loading || cartItems.length === 0}
-            >
-              🔗 Share Plan Only (No Payment)
-            </Button>
-          </div>
+          {/* Payment Options - Conditional based on venue */}
+<div className="space-y-3 mt-6" style={{ marginBottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))' }}>
+  {/* Always show Checkout button */}
+  {buttons.showCheckout && (
+    <Button 
+      size="lg" 
+      className="w-full bg-teal-500 text-white hover:bg-teal-600 h-12 text-lg" 
+      onClick={() => tier ? setConfirmationModalOpen(true) : handleCheckout()}
+      disabled={loading || cartItems.length === 0 || !selectedVenue}
+    >
+      {loading ? "Processing..." : "💳 Proceed to Checkout"}
+    </Button>
+  )}
+  
+  {/* F45 Only: QR Payment */}
+  {buttons.showQRPayment && (
+    <Button 
+      size="lg" 
+      variant="outline"
+      className="w-full border-teal-500 text-teal-300 hover:bg-teal-500/20 h-12 text-lg" 
+      onClick={() => handleGenerateCustomerQR()}
+      disabled={loading || cartItems.length === 0}
+    >
+      📱 Generate QR to Pay
+    </Button>
+  )}
+  
+  {/* AOI Only: Share Plan */}
+  {buttons.showSharePlan && (
+    <Button 
+      size="lg" 
+      variant="outline"
+      className="w-full border-purple-500 text-purple-300 hover:bg-purple-500/20 h-12 text-lg" 
+      onClick={() => handleSharePlanQR()}
+      disabled={loading || cartItems.length === 0}
+    >
+      🔗 Share Plan Only (No Payment)
+    </Button>
+  )}
+</div>
         {isConfirmationModalOpen && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100]">
             <div className="bg-gray-800 border border-teal-500/50 p-8 rounded-2xl shadow-2xl text-white max-w-md w-full mx-4">
@@ -597,13 +718,24 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
                     <h3 className="text-2xl font-bold mb-2 text-green-600">Payment Received!</h3>
                     <p className="text-gray-600 mb-6">Order has been paid successfully</p>
                     <Button
-                      onClick={() => {
+                      onClick={async () => {
                         setShowQR(false)
                         setPaymentStatus(null)
-                        // Clear cart and refresh
+                        
+                        // FLOW 2 COMPLETE: Clear everything after successful payment
                         onClearCart?.()
-                        // Clear AI questionnaire data
                         sessionStorage.removeItem("hydrationAssessment")
+                        
+                        // Clear Dexie (staff device ready for next customer)
+                        try {
+                          const { db } = await import('@/lib/dexie-db')
+                          await db.hydration_assessments.clear()
+                          await db.drink_logs.clear()
+                          console.log('✅ Staff device fully reset after payment')
+                        } catch (err) {
+                          console.warn('Failed to clear Dexie:', err)
+                        }
+                        
                         window.location.reload()
                       }}
                       className="w-full bg-green-600 hover:bg-green-700"
@@ -620,29 +752,87 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
                     
                     <div className="bg-gray-50 p-4 rounded-lg mb-6">
                       <img 
-                        src={generateQRCode(paymentUrl)} 
+                        src={paymentUrl.startsWith('data:') ? paymentUrl : generateQRCode(paymentUrl)} 
                         alt="Payment QR Code"
                         className="mx-auto max-w-full h-auto w-64 h-64"
                       />
                     </div>
                     
-                    <p className="text-xs text-gray-400 mb-4">Waiting for payment...</p>
-                    
-                    <div className="flex gap-3">
-                      <Button
-                        onClick={() => setShowQR(false)}
-                        variant="outline"
-                        className="flex-1"
-                      >
-                        Close
-                      </Button>
-                      <Button
-                        onClick={() => window.open(paymentUrl, '_blank')}
-                        className="flex-1 bg-teal-600 hover:bg-teal-700"
-                      >
-                        Open Link
-                      </Button>
-                    </div>
+                    {/* Show different actions based on QR type */}
+                    {paymentUrl.startsWith('data:') ? (
+                      // Flow 3: Plan Transfer QR
+                      <>
+                        <p className="text-xs text-gray-500 mb-4">
+                          Staff can scan this QR to view your cart with AI recommendations
+                        </p>
+                        <div className="flex gap-3">
+                          <Button
+                            onClick={() => setShowQR(false)}
+                            variant="outline"
+                            className="flex-1"
+                          >
+                            Close
+                          </Button>
+                          <Button
+                            onClick={async () => {
+                              // Send plan via email
+                              const email = prompt('Enter your email address:')
+                              if (!email) return
+                              
+                              try {
+                                // Get cart ID
+                                const cartRes = await fetch("/api/cart", {
+                                  method: "GET",
+                                  credentials: "include"
+                                })
+                                const cartData = await cartRes.json()
+                                
+                                const res = await fetch('/api/send-plan-email', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    cartId: cartData.sessionId,
+                                    customerEmail: email,
+                                    customerName: 'Valued Customer'
+                                  })
+                                })
+                                if (res.ok) {
+                                  alert('✅ Plan sent to your email! Check your inbox.')
+                                } else {
+                                  const error = await res.json()
+                                  alert(`Failed to send email: ${error.error}`)
+                                }
+                              } catch (err) {
+                                alert('Network error sending email')
+                              }
+                            }}
+                            className="flex-1 bg-purple-600 hover:bg-purple-700"
+                          >
+                            📧 Email Plan
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      // Flow 2: Payment QR
+                      <>
+                        <p className="text-xs text-gray-400 mb-4">Waiting for payment...</p>
+                        <div className="flex gap-3">
+                          <Button
+                            onClick={() => setShowQR(false)}
+                            variant="outline"
+                            className="flex-1"
+                          >
+                            Close
+                          </Button>
+                          <Button
+                            onClick={() => window.open(paymentUrl, '_blank')}
+                            className="flex-1 bg-teal-600 hover:bg-teal-700"
+                          >
+                            Open Link
+                          </Button>
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
               </div>

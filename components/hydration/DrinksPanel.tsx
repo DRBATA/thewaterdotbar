@@ -12,13 +12,50 @@ import { useHydrationContext } from '@/contexts'
 
 interface DrinksPanelProps {
   onNext?: () => void
+  trackingOrderId?: string | null
 }
 
-export function DrinksPanel({ onNext }: DrinksPanelProps) {
+interface OrderItem {
+  id: string
+  product_id: string
+  product_name: string
+  quantity: number
+  consumed: boolean
+  nutrients: {
+    water: number
+    sodium: number
+    potassium: number
+    magnesium: number
+    calcium: number
+    fiber: number
+    soluble_fiber: number
+    insoluble_fiber: number
+    protein: number
+    iron: number
+    zinc: number
+    copper: number
+    choline: number
+    b6: number
+    b9: number
+    b12: number
+    vitamin_c: number
+    vitamin_d: number
+    caffeine: number
+    probiotics: number
+    omega3: number
+    polyphenols: number
+  }
+}
+
+export function DrinksPanel({ onNext, trackingOrderId }: DrinksPanelProps) {
   const { drinks, deficits } = useHydrationContext()
   const { toast } = useToast()
   const [selectedDrink, setSelectedDrink] = useState<any>(null)
   const [addedDrinks, setAddedDrinks] = useState<any[]>([])
+  const [orderItems, setOrderItems] = useState<OrderItem[]>([])
+  const [selectedOrderItems, setSelectedOrderItems] = useState<Set<string>>(new Set())
+  const [isLoadingOrder, setIsLoadingOrder] = useState(false)
+  const [isUpdatingConsumption, setIsUpdatingConsumption] = useState(false)
 
   // Load available drinks from database
   useEffect(() => {
@@ -33,6 +70,116 @@ export function DrinksPanel({ onNext }: DrinksPanelProps) {
     }
     loadDrinks()
   }, [])
+
+  // Load order items if trackingOrderId is provided
+  useEffect(() => {
+    if (trackingOrderId) {
+      loadOrderItems()
+    }
+  }, [trackingOrderId])
+
+  const loadOrderItems = async () => {
+    if (!trackingOrderId) return
+    
+    setIsLoadingOrder(true)
+    try {
+      const response = await fetch(`/api/orders/${trackingOrderId}/items`)
+      const data = await response.json()
+      
+      if (data.items) {
+        // Filter out already consumed items
+        const unconsumed = data.items.filter((item: OrderItem) => !item.consumed)
+        setOrderItems(unconsumed)
+      }
+    } catch (error) {
+      console.error('Error loading order items:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to load purchased drinks',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsLoadingOrder(false)
+    }
+  }
+
+  const toggleOrderItem = (itemId: string) => {
+    setSelectedOrderItems(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId)
+      } else {
+        newSet.add(itemId)
+      }
+      return newSet
+    })
+  }
+
+  const handleAddSelectedToIntake = async () => {
+    if (selectedOrderItems.size === 0) return
+    
+    setIsUpdatingConsumption(true)
+    try {
+      // 1. Add to Dexie with REAL nutrients from products table
+      const { drinkLogHelpers, assessmentHelpers } = await import('@/lib/dexie-db')
+      
+      // Prepare drinks for logging with actual product nutrients
+      const drinksToLog = []
+      for (const itemId of selectedOrderItems) {
+        const item = orderItems.find(i => i.id === itemId)
+        if (!item) continue
+        
+        // Use REAL nutrients from products table (already fetched by API)
+        drinksToLog.push({
+          product_id: item.product_id,
+          name: item.product_name,
+          quantity: item.quantity,
+          nutrients: item.nutrients // ✅ Real data from Supabase products table!
+        })
+      }
+      
+      // Use helper to log all drinks (assessment_id is optional!)
+      if (drinksToLog.length > 0) {
+        await drinkLogHelpers.logDrinks(drinksToLog, 'email_tracking')
+        
+        // Check if user should create assessment for better recommendations
+        const hasAssessment = await assessmentHelpers.getCurrentAssessment()
+        if (!hasAssessment) {
+          console.log('💡 Tip: Complete ProfilePanel → "Generate Plan" for personalized recommendations')
+        }
+      }
+      
+      // 2. Update Supabase (mark as consumed)
+      await fetch('/api/orders/update-consumption', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order_id: trackingOrderId,
+          consumed_items: Array.from(selectedOrderItems)
+        })
+      })
+      
+      // 3. Show success and refresh
+      toast({
+        title: 'Success!',
+        description: `Added ${selectedOrderItems.size} drinks to your hydration log`
+      })
+      
+      // Remove selected items from UI
+      setOrderItems(prev => prev.filter(item => !selectedOrderItems.has(item.id)))
+      setSelectedOrderItems(new Set())
+      
+    } catch (error) {
+      console.error('Error updating consumption:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to update tracking',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsUpdatingConsumption(false)
+    }
+  }
 
   // Handle adding a drink
   const handleAddDrink = (drink: any) => {
@@ -95,6 +242,69 @@ export function DrinksPanel({ onNext }: DrinksPanelProps) {
         <CardTitle>What have you drunk today?</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Email Tracking Section */}
+        {trackingOrderId && (
+          <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium text-blue-900 flex items-center gap-2">
+                📧 Purchased Drinks from Email
+              </h4>
+              {orderItems.length > 0 && (
+                <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                  {orderItems.length} item{orderItems.length !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+            
+            {isLoadingOrder ? (
+              <div className="text-sm text-blue-700">Loading your purchased drinks...</div>
+            ) : orderItems.length === 0 ? (
+              <div className="text-sm text-blue-700">
+                All purchased drinks have been logged! ✅
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-blue-700">
+                  Select the drinks you've consumed today:
+                </p>
+                <div className="space-y-2">
+                  {orderItems.map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => toggleOrderItem(item.id)}
+                      className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
+                        selectedOrderItems.has(item.id)
+                          ? 'border-blue-500 bg-blue-100'
+                          : 'border-blue-200 bg-white hover:border-blue-400'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-semibold text-blue-900">{item.product_name}</div>
+                          <div className="text-xs text-blue-600">Qty: {item.quantity}</div>
+                        </div>
+                        {selectedOrderItems.has(item.id) && (
+                          <div className="text-2xl">✅</div>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <Button
+                  onClick={handleAddSelectedToIntake}
+                  disabled={selectedOrderItems.size === 0 || isUpdatingConsumption}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                >
+                  {isUpdatingConsumption 
+                    ? '⏳ Updating...' 
+                    : `Add Selected to Today's Intake (${selectedOrderItems.size})`
+                  }
+                </Button>
+              </>
+            )}
+          </div>
+        )}
+        
         {/* Current Intake Display */}
         <div className="p-4 bg-green-50 rounded-lg">
           <h4 className="font-medium text-green-800 mb-2">Current Intake:</h4>

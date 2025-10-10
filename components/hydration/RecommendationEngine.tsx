@@ -170,13 +170,46 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
         
         if (mealImagesResponse.ok) {
           const mealImagesData = await mealImagesResponse.json()
-          // Merge image data with original meal data
-          const mealsWithImages = mealsData.meals.map((meal: any, idx: number) => ({
-            ...meal,
-            image_url: mealImagesData.meals?.[idx]?.image_url,
-            image_type: mealImagesData.meals?.[idx]?.image_type
-          }))
-          setMealCards(mealsWithImages)
+          
+          // Download OpenAI images and convert to base64
+          const mealsWithBase64Images = await Promise.all(
+            mealsData.meals.map(async (meal: any, idx: number) => {
+              const imageUrl = mealImagesData.meals?.[idx]?.image_url
+              
+              if (imageUrl) {
+                try {
+                  // Download image from OpenAI
+                  const imageResponse = await fetch(imageUrl)
+                  const blob = await imageResponse.blob()
+                  
+                  // Convert to base64
+                  const reader = new FileReader()
+                  const base64Promise = new Promise<string>((resolve) => {
+                    reader.onloadend = () => resolve(reader.result as string)
+                    reader.readAsDataURL(blob)
+                  })
+                  const imageData = await base64Promise
+                  
+                  return {
+                    ...meal,
+                    imageData, // Base64 for Supabase upload
+                    image_type: mealImagesData.meals?.[idx]?.image_type
+                  }
+                } catch (error) {
+                  console.error('Failed to download meal image:', error)
+                  return {
+                    ...meal,
+                    image_url: imageUrl, // Fallback to URL
+                    image_type: mealImagesData.meals?.[idx]?.image_type
+                  }
+                }
+              }
+              
+              return meal
+            })
+          )
+          
+          setMealCards(mealsWithBase64Images)
         } else {
           // If images fail, still show meals without images
           setMealCards(mealsData.meals || [])
@@ -291,22 +324,28 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
         })
       }
 
-      // Store assessment data for success page
-      await fetch('/api/cart/store-assessment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          sessionId: 'current-session',
-          assessmentData: {
-            profile,
-            totalIntake,
-            deficits,
-            recommendedDrinks: recommendations,
-            recommendedMeals: mealCards,
-            dailyTargets: profile.targets
-          }
-        })
-      })
+      // Store OUTPUT recommendations to sessionStorage (for email construction)
+      const outputRecommendations = {
+        deficits,
+        recommended_drinks: recommendations.map(drink => ({
+          name: drink.name,
+          quantity: drink.quantity,
+          nutrients_provided: drink.nutrients || {},
+          reason: drink.reason || ''
+        })),
+        recommended_meals: mealCards.map(meal => ({
+          name: meal.name,
+          description: meal.explanation || '',
+          imageData: (meal as any).imageData || '', // Base64 for Supabase upload
+          image_type: meal.image_type || '',
+          nutrients_provided: meal.nutrients || {},
+          foods: meal.foods || [],
+          items: meal.items || []
+        }))
+      }
+      
+      sessionStorage.setItem('hydrationOutputRecommendations', JSON.stringify(outputRecommendations))
+      console.log('💾 OUTPUT recommendations saved to sessionStorage (for email)')
 
       // Trigger cart refresh
       window.dispatchEvent(new Event('cart-updated'))

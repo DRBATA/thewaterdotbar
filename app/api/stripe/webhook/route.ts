@@ -61,54 +61,48 @@ export async function POST(req: Request) {
         // Don't block the response for this, just log it
       } else {
         try {
-          // Check if customer has hydration assessment data stored in database
-          let hydrationPlan = null;
+          // Check if customer has hydration assessment data stored in cart_headers
+          let assessmentData = null;
           try {
-            console.log('📧 Checking for hydration assessment data for session:', session_id);
+            console.log('📧 Checking for assessment data in cart_headers for session:', session_id);
             
-            // Query for assessment data stored with this session_id
-            const { data: assessmentData, error: assessmentError } = await supabase
-              .from('hydration_assessments')
-              .select('*')
+            // Get cart_header with assessment_data
+            const { data: cartHeader, error: cartError } = await supabase
+              .from('cart_headers')
+              .select('assessment_data')
               .eq('session_id', session_id)
               .order('created_at', { ascending: false })
               .limit(1)
-              .single();
+              .maybeSingle();
 
-            if (assessmentData && !assessmentError) {
-              hydrationPlan = {
-                profile: assessmentData.profile,
-                dailyTargets: assessmentData.daily_targets,
-                deficits: assessmentData.deficits,
-                // TODO: Add AI recommendations from generate-meals API
-                recommendedDrinks: assessmentData.recommended_drinks || [],
-                recommendedMeals: assessmentData.recommended_meals || []
-              };
-              console.log('✅ Found hydration plan for enhanced email');
+            if (cartHeader?.assessment_data && !cartError) {
+              assessmentData = cartHeader.assessment_data;
+              console.log('✅ Found assessment data for enhanced email');
             } else {
-              console.log('No hydration assessment found, sending basic receipt');
+              console.log('No assessment data found, sending basic receipt');
             }
-          } catch (assessmentError) {
-            console.log('Error fetching assessment:', assessmentError);
+          } catch (error) {
+            console.log('Error fetching assessment:', error);
           }
 
-          const resend = new Resend(process.env.RESEND_API_KEY);
-          await resend.emails.send({
-            from: 'The Water Bar <hello@thewater.bar>',
-            to: [orderData.email!],
-            subject: hydrationPlan ? 
-              `Your Personalized Hydration Plan + Order #${orderData.id.substring(0, 8)}` :
-              `Your Water Bar Order Confirmation #${orderData.id.substring(0, 8)}`,
-            react: OrderConfirmationEmail({
+          // Call the send-receipt-email API which handles everything properly
+          const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://thewater.bar'}/api/send-receipt-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
               orderId: orderData.id,
-              userFirstName: session.customer_details?.name?.split(' ')[0] || 'Valued Customer',
-              orderItems: orderData.order_items.map((item: { name: string; qty: number; pin_code: string; }) => ({ name: item.name, quantity: item.qty, pin_code: item.pin_code })),
-              total: orderData.total,
-              // TODO: Pass hydration plan data to enhanced email template
-              hydrationPlan: hydrationPlan || undefined,
+              customerEmail: orderData.email,
+              assessmentData, // Pass assessment data if available
             }),
           });
-          console.log(`${hydrationPlan ? 'Enhanced hydration plan' : 'Order confirmation'} email sent to ${orderData.email}`);
+
+          const emailResult = await emailResponse.json();
+          
+          if (emailResponse.ok) {
+            console.log(`✅ ${assessmentData ? 'Enhanced email with assessment' : 'Basic receipt'} sent to ${orderData.email}`);
+          } else {
+            console.error('Failed to send receipt email:', emailResult);
+          }
         } catch (emailError) {
           console.error('Failed to send confirmation email:', emailError);
         }

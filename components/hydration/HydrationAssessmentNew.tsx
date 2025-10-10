@@ -1,7 +1,7 @@
 // components/hydration/HydrationAssessmentNew.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -24,15 +24,24 @@ import styles from './hydration-assessment.module.css'
 interface HydrationAssessmentModalProps {
   isOpen: boolean
   onCloseAction: () => void
+  trackingOrderId?: string | null
 }
 
 export function HydrationAssessmentModal({ 
   isOpen, 
-  onCloseAction 
+  onCloseAction,
+  trackingOrderId 
 }: HydrationAssessmentModalProps) {
   const [activeTab, setActiveTab] = useState('profile')
   const [selectedVenue, setSelectedVenue] = useState<string>('f4ce6693-dac2-4010-a4f0-9ebb2bdaafbd')
   const [resetTrigger, setResetTrigger] = useState(0) // Force re-render on reset
+  
+  // Auto-switch to drinks tab when tracking order from email
+  useEffect(() => {
+    if (trackingOrderId && isOpen) {
+      setActiveTab('drinks')
+    }
+  }, [trackingOrderId, isOpen])
 
   const handleReset = () => {
     // Reset to profile tab
@@ -91,7 +100,10 @@ export function HydrationAssessmentModal({
           </TabsContent>
           
           <TabsContent value="drinks">
-            <DrinksPanel onNext={() => setActiveTab('meals')} />
+            <DrinksPanel 
+              onNext={() => setActiveTab('meals')} 
+              trackingOrderId={trackingOrderId}
+            />
           </TabsContent>
           
           <TabsContent value="meals">

@@ -141,6 +141,11 @@ export default function SharePlanEmail({
             <Text style={qrHelper}>
               Staff can scan this to see what drinks best match your nutritional needs
             </Text>
+            
+            <Text style={{ ...qrHelper, marginTop: '20px', color: '#F59E0B', fontSize: '12px' }}>
+              ⚠️ Note: This assessment is accurate as of the time it was created. 
+              If you've consumed more fluids or food since then, update your tracker accordingly.
+            </Text>
           </Section>
 
           <Hr style={sectionDivider} />

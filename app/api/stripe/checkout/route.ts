@@ -111,15 +111,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No items in cart have valid pricing information for checkout." }, { status: 400 });
   }
 
-  // Parse POST body for utm_campaign and venue_id
+  // Parse POST body for utm_campaign, venue_id, and assessmentData
   let utm_campaign = "organic";
   let venue_id = null;
+  let assessmentData = null;
   try {
     const reqBody = req ? await req.json() : {};
     utm_campaign = reqBody.utm_campaign || "organic";
     venue_id = reqBody.venue_id || null;
+    assessmentData = reqBody.assessmentData || null;
   } catch (e) {
     // If parsing fails or body is empty, default to 'organic'
+  }
+
+  // Store assessment data in cart_headers for Flow 2 (staff → customer device)
+  if (assessmentData) {
+    await supabase
+      .from('cart_headers')
+      .update({ assessment_data: assessmentData })
+      .eq('id', cartHeader.id);
+    console.log(`🛒 CHECKOUT: Stored assessment data for cart ${cartHeader.id}`);
   }
 
   try {
