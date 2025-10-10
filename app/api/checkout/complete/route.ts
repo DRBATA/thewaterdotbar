@@ -33,10 +33,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Cart session not found' }, { status: 400 });
     }
 
-    // Find cart header
+    // Find cart header (with venue_id for stock tracking)
     const { data: cartHeader } = await supabase
       .from('cart_headers')
-      .select('id')
+      .select('id, venue_id')
       .eq('session_id', cartSessionId)
       .single();
 
@@ -44,28 +44,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Cart not found' }, { status: 404 });
     }
 
-    // Get cart items with product details
+    // Get cart items
     const { data: cartItems } = await supabase
       .from('cart_items')
-      .select(`
-        item_id,
-        qty,
-        products!inner (
-          id,
-          name,
-          price_aed,
-          image_url
-        )
-      `)
+      .select('item_id, qty')
       .eq('cart_id', cartHeader.id);
 
+    // Get product details for each cart item
+    const productIds = cartItems?.map(item => item.item_id) || [];
+    const { data: products, error: productsError } = await supabase
+      .from('products')
+      .select('id, name, price_aed')
+      .in('id', productIds);
+
+    // Debug logging
+    console.log('Cart items:', cartItems);
+    console.log('Product IDs:', productIds);
+    console.log('Products found:', products);
+    console.log('Products error:', productsError);
+
     // Create order record (using products.price_aed)
-    const orderItems = cartItems?.map((item: any) => ({
-      item_id: item.item_id,
-      name: item.products?.name || 'Unknown',
-      qty: item.qty,
-      price: item.products?.price_aed || 0,
-    })) || [];
+    const orderItems = cartItems?.map((item: any) => {
+      const product = products?.find(p => p.id === item.item_id);
+      console.log(`Mapping item ${item.item_id}:`, product);
+      return {
+        item_id: item.item_id,
+        name: product?.name || 'Unknown',
+        qty: item.qty,
+        price: product?.price_aed || 0,
+      };
+    }) || [];
 
     const total = orderItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
@@ -95,6 +103,23 @@ export async function POST(req: NextRequest) {
         price: item.price,
       }))
     );
+
+    // Clear cart items after successful order creation
+    await supabase
+      .from('cart_items')
+      .delete()
+      .eq('cart_id', cartHeader.id);
+
+    // Decrement stock at the venue (if venue was selected)
+    if (cartHeader.venue_id) {
+      for (const item of orderItems) {
+        await supabase.rpc('decrement_venue_stock', {
+          p_product_id: item.item_id,
+          p_venue_id: cartHeader.venue_id,
+          p_quantity: item.qty
+        });
+      }
+    }
 
     // Trigger email send with optional assessmentData from sessionStorage
     const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://thewater.bar'}/api/send-receipt-email`, {
