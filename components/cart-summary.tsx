@@ -383,7 +383,13 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
     setLoading(true)
     try {
       // Flow 1: Pay on This Device - redirect to Stripe
-      const res = await fetch("/api/stripe/checkout", { method: "POST" })
+      const res = await fetch("/api/stripe/checkout", { 
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          venue_id: selectedVenue?.id
+        })
+      })
       const data = await res.json()
       if (data.url) window.location.href = data.url
       else alert(data.error || "Unable to start checkout")

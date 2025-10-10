@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       p_stripe_session_id: session.id,
       p_email: session.customer_details?.email,
       p_utm_campaign: utm_campaign ?? null,
-      p_venue_id: venue_id ?? null, // Add venue_id to match function signature
+      p_venue_id: venue_id && venue_id !== "" ? venue_id : null, // Handle empty string as null
     });
 
     if (rpcError) {
