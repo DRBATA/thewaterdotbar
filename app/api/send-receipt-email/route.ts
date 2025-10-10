@@ -25,7 +25,6 @@ export async function POST(req: NextRequest) {
         created_at,
         total,
         email,
-        customer_name,
         cart_id,
         order_items (
           item_id,
@@ -113,7 +112,7 @@ export async function POST(req: NextRequest) {
     // Render email
     const emailHtml = render(
       WaterBarReceipt({
-        customerName: order.customer_name || 'Valued Customer',
+        customerName: order.email ? order.email.split('@')[0] : 'Valued Customer',
         customerEmail: order.email,
         orderId: order.id,
         orderDate: order.created_at,

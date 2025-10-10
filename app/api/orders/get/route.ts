@@ -17,17 +17,15 @@ export async function GET(request: Request) {
       .from("orders")
       .select(`
         id,
-        total_amount,
-        status,
+        total,
+        email,
         order_items (
-          quantity,
-          unit_price,
-          products (
-            name
-          )
+          qty,
+          price,
+          name
         )
       `)
-      .eq("checkout_session_id", sessionId)
+      .eq("stripe_session_id", sessionId)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
@@ -43,15 +41,15 @@ export async function GET(request: Request) {
 
     // Format the response
     const items = order.order_items?.map((item: any) => ({
-      name: item.products?.name || "Unknown Item",
-      quantity: item.quantity,
-      price: item.unit_price
+      name: item.name || "Unknown Item",
+      quantity: item.qty,
+      price: item.price
     })) || []
 
     return NextResponse.json({ 
       items,
-      total: order.total_amount,
-      status: order.status
+      total: order.total,
+      email: order.email
     })
   } catch (error: any) {
     console.error("Order fetch error:", error)
