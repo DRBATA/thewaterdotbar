@@ -110,16 +110,7 @@ export async function POST(req: NextRequest) {
       .delete()
       .eq('cart_id', cartHeader.id);
 
-    // Decrement stock at the venue (if venue was selected)
-    if (cartHeader.venue_id) {
-      for (const item of orderItems) {
-        await supabase.rpc('decrement_venue_stock', {
-          p_product_id: item.item_id,
-          p_venue_id: cartHeader.venue_id,
-          p_quantity: item.qty
-        });
-      }
-    }
+    // Stock decrement is handled by migrate_cart_to_order RPC function
 
     // Trigger email send with optional assessmentData from sessionStorage
     const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://thewater.bar'}/api/send-receipt-email`, {

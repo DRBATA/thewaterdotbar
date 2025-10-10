@@ -22,36 +22,18 @@ export default function SuccessPage({ searchParams }: Props) {
   useEffect(() => {
     // Complete checkout and send email
     if (searchParams.session) {
-      // Get OUTPUT recommendations from sessionStorage (for email)
-      const recommendations = typeof window !== 'undefined' && sessionStorage.getItem('hydrationOutputRecommendations')
-        ? JSON.parse(sessionStorage.getItem('hydrationOutputRecommendations')!)
-        : null;
-      
-      // Complete checkout (creates order + sends email with recommendations)
-      fetch('/api/checkout/complete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          session_id: searchParams.session,
-          assessmentData: recommendations // Pass OUTPUT recommendations for email
-        })
-      })
-        .then(res => res.json())
-        .then(data => {
-          setEmailSent(data.emailSent || false)
-          setLoading(false)
-        })
-        .catch(() => setLoading(false))
-
-      // Fetch order details for display
+      // Webhook already created the order and sent email
+      // Just fetch order details for display
       fetch(`/api/orders/get?session_id=${searchParams.session}`)
         .then(res => res.json())
         .then(data => {
           if (data.items) {
             setOrderItems(data.items)
+            setEmailSent(true) // Webhook handles email
           }
+          setLoading(false)
         })
-        .catch(() => {})
+        .catch(() => setLoading(false))
     } else {
       setLoading(false)
     }
