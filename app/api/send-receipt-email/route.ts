@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Fetch order data
+    // Fetch order data (including assessment_data from orders table)
     const supabase = await createClient();
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
         total,
         email,
         cart_id,
+        assessment_data,
         order_items (
           item_id,
           name,
@@ -64,7 +65,15 @@ export async function POST(req: NextRequest) {
     // Calculate dynamic colors (if assessment exists)
     let colors;
     // Handle both direct OUTPUT and bundled {input, output} structure
-    let assessment = assessmentData?.output || assessmentData; // Use OUTPUT if bundled, otherwise use directly
+    // Priority: 1. From order table, 2. From API parameter (for manual sends)
+    const storedAssessment = order.assessment_data as any || assessmentData;
+    let assessment = storedAssessment?.output || storedAssessment; // Use OUTPUT if bundled, otherwise use directly
+    
+    console.log('📧 Assessment data check:', {
+      hasOrderAssessment: !!order.assessment_data,
+      hasApiAssessment: !!assessmentData,
+      hasRecommendations: !!(assessment?.recommended_drinks)
+    });
     
     if (assessment && assessment.recommended_drinks) { // Check for actual recommendations
       // Upload meal images to Supabase Storage if provided
