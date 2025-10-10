@@ -650,45 +650,45 @@ const buttons = getButtonsForVenue();
             </Button>
           )}
           {/* Payment Options - Conditional based on venue */}
-<div className="space-y-3 mt-6" style={{ marginBottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))' }}>
-  {/* Always show Checkout button */}
-  {buttons.showCheckout && (
-    <Button 
-      size="lg" 
-      className="w-full bg-teal-500 text-white hover:bg-teal-600 h-12 text-lg" 
-      onClick={() => tier ? setConfirmationModalOpen(true) : handleCheckout()}
-      disabled={loading || cartItems.length === 0 || !selectedVenue}
-    >
-      {loading ? "Processing..." : "💳 Proceed to Checkout"}
-    </Button>
-  )}
-  
-  {/* F45 Only: QR Payment */}
-  {buttons.showQRPayment && (
-    <Button 
-      size="lg" 
-      variant="outline"
-      className="w-full border-teal-500 text-teal-300 hover:bg-teal-500/20 h-12 text-lg" 
-      onClick={() => handleGenerateCustomerQR()}
-      disabled={loading || cartItems.length === 0}
-    >
-      📱 Generate QR to Pay
-    </Button>
-  )}
-  
-  {/* AOI Only: Share Plan */}
-  {buttons.showSharePlan && (
-    <Button 
-      size="lg" 
-      variant="outline"
-      className="w-full border-purple-500 text-purple-300 hover:bg-purple-500/20 h-12 text-lg" 
-      onClick={() => handleSharePlanQR()}
-      disabled={loading || cartItems.length === 0}
-    >
-      🔗 Share Plan Only (No Payment)
-    </Button>
-  )}
-</div>
+          <div className="space-y-3 mt-6" style={{ marginBottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))' }}>
+            {/* Always show Checkout button */}
+            {buttons.showCheckout && (
+              <Button 
+                size="lg" 
+                className="w-full bg-teal-500 text-white hover:bg-teal-600 h-12 text-lg" 
+                onClick={() => tier ? setConfirmationModalOpen(true) : handleCheckout()}
+                disabled={loading || cartItems.length === 0 || !selectedVenue}
+              >
+                {loading ? "Processing..." : "💳 Proceed to Checkout"}
+              </Button>
+            )}
+            
+            {/* F45 Only: QR Payment */}
+            {buttons.showQRPayment && (
+              <Button 
+                size="lg" 
+                variant="outline"
+                className="w-full border-teal-500 text-teal-300 hover:bg-teal-500/20 h-12 text-lg" 
+                onClick={() => handleGenerateCustomerQR()}
+                disabled={loading || cartItems.length === 0}
+              >
+                📱 Generate QR to Pay
+              </Button>
+            )}
+            
+            {/* AOI Only: Share Plan */}
+            {buttons.showSharePlan && (
+              <Button 
+                size="lg" 
+                variant="outline"
+                className="w-full border-purple-500 text-purple-300 hover:bg-purple-500/20 h-12 text-lg" 
+                onClick={() => handleSharePlanQR()}
+                disabled={loading || cartItems.length === 0}
+              >
+                🔗 Share Plan Only (No Payment)
+              </Button>
+            )}
+          </div>
         {isConfirmationModalOpen && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100]">
             <div className="bg-gray-800 border border-teal-500/50 p-8 rounded-2xl shadow-2xl text-white max-w-md w-full mx-4">
