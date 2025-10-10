@@ -118,8 +118,9 @@ export async function POST(req: NextRequest) {
       };
     }
 
-    // Render email
-    const emailHtml = render(
+    // Render email (await because it returns a Promise!)
+    console.log('📧 Attempting to render email template...');
+    const emailHtml = await render(
       WaterBarReceipt({
         customerName: order.email ? order.email.split('@')[0] : 'Valued Customer',
         customerEmail: order.email,
@@ -135,6 +136,8 @@ export async function POST(req: NextRequest) {
           : undefined,
       })
     );
+    
+    console.log('✅ Email rendered, type:', typeof emailHtml, 'length:', emailHtml?.length || 0);
 
     // Send email using Resend
     const resendApiKey = process.env.RESEND_API_KEY;
