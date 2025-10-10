@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server"
 
 import { MenuDisplay } from "@/components/menu-display" // We will create this next
 import { UnifiedChatAvatar } from "@/components/UnifiedChatAvatar"
-import PageClientWrapper from "@/components/PageClientWrapper"
 import { HydrationAssessmentButton } from "@/components/hydration-assessment-button"
 
 // Define types for fetched data
@@ -70,10 +69,10 @@ export default async function HomePage() {
   const wellnessError = null
 
   if (drinksError) {
-    console.error("Error fetching drinks:", drinksError.message)
+    console.error("Error fetching drinks:", drinksError)
   }
   if (wellnessError) {
-    console.error("Error fetching wellness experiences:", wellnessError.message)
+    console.error("Error fetching wellness experiences:", wellnessError)
   }
 
   const currentDate = new Date();
@@ -158,15 +157,13 @@ export default async function HomePage() {
   const availableExperiences = wellnessExperiences.filter(item => item.venues && item.venues.length > 0);
   
   return (
-    <PageClientWrapper>
-      <div className="min-h-screen text-stone-800">
-        <MenuDisplay 
-          initialDrinks={availableDrinks} 
-          initialWellnessExperiences={availableExperiences} 
-        />
-        <HydrationAssessmentButton />
-        <UnifiedChatAvatar />
-      </div>
-    </PageClientWrapper>
+    <div className="min-h-screen text-stone-800">
+      <MenuDisplay 
+        initialDrinks={availableDrinks} 
+        initialWellnessExperiences={availableExperiences} 
+      />
+      <HydrationAssessmentButton />
+      <UnifiedChatAvatar />
+    </div>
   )
 }
