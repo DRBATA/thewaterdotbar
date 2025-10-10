@@ -584,9 +584,9 @@ const buttons = getButtonsForVenue();
               className="w-full p-3 bg-white/20 border border-white/30 rounded-lg text-white focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 transition-all"
               style={{ WebkitAppearance: 'menulist', appearance: 'menulist' }}
             >
-              <option value="">Select a venue...</option>
+              <option value="" className="bg-gray-800 text-white">Select a venue...</option>
               {venues.map(venue => (
-                <option key={venue.id} value={venue.id}>
+                <option key={venue.id} value={venue.id} className="bg-gray-800 text-white">
                   {venue.name}
                 </option>
               ))}
