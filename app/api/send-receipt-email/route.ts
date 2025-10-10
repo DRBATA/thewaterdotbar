@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { calculateEmailColors } from '@/lib/email-colors';
-import { render } from '@react-email/components';
+import { render } from '@react-email/render';
 import WaterBarReceipt from '@/emails/water-bar-receipt';
 
 export async function POST(req: NextRequest) {
@@ -107,6 +107,15 @@ export async function POST(req: NextRequest) {
       if (productColors.length > 0) {
         colors = calculateEmailColors(productColors);
       }
+    }
+    
+    // Ensure we have default colors
+    if (!colors) {
+      colors = {
+        primary: '#0D9488',
+        accent: '#10B981',
+        background: '#F0FDFA'
+      };
     }
 
     // Render email
