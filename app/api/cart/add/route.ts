@@ -4,8 +4,8 @@ import { cookies } from "next/headers"
 import { getSessionId } from "@/lib/session"
 
 export async function POST(req: Request) {
-  const { itemId, qty = 1, bundle_components, venue_id, ai_recommendation } = await req.json()
-  console.log(`🛒 ADD: Received request - itemId=${itemId}, qty=${qty}, venue_id=${venue_id}, hasAI=${!!ai_recommendation}`)
+  const { itemId, qty = 1, bundle_components, venue_id, ai_recommendation, assessmentData } = await req.json()
+  console.log(`🛒 ADD: Received request - itemId=${itemId}, qty=${qty}, venue_id=${venue_id}, hasAI=${!!ai_recommendation}, hasAssessment=${!!assessmentData}`)
   
   if (!itemId) {
     return NextResponse.json({ error: "Missing itemId" }, { status: 400 })
@@ -33,15 +33,24 @@ export async function POST(req: Request) {
     }
     
     let cartId;
+    let isNewCart = false;
     if (!cartHeader) {
       console.log(`🛒 ADD: Creating new cart header for session ${sessionId}`)
       // Create new cart header if not exists
+      const insertData: any = {
+        session_id: sessionId,
+        venue_id: venue_id || null
+      };
+      
+      // If assessment data provided, save it immediately with new cart
+      if (assessmentData) {
+        insertData.assessment_data = assessmentData;
+        console.log(`🛒 ADD: Saving assessment data with new cart`);
+      }
+      
       const { data: newCartHeader, error: newCartError } = await supabase
         .from("cart_headers")
-        .insert({
-          session_id: sessionId,
-          venue_id: venue_id || null
-        })
+        .insert(insertData)
         .select("id")
         .single();
         
@@ -50,10 +59,25 @@ export async function POST(req: Request) {
         throw new Error(`New cart error: ${newCartError.message}`);
       }
       cartId = newCartHeader.id;
-      console.log(`🛒 ADD: Created cart ${cartId}`)
+      isNewCart = true;
+      console.log(`🛒 ADD: Created cart ${cartId}${assessmentData ? ' with assessment data' : ''}`)
     } else {
       cartId = cartHeader.id;
       console.log(`🛒 ADD: Using existing cart ${cartId}`)
+      
+      // If assessment data provided and cart already exists, update it
+      if (assessmentData) {
+        const { error: updateError } = await supabase
+          .from("cart_headers")
+          .update({ assessment_data: assessmentData })
+          .eq("id", cartId);
+          
+        if (updateError) {
+          console.error(`🛒 ADD: Failed to update assessment data:`, updateError);
+        } else {
+          console.log(`🛒 ADD: Updated assessment data for existing cart ${cartId}`);
+        }
+      }
     }
     
     // 2. Add item to cart_items or update quantity if exists

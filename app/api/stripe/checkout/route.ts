@@ -120,17 +120,32 @@ export async function POST(req: Request) {
     utm_campaign = reqBody.utm_campaign || "organic";
     venue_id = reqBody.venue_id || null;
     assessmentData = reqBody.assessmentData || null;
+    
+    console.log('📦 CHECKOUT: Received assessment data?', {
+      hasAssessmentData: !!assessmentData,
+      hasInput: !!(assessmentData?.input),
+      hasOutput: !!(assessmentData?.output),
+      cartHeaderId: cartHeader.id
+    });
   } catch (e) {
-    // If parsing fails or body is empty, default to 'organic'
+    console.error('❌ CHECKOUT: Failed to parse request body:', e);
   }
 
   // Store assessment data in cart_headers for Flow 2 (staff → customer device)
   if (assessmentData) {
-    await supabase
+    const { data: updateData, error: updateError } = await supabase
       .from('cart_headers')
       .update({ assessment_data: assessmentData })
-      .eq('id', cartHeader.id);
-    console.log(`🛒 CHECKOUT: Stored assessment data for cart ${cartHeader.id}`);
+      .eq('id', cartHeader.id)
+      .select();
+    
+    if (updateError) {
+      console.error(`❌ CHECKOUT: Failed to store assessment data:`, updateError);
+    } else {
+      console.log(`✅ CHECKOUT: Stored assessment data for cart ${cartHeader.id}`, updateData);
+    }
+  } else {
+    console.log(`⚠️ CHECKOUT: No assessment data to store for cart ${cartHeader.id}`);
   }
 
   try {

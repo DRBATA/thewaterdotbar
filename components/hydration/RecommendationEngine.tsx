@@ -291,6 +291,21 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
         };
       }
       
+      // Include assessment data from sessionStorage (for first item)
+      // This ensures assessment is saved to cart_headers when first item is added
+      if (typeof window !== 'undefined') {
+        const inputContext = sessionStorage.getItem('hydrationInputContext');
+        const outputRecommendations = sessionStorage.getItem('hydrationOutputRecommendations');
+        
+        if (inputContext || outputRecommendations) {
+          payload.assessmentData = {
+            input: inputContext ? JSON.parse(inputContext) : null,
+            output: outputRecommendations ? JSON.parse(outputRecommendations) : null
+          };
+          console.log('📦 Including assessment data with cart item');
+        }
+      }
+      
       const response = await fetch('/api/cart/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -330,8 +345,23 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
     setIsProcessing(true)
     
     try {
+      // Get assessment data once (will be included with first item only)
+      let assessmentDataToSend = null;
+      if (typeof window !== 'undefined') {
+        const inputContext = sessionStorage.getItem('hydrationInputContext');
+        const outputRecommendations = sessionStorage.getItem('hydrationOutputRecommendations');
+        
+        if (inputContext || outputRecommendations) {
+          assessmentDataToSend = {
+            input: inputContext ? JSON.parse(inputContext) : null,
+            output: outputRecommendations ? JSON.parse(outputRecommendations) : null
+          };
+        }
+      }
+      
       // Add all products to cart with AI recommendation context
-      for (const product of recommendations) {
+      for (let i = 0; i < recommendations.length; i++) {
+        const product = recommendations[i];
         const payload: any = {
           itemId: product.id,
           qty: product.quantity
@@ -343,6 +373,12 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
             reason: product.reason || '',
             nutrients_provided: product.nutrients || {}
           };
+        }
+        
+        // Include assessment data ONLY with first item
+        if (i === 0 && assessmentDataToSend) {
+          payload.assessmentData = assessmentDataToSend;
+          console.log('📦 Including assessment data with first item of bulk add');
         }
         
         await fetch('/api/cart/add', {
