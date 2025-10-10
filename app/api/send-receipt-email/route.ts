@@ -30,8 +30,7 @@ export async function POST(req: NextRequest) {
           item_id,
           name,
           qty,
-          price,
-          plan
+          price
         )
       `)
       .eq('id', orderId)
