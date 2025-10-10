@@ -21,42 +21,63 @@ export async function GET(
 
     const supabase = await createClient();
 
-    // Fetch order items with product details INCLUDING nutrients
-    const { data: items, error } = await supabase
+    // Fetch order items first
+    const { data: orderItemsData, error: orderError } = await supabase
       .from('order_items')
-      .select(`
-        id,
-        product_id,
-        quantity,
-        consumed,
-        products (
-          name,
-          water_content_ml,
-          sodium_mg,
-          potassium_mg,
-          magnesium_mg,
-          calcium_mg,
-          fiber_g,
-          soluble_fiber_g,
-          insoluble_fiber_g,
-          protein_g,
-          probiotic_cfu,
-          omega3_mg,
-          polyphenols_mg,
-          vitamin_c_mg,
-          vitamin_d_mcg
-        )
-      `)
+      .select('id, item_id, quantity, consumed')
       .eq('order_id', orderId);
 
-    if (error) throw error;
+    if (orderError) {
+      console.error('Error fetching order items:', orderError);
+      throw orderError;
+    }
+
+    if (!orderItemsData || orderItemsData.length === 0) {
+      return NextResponse.json({ items: [] });
+    }
+
+    // Get unique product IDs
+    const productIds = [...new Set(orderItemsData.map(item => item.item_id))];
+
+    // Fetch product details separately
+    const { data: productsData, error: productsError } = await supabase
+      .from('products')
+      .select(`
+        id,
+        name,
+        water_content_ml,
+        sodium_mg,
+        potassium_mg,
+        magnesium_mg,
+        calcium_mg,
+        fiber_g,
+        soluble_fiber_g,
+        insoluble_fiber_g,
+        protein_g,
+        probiotic_cfu,
+        omega3_mg,
+        polyphenols_mg,
+        vitamin_c_mg,
+        vitamin_d_mcg
+      `)
+      .in('id', productIds);
+
+    if (productsError) {
+      console.error('Error fetching products:', productsError);
+      throw productsError;
+    }
+
+    // Create product lookup map
+    const productMap = new Map(
+      productsData?.map(p => [p.id, p]) || []
+    );
 
     // Format response with full product nutrients
-    const formattedItems = items?.map(item => {
-      const product = item.products as any;
+    const formattedItems = orderItemsData.map(item => {
+      const product = productMap.get(item.item_id);
       return {
         id: item.id,
-        product_id: item.product_id,
+        product_id: item.item_id,  // Use item_id as product_id
         product_name: product?.name || 'Unknown Product',
         quantity: item.quantity,
         consumed: item.consumed || false,
