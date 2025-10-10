@@ -129,7 +129,8 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
       
       if (!drinksResponse.ok) throw new Error('Drinks API failed')
       const drinksData = await drinksResponse.json()
-      setRecommendations(drinksData.drinks || [])
+      const drinks = drinksData.drinks || []
+      setRecommendations(drinks)
       setIsLoadingDrinks(false)
       
       // Step 2: Call generate-meals API  
@@ -245,6 +246,33 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
     // Only prepare inputs, don't generate
     // User will explicitly click to generate
   }, [drinkInputs, mealInputs])
+  
+  // Auto-save OUTPUT to sessionStorage when recommendations are generated
+  useEffect(() => {
+    if (recommendations.length > 0 && hasGenerated) {
+      const outputRecommendations = {
+        deficits,
+        recommended_drinks: recommendations.map(drink => ({
+          name: drink.name,
+          quantity: drink.quantity,
+          nutrients_provided: drink.nutrients || {},
+          reason: drink.reason || ''
+        })),
+        recommended_meals: mealCards.map(meal => ({
+          name: meal.name,
+          description: meal.explanation || '',
+          imageData: (meal as any).imageData || '',
+          image_type: meal.image_type || '',
+          nutrients_provided: meal.nutrients || {},
+          foods: meal.foods || [],
+          items: meal.items || []
+        }))
+      }
+      
+      sessionStorage.setItem('hydrationOutputRecommendations', JSON.stringify(outputRecommendations))
+      console.log('💾 OUTPUT recommendations auto-saved to sessionStorage')
+    }
+  }, [recommendations, mealCards, deficits, hasGenerated])
 
   // Retry mechanism
   const retryRecommendations = () => {
@@ -429,7 +457,16 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
       {/* Drinks Section */}
       {recommendations.length > 0 && (
         <div>
-          <h3 className="text-lg font-semibold mb-3">Recommended Drinks</h3>
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h3 className="text-lg font-semibold mb-1">💧 Your Hydration Gap</h3>
+            <p className="text-sm text-gray-600">
+              You need <strong>{(deficits as any)?.water_ml || 0}ml more water</strong> based on your activity.
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              ✨ These are <strong>options</strong> - pick one or combine them to meet your needs
+            </p>
+          </div>
+          <h3 className="text-lg font-semibold mb-3">Choose Your Hydration</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {recommendations.map((product) => (
               <Card key={product.id} className="w-full overflow-hidden hover:shadow-lg transition-shadow">
@@ -482,19 +519,24 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
           </div>
 
           {/* Add All Drinks Button */}
-          <Button
-            onClick={addAllToCart}
-            disabled={isProcessing || recommendations.length === 0}
-            className="w-full mt-4"
-            size="lg"
-          >
-            {isProcessing ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <ShoppingCart className="mr-2 h-4 w-4" />
-            )}
-            Add All Drinks to Cart ({recommendations.length} items)
-          </Button>
+          <div className="space-y-2 mt-4">
+            <Button
+              onClick={addAllToCart}
+              disabled={isProcessing || recommendations.length === 0}
+              className="w-full"
+              size="lg"
+            >
+              {isProcessing ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <ShoppingCart className="mr-2 h-4 w-4" />
+              )}
+              Add All Options to Cart ({recommendations.length} items)
+            </Button>
+            <p className="text-xs text-center text-gray-500">
+              Or add individual items above using the + ADD buttons
+            </p>
+          </div>
         </div>
       )}
 

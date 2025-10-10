@@ -387,6 +387,14 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
       const outputRecommendations = typeof window !== 'undefined' && sessionStorage.getItem('hydrationOutputRecommendations')
         ? JSON.parse(sessionStorage.getItem('hydrationOutputRecommendations')!)
         : null
+      
+      console.log('🔍 CHECKOUT: Found assessment recommendations?', !!outputRecommendations)
+      if (outputRecommendations) {
+        console.log('📋 Recommendations:', {
+          drinks: outputRecommendations.recommended_drinks?.length,
+          meals: outputRecommendations.recommended_meals?.length
+        })
+      }
 
       const res = await fetch("/api/stripe/checkout", { 
         method: "POST",
@@ -424,6 +432,13 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
       const outputRecommendations = typeof window !== 'undefined' && sessionStorage.getItem('hydrationOutputRecommendations')
         ? JSON.parse(sessionStorage.getItem('hydrationOutputRecommendations')!)
         : null
+
+      console.log('🔍 QR GENERATION: Assessment data check', {
+        hasInput: !!inputContext,
+        hasOutput: !!outputRecommendations,
+        drinks: outputRecommendations?.recommended_drinks?.length,
+        meals: outputRecommendations?.recommended_meals?.length
+      })
 
       // Combine both for cart_headers storage
       const assessmentBundle = {
