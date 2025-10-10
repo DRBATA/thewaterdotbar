@@ -383,11 +383,17 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
     setLoading(true)
     try {
       // Flow 1: Pay on This Device - redirect to Stripe
+      // Get OUTPUT recommendations if they exist (for email)
+      const outputRecommendations = typeof window !== 'undefined' && sessionStorage.getItem('hydrationOutputRecommendations')
+        ? JSON.parse(sessionStorage.getItem('hydrationOutputRecommendations')!)
+        : null
+
       const res = await fetch("/api/stripe/checkout", { 
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          venue_id: selectedVenue?.id
+          venue_id: selectedVenue?.id,
+          assessmentData: outputRecommendations // Pass OUTPUT for email (direct payment)
         })
       })
       const data = await res.json()
@@ -410,17 +416,27 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
     setLoading(true)
     try {
       // Flow 2: Generate QR for Customer to Pay
-      // Get INPUT context from sessionStorage (for cart_headers transfer)
+      // Get BOTH INPUT and OUTPUT from sessionStorage
       const inputContext = typeof window !== 'undefined' && sessionStorage.getItem('hydrationInputContext')
         ? JSON.parse(sessionStorage.getItem('hydrationInputContext')!)
         : null
+      
+      const outputRecommendations = typeof window !== 'undefined' && sessionStorage.getItem('hydrationOutputRecommendations')
+        ? JSON.parse(sessionStorage.getItem('hydrationOutputRecommendations')!)
+        : null
+
+      // Combine both for cart_headers storage
+      const assessmentBundle = {
+        input: inputContext,     // For customer download
+        output: outputRecommendations  // For email display
+      }
 
       const res = await fetch("/api/stripe/checkout", { 
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           venue_id: selectedVenue?.id,
-          assessmentData: inputContext // INPUT context for customer's device download
+          assessmentData: assessmentBundle // BOTH input and output
         })
       })
       const data = await res.json()
@@ -430,13 +446,12 @@ export function CartSummary({ cartItems, total, onRemoveItemAction, onClearCart 
         
         // FLOW 2 CLEANUP: Clear staff device after successful transfer to cloud
         if (typeof window !== 'undefined') {
-          // 1. Clear sessionStorage (INPUT context transferred to cart_headers)
+          // 1. Clear ALL sessionStorage (both INPUT and OUTPUT transferred to cart_headers)
           sessionStorage.removeItem('hydrationInputContext')
           sessionStorage.removeItem('hydrationProfile')
           sessionStorage.removeItem('hydrationMeals')
           sessionStorage.removeItem('hydrationAllergies')
-          // Keep OUTPUT recommendations for email webhook
-          // sessionStorage.removeItem('hydrationOutputRecommendations') - DON'T clear yet
+          sessionStorage.removeItem('hydrationOutputRecommendations') // Clear this too - it's in cart_headers now!
           
           // 2. Clear Dexie (staff device doesn't need this data anymore)
           try {

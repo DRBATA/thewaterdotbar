@@ -63,9 +63,10 @@ export async function POST(req: NextRequest) {
 
     // Calculate dynamic colors (if assessment exists)
     let colors;
-    let assessment = assessmentData; // Use assessmentData from POST body
+    // Handle both direct OUTPUT and bundled {input, output} structure
+    let assessment = assessmentData?.output || assessmentData; // Use OUTPUT if bundled, otherwise use directly
     
-    if (assessment) {
+    if (assessment && assessment.recommended_drinks) { // Check for actual recommendations
       // Upload meal images to Supabase Storage if provided
       if (assessment.recommended_meals && Array.isArray(assessment.recommended_meals)) {
         for (const meal of assessment.recommended_meals) {
@@ -120,8 +121,8 @@ export async function POST(req: NextRequest) {
         assessment,
         colors,
         updateTrackerUrl: `https://thewater.bar/?track_order=${order.id}`,
-        downloadAssessmentUrl: assessmentData
-          ? `https://thewater.bar/?track_order=${order.id}`
+        downloadAssessmentUrl: assessmentData?.input  // Only show download if INPUT context exists (QR flow)
+          ? `https://thewater.bar/?track_order=${order.id}&download=true`
           : undefined,
       })
     );
