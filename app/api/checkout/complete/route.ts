@@ -75,7 +75,6 @@ export async function POST(req: NextRequest) {
         stripe_session_id: session_id,
         total,
         email: session.customer_details?.email,
-        customer_name: session.customer_details?.name,
         cart_id: cartHeader.id,
       })
       .select()
