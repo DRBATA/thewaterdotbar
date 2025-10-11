@@ -525,7 +525,7 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
           <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <h3 className="text-lg font-semibold mb-1">💧 Your Hydration Gap</h3>
             <p className="text-sm text-gray-600">
-              You need <strong>{(deficits as any)?.water_ml || 0}ml more water</strong> based on your activity.
+              You need <strong>{Math.round((deficits as any)?.water || 0)}ml more water</strong> based on your activity.
             </p>
             <p className="text-xs text-gray-500 mt-1">
               ✨ These are <strong>options</strong> - pick one or combine them to meet your needs

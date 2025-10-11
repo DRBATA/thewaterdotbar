@@ -42,8 +42,50 @@ export async function POST(req: Request) {
         venue_id: venue_id || null
       };
       
-      // If assessment data provided, save it immediately with new cart
+      // If assessment data provided, upload meal images first, then save
       if (assessmentData) {
+        // Upload meal images to Supabase Storage and replace base64 with URLs
+        const outputData = assessmentData.output || assessmentData;
+        if (outputData?.recommended_meals && Array.isArray(outputData.recommended_meals)) {
+          console.log(`🛒 ADD: Processing ${outputData.recommended_meals.length} meal images...`);
+          
+          for (const meal of outputData.recommended_meals) {
+            if (meal.imageData && meal.imageData.length > 100) { // Has actual base64 data
+              try {
+                // Convert base64 to buffer
+                const base64Data = meal.imageData.replace(/^data:image\/\w+;base64,/, '');
+                const buffer = Buffer.from(base64Data, 'base64');
+                
+                // Upload to Supabase Storage
+                const fileName = `meal-${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                  .from('meal-images')
+                  .upload(fileName, buffer, {
+                    contentType: 'image/png',
+                    cacheControl: '3600',
+                  });
+                
+                if (!uploadError && uploadData) {
+                  // Get public URL
+                  const { data: { publicUrl } } = supabase.storage
+                    .from('meal-images')
+                    .getPublicUrl(fileName);
+                  
+                  meal.imageUrl = publicUrl;
+                  delete meal.imageData; // Remove base64 to keep payload small
+                  console.log(`🛒 ADD: Uploaded meal image: ${meal.name} → ${publicUrl}`);
+                } else {
+                  console.error(`🛒 ADD: Image upload failed for ${meal.name}:`, uploadError);
+                  delete meal.imageData; // Remove failed base64
+                }
+              } catch (uploadError) {
+                console.error(`🛒 ADD: Image upload error for ${meal.name}:`, uploadError);
+                delete meal.imageData; // Remove failed base64
+              }
+            }
+          }
+        }
+        
         insertData.assessment_data = assessmentData;
         console.log(`🛒 ADD: Saving assessment data with new cart`);
       }
@@ -67,6 +109,48 @@ export async function POST(req: Request) {
       
       // If assessment data provided and cart already exists, update it
       if (assessmentData) {
+        // Upload meal images to Supabase Storage and replace base64 with URLs
+        const outputData = assessmentData.output || assessmentData;
+        if (outputData?.recommended_meals && Array.isArray(outputData.recommended_meals)) {
+          console.log(`🛒 ADD: Processing ${outputData.recommended_meals.length} meal images...`);
+          
+          for (const meal of outputData.recommended_meals) {
+            if (meal.imageData && meal.imageData.length > 100) { // Has actual base64 data
+              try {
+                // Convert base64 to buffer
+                const base64Data = meal.imageData.replace(/^data:image\/\w+;base64,/, '');
+                const buffer = Buffer.from(base64Data, 'base64');
+                
+                // Upload to Supabase Storage
+                const fileName = `meal-${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                  .from('meal-images')
+                  .upload(fileName, buffer, {
+                    contentType: 'image/png',
+                    cacheControl: '3600',
+                  });
+                
+                if (!uploadError && uploadData) {
+                  // Get public URL
+                  const { data: { publicUrl } } = supabase.storage
+                    .from('meal-images')
+                    .getPublicUrl(fileName);
+                  
+                  meal.imageUrl = publicUrl;
+                  delete meal.imageData; // Remove base64 to keep payload small
+                  console.log(`🛒 ADD: Uploaded meal image: ${meal.name} → ${publicUrl}`);
+                } else {
+                  console.error(`🛒 ADD: Image upload failed for ${meal.name}:`, uploadError);
+                  delete meal.imageData; // Remove failed base64
+                }
+              } catch (uploadError) {
+                console.error(`🛒 ADD: Image upload error for ${meal.name}:`, uploadError);
+                delete meal.imageData; // Remove failed base64
+              }
+            }
+          }
+        }
+        
         const { error: updateError } = await supabase
           .from("cart_headers")
           .update({ assessment_data: assessmentData })

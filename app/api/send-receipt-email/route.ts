@@ -54,11 +54,19 @@ export async function POST(req: NextRequest) {
     // Map products to items
     const orderItems = order.order_items.map((item: any) => {
       const product = products?.find(p => p.id === item.item_id);
+      
+      // Construct full image URL if relative path
+      let fullImageUrl = product?.image_url;
+      if (fullImageUrl && !fullImageUrl.startsWith('http')) {
+        // Assume images are in /drinks/ directory
+        fullImageUrl = `https://thewater.bar/drinks/${fullImageUrl}`;
+      }
+      
       return {
         name: item.name,
         quantity: item.qty,
         price: item.price,
-        image_url: product?.image_url,
+        image_url: fullImageUrl,
       };
     });
 
