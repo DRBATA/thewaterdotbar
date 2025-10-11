@@ -75,6 +75,18 @@ export async function POST(req: NextRequest) {
       hasRecommendations: !!(assessment?.recommended_drinks)
     });
     
+    // Transform deficits field names to match email component expectations (water → water_ml, etc.)
+    if (assessment?.deficits) {
+      const transformedDeficits: any = {};
+      if (assessment.deficits.water !== undefined) transformedDeficits.water_ml = assessment.deficits.water;
+      if (assessment.deficits.sodium !== undefined) transformedDeficits.sodium_mg = assessment.deficits.sodium;
+      if (assessment.deficits.potassium !== undefined) transformedDeficits.potassium_mg = assessment.deficits.potassium;
+      if (assessment.deficits.magnesium !== undefined) transformedDeficits.magnesium_mg = assessment.deficits.magnesium;
+      if (assessment.deficits.fiber !== undefined) transformedDeficits.fiber_g = assessment.deficits.fiber;
+      assessment.deficits = transformedDeficits;
+      console.log('✅ Transformed deficits field names for email display');
+    }
+    
     if (assessment && assessment.recommended_drinks) { // Check for actual recommendations
       // Upload meal images to Supabase Storage if provided
       if (assessment.recommended_meals && Array.isArray(assessment.recommended_meals)) {
