@@ -107,6 +107,12 @@ Available products in stock:
 ${products.map(p => `- ${p.name} (ID: ${p.id})
   Water: ${p.water_content_ml}ml, Sodium: ${p.sodium_mg}mg, Potassium: ${p.potassium_mg}mg, Fiber: ${p.fiber_g}g, Protein: ${p.protein_g}g`).join('\n')}
 
+IMPORTANT HYDRATION RULES:
+- If recommending powders (Rite Greens, Rite Gut Health, or Humantra Electrolytes), you MUST also recommend water to mix them with:
+  * Each sachet needs 500ml water
+  * Recommend either "Inscribed Copper Bottle" OR "Prana Spring Water (500ml)"
+  * Add 500ml × number of sachets to the water deficit coverage
+
 Select the best products to address these deficits. If potassium deficit is high, prioritize coconut water. If fiber deficit exists, include Poppi or Rite Gut Health. For sodium, consider SoCelery.`
           }
         ],
