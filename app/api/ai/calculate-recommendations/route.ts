@@ -76,15 +76,19 @@ export async function POST(request: NextRequest) {
 RULES:
 1. ALWAYS recommend at least 3 items minimum (even if no deficits, suggest things to try)
 2. Prioritize products that address the largest deficits
-3. For each product, suggest appropriate quantities
-4. Focus on the actual nutritional benefits
+3. VARIETY IS KEY: 
+   - Maximum 2 of the same product (avoid recommending 3+ of same item)
+   - Prefer different product types (e.g., don't pick 4 coconut waters)
+   - Mix complementary nutrients across different drinks
+4. For each product, suggest appropriate quantities (1-2 usually)
+5. Focus on the actual nutritional benefits and how products work together
 
 Return a JSON array of recommendations with this exact structure:
 {
   "recommendations": [
     {
       "id": "product-uuid",
-      "quantity": 1-3,
+      "quantity": 1-2,
       "reason": "Brief explanation of why this helps"
     }
   ]
@@ -113,15 +117,21 @@ Select the best products to address these deficits. If potassium deficit is high
       
       const aiResponse = JSON.parse(completion.choices[0]?.message?.content || '{"recommendations": []}')
       
+      // DIVERSITY ENFORCEMENT: Cap quantities at 2 per product
+      const diversityEnforced = aiResponse.recommendations.map((rec: any) => ({
+        ...rec,
+        quantity: Math.min(rec.quantity || 1, 2) // Max 2 of same product
+      }))
+      
       // Map AI recommendations to full product details
-      const recommendations = aiResponse.recommendations.map((rec: any) => {
+      const recommendations = diversityEnforced.map((rec: any) => {
         const product = products.find(p => p.id === rec.id)
         if (!product) return null
         
         return {
           id: product.id,
           name: product.name,
-          quantity: rec.quantity || 1,
+          quantity: rec.quantity,
           sodium_mg: product.sodium_mg,
           potassium_mg: product.potassium_mg,
           fiber_g: product.fiber_g,
