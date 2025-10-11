@@ -44,6 +44,25 @@ export interface HydrationAssessment {
     snacks: string;
     parsed: NutritionalIntake; // AI parsed nutrition
   };
+  
+  // AI Recommendations (optional - only if user generated plan)
+  recommendations?: {
+    deficits: Partial<NutritionalIntake>;
+    recommended_drinks: Array<{
+      name: string;
+      quantity: number;
+      nutrients_provided: any;
+      reason: string;
+    }>;
+    recommended_meals: Array<{
+      name: string;
+      description: string;
+      imageUrl?: string;
+      nutrients_provided: any;
+      foods: string[];
+      items: any[];
+    }>;
+  };
 }
 
 /**

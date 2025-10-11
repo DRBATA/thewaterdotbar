@@ -92,32 +92,30 @@ const totalMealIntake = useMemo(() => {
   return totals as NutritionalIntake
 }, [mealNutrition])
   
-  // Load meals and allergies from storage on mount
+  // Load meals and allergies from Dexie on mount
   useEffect(() => {
     if (typeof window === 'undefined') return
     
     const loadMeals = async () => {
       try {
-        // 1. Load allergies from Dexie (persistent)
-        const { db } = await import('@/lib/dexie-db')
-        const profile = await db.user_profile.get(1)
+        const { db, assessmentHelpers } = await import('@/lib/dexie-db')
         
+        // 1. Load allergies from user profile (persistent)
+        const profile = await db.user_profile.get(1)
         if (profile?.allergies) {
           console.log('✅ Loading allergies from Dexie:', profile.allergies)
           setAllergies(profile.allergies)
         }
         
-        // 2. Load meal inputs from sessionStorage (session only)
-        const cached = sessionStorage.getItem('hydrationMeals')
-        if (cached) {
-          const data = JSON.parse(cached)
-          console.log('✅ Loading meals from sessionStorage')
-          
-          if (data.breakfast) setBreakfast(data.breakfast)
-          if (data.lunch) setLunch(data.lunch)
-          if (data.dinner) setDinner(data.dinner)
-          if (data.snacks) setSnacks(data.snacks)
-          if (data.mealNutrition) setMealNutrition(data.mealNutrition)
+        // 2. Load meal inputs from current assessment (24h persistent)
+        const assessment = await assessmentHelpers.getCurrentAssessment()
+        if (assessment?.meals) {
+          console.log('✅ Loading meals from Dexie assessment')
+          setBreakfast(assessment.meals.breakfast || '')
+          setLunch(assessment.meals.lunch || '')
+          setDinner(assessment.meals.dinner || '')
+          setSnacks(assessment.meals.snacks || '')
+          // Note: mealNutrition will be re-parsed when meal inputs change
         }
         
         setIsLoaded(true)
@@ -160,7 +158,7 @@ const totalMealIntake = useMemo(() => {
     if (allergies) saveToDexie()
   }, [isLoaded, allergies])
   
-  // Auto-save meal inputs to sessionStorage (only after initial load)
+  // Auto-save meal inputs to sessionStorage AND Dexie (only after initial load)
   useEffect(() => {
     if (typeof window === 'undefined' || !isLoaded) return
     
@@ -173,8 +171,34 @@ const totalMealIntake = useMemo(() => {
       totalMealIntake
     }
     
+    // 1. Always save to sessionStorage for quick access
     sessionStorage.setItem('hydrationMeals', JSON.stringify(mealData))
     console.log('💾 Meals auto-saved to sessionStorage')
+    
+    // 2. Also save to Dexie assessment if one exists (for 24h persistence)
+    const saveToDexie = async () => {
+      try {
+        const { db, assessmentHelpers } = await import('@/lib/dexie-db')
+        const assessment = await assessmentHelpers.getCurrentAssessment()
+        
+        if (assessment) {
+          await db.hydration_assessments.update(assessment.id!, {
+            meals: {
+              breakfast,
+              lunch,
+              dinner,
+              snacks,
+              parsed: totalMealIntake
+            }
+          })
+          console.log('💾 Meals also saved to Dexie assessment')
+        }
+      } catch (err) {
+        console.warn('Failed to save meals to Dexie:', err)
+      }
+    }
+    
+    saveToDexie()
   }, [isLoaded, breakfast, lunch, dinner, snacks, mealNutrition, totalMealIntake])
   
   return {

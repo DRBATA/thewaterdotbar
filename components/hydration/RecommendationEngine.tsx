@@ -58,29 +58,31 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
   // Generation control
   const [hasGenerated, setHasGenerated] = useState(false)
   
-  // Load recommendations from sessionStorage on mount
+  // Load recommendations from Dexie on mount
   useEffect(() => {
     if (typeof window === 'undefined') return
     
-    const loadRecommendations = () => {
+    const loadRecommendations = async () => {
       try {
-        const cached = sessionStorage.getItem('hydrationOutputRecommendations')
-        if (cached) {
-          const data = JSON.parse(cached)
-          console.log('✅ Loading recommendations from sessionStorage')
+        const { assessmentHelpers } = await import('@/lib/dexie-db')
+        const assessment = await assessmentHelpers.getCurrentAssessment()
+        
+        if (assessment?.recommendations) {
+          console.log('✅ Loading recommendations from Dexie assessment')
           
-          if (data.recommended_drinks) {
-            setRecommendations(data.recommended_drinks)
+          if (assessment.recommendations.recommended_drinks) {
+            setRecommendations(assessment.recommendations.recommended_drinks as any)
           }
-          if (data.recommended_meals) {
-            setMealCards(data.recommended_meals)
+          if (assessment.recommendations.recommended_meals) {
+            setMealCards(assessment.recommendations.recommended_meals as any)
           }
-          if (data.recommended_drinks?.length > 0 || data.recommended_meals?.length > 0) {
+          if (assessment.recommendations.recommended_drinks?.length > 0 || 
+              assessment.recommendations.recommended_meals?.length > 0) {
             setHasGenerated(true)
           }
         }
       } catch (err) {
-        console.warn('Failed to load recommendations:', err)
+        console.warn('Failed to load recommendations from Dexie:', err)
       }
     }
     
@@ -276,7 +278,7 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
     // User will explicitly click to generate
   }, [drinkInputs, mealInputs])
   
-  // Auto-save OUTPUT to sessionStorage when recommendations are generated
+  // Auto-save OUTPUT to sessionStorage AND Dexie when recommendations are generated
   useEffect(() => {
     if (recommendations.length > 0 && hasGenerated) {
       const outputRecommendations = {
@@ -291,6 +293,7 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
           name: meal.name,
           description: meal.explanation || '',
           imageData: (meal as any).imageData || '',
+          imageUrl: (meal as any).imageUrl || '', // Include imageUrl if already uploaded
           image_type: meal.image_type || '',
           nutrients_provided: meal.nutrients || {},
           foods: meal.foods || [],
@@ -298,8 +301,28 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
         }))
       }
       
+      // 1. Save to sessionStorage for quick access
       sessionStorage.setItem('hydrationOutputRecommendations', JSON.stringify(outputRecommendations))
       console.log('💾 OUTPUT recommendations auto-saved to sessionStorage')
+      
+      // 2. Save to Dexie assessment for 24h persistence
+      const saveToDexie = async () => {
+        try {
+          const { db, assessmentHelpers } = await import('@/lib/dexie-db')
+          const assessment = await assessmentHelpers.getCurrentAssessment()
+          
+          if (assessment) {
+            await db.hydration_assessments.update(assessment.id!, {
+              recommendations: outputRecommendations
+            })
+            console.log('💾 Recommendations also saved to Dexie assessment')
+          }
+        } catch (err) {
+          console.warn('Failed to save recommendations to Dexie:', err)
+        }
+      }
+      
+      saveToDexie()
     }
   }, [recommendations, mealCards, deficits, hasGenerated])
 
