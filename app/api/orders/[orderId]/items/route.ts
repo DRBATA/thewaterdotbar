@@ -24,7 +24,7 @@ export async function GET(
     // Fetch order items first
     const { data: orderItemsData, error: orderError } = await supabase
       .from('order_items')
-      .select('id, item_id, quantity, consumed')
+      .select('id, item_id, qty, consumed')
       .eq('order_id', orderId);
 
     if (orderError) {
@@ -79,7 +79,7 @@ export async function GET(
         id: item.id,
         product_id: item.item_id,  // Use item_id as product_id
         product_name: product?.name || 'Unknown Product',
-        quantity: item.quantity,
+        quantity: item.qty,  // Use qty (not quantity!)
         consumed: item.consumed || false,
         nutrients: {
           water: product?.water_content_ml || 0,
