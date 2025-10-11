@@ -8,6 +8,7 @@ export function useMealsPanel() {
   const [dinner, setDinner] = useState('')
   const [snacks, setSnacks] = useState('')
   const [allergies, setAllergies] = useState('')
+  const [isLoaded, setIsLoaded] = useState(false)
   
   // Processed meal nutrition
   const [mealNutrition, setMealNutrition] = useState<{
@@ -91,9 +92,47 @@ const totalMealIntake = useMemo(() => {
   return totals as NutritionalIntake
 }, [mealNutrition])
   
-  // Auto-save allergies to sessionStorage and Dexie
+  // Load meals and allergies from storage on mount
   useEffect(() => {
     if (typeof window === 'undefined') return
+    
+    const loadMeals = async () => {
+      try {
+        // 1. Load allergies from Dexie (persistent)
+        const { db } = await import('@/lib/dexie-db')
+        const profile = await db.user_profile.get(1)
+        
+        if (profile?.allergies) {
+          console.log('✅ Loading allergies from Dexie:', profile.allergies)
+          setAllergies(profile.allergies)
+        }
+        
+        // 2. Load meal inputs from sessionStorage (session only)
+        const cached = sessionStorage.getItem('hydrationMeals')
+        if (cached) {
+          const data = JSON.parse(cached)
+          console.log('✅ Loading meals from sessionStorage')
+          
+          if (data.breakfast) setBreakfast(data.breakfast)
+          if (data.lunch) setLunch(data.lunch)
+          if (data.dinner) setDinner(data.dinner)
+          if (data.snacks) setSnacks(data.snacks)
+          if (data.mealNutrition) setMealNutrition(data.mealNutrition)
+        }
+        
+        setIsLoaded(true)
+      } catch (err) {
+        console.warn('Failed to load meals:', err)
+        setIsLoaded(true)
+      }
+    }
+    
+    loadMeals()
+  }, [])
+  
+  // Auto-save allergies to sessionStorage and Dexie (only after initial load)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isLoaded) return
     
     // Save to sessionStorage
     sessionStorage.setItem('hydrationAllergies', allergies)
@@ -119,11 +158,11 @@ const totalMealIntake = useMemo(() => {
     }
     
     if (allergies) saveToDexie()
-  }, [allergies])
+  }, [isLoaded, allergies])
   
-  // Auto-save meal inputs to sessionStorage
+  // Auto-save meal inputs to sessionStorage (only after initial load)
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined' || !isLoaded) return
     
     const mealData = {
       breakfast,
@@ -136,7 +175,7 @@ const totalMealIntake = useMemo(() => {
     
     sessionStorage.setItem('hydrationMeals', JSON.stringify(mealData))
     console.log('💾 Meals auto-saved to sessionStorage')
-  }, [breakfast, lunch, dinner, snacks, mealNutrition, totalMealIntake])
+  }, [isLoaded, breakfast, lunch, dinner, snacks, mealNutrition, totalMealIntake])
   
   return {
     // Meal inputs

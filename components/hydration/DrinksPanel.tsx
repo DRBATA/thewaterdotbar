@@ -165,6 +165,9 @@ export function DrinksPanel({ onNext, trackingOrderId }: DrinksPanelProps) {
         description: `Added ${selectedOrderItems.size} drinks to your hydration log`
       })
       
+      // 4. Refresh the hydration context from Dexie
+      drinks.refreshFromDexie()
+      
       // Remove selected items from UI
       setOrderItems(prev => prev.filter(item => !selectedOrderItems.has(item.id)))
       setSelectedOrderItems(new Set())

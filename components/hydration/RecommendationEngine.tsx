@@ -58,6 +58,35 @@ export function RecommendationEngine({ venueId }: RecommendationEngineProps) {
   // Generation control
   const [hasGenerated, setHasGenerated] = useState(false)
   
+  // Load recommendations from sessionStorage on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    const loadRecommendations = () => {
+      try {
+        const cached = sessionStorage.getItem('hydrationOutputRecommendations')
+        if (cached) {
+          const data = JSON.parse(cached)
+          console.log('✅ Loading recommendations from sessionStorage')
+          
+          if (data.recommended_drinks) {
+            setRecommendations(data.recommended_drinks)
+          }
+          if (data.recommended_meals) {
+            setMealCards(data.recommended_meals)
+          }
+          if (data.recommended_drinks?.length > 0 || data.recommended_meals?.length > 0) {
+            setHasGenerated(true)
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load recommendations:', err)
+      }
+    }
+    
+    loadRecommendations()
+  }, [])
+  
   // Auto-prepare inputs when component mounts (AI Plan tab opens)
   useEffect(() => {
     if (!deficits || !totalIntake) return
