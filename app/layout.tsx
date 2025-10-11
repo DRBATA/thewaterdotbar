@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import './globals.css'
 import Logo from "../components/Logo"
 import HalftoneBackground from "../components/HalftoneBackground";
 import { FilterProvider } from "../context/filter-context";
 import FilterBar from "../components/FilterBar";
+import AssessmentDownloader from "../components/AssessmentDownloader";
 
 export const metadata: Metadata = {
   title: 'The Water Bar | Functional Hydration Coach',
@@ -43,6 +45,12 @@ export default function RootLayout({
         <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-teal-500 to-cyan-400 z-[-2]" />
         {/* Animated halftone overlay */}
         <HalftoneBackground />
+        
+        {/* Assessment Download Handler (F45 scenario) */}
+        <Suspense fallback={null}>
+          <AssessmentDownloader />
+        </Suspense>
+        
         {/* Main content */}
         <FilterProvider>
           <Logo />
