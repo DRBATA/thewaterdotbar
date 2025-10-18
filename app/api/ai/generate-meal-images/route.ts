@@ -71,14 +71,39 @@ STYLE:
       )
     );
 
-    // 4️⃣ Attach URLs back to meals
-    const mealsWithImages = safeMeals.map((meal: any, idx: number) => ({
-      ...meal,
-      image_url: results[idx].data[0].url,
-      image_type: "infographic_card",
-      avoided_foods: previousMeals,
-      filtered_allergies: allergies
-    }));
+    // 4️⃣ Download images and convert to base64 for email upload
+    const mealsWithImages = await Promise.all(
+      safeMeals.map(async (meal: any, idx: number) => {
+        const dalleUrl = results[idx].data[0].url;
+        
+        try {
+          // Download the DALL-E image
+          const imageResponse = await fetch(dalleUrl);
+          const imageBuffer = await imageResponse.arrayBuffer();
+          
+          // Convert to base64
+          const base64Image = `data:image/png;base64,${Buffer.from(imageBuffer).toString('base64')}`;
+          
+          return {
+            ...meal,
+            image_url: dalleUrl, // Keep URL for immediate display
+            imageData: base64Image, // Add base64 for email upload
+            image_type: "infographic_card",
+            avoided_foods: previousMeals,
+            filtered_allergies: allergies
+          };
+        } catch (error) {
+          console.error(`Failed to download image for ${meal.name}:`, error);
+          return {
+            ...meal,
+            image_url: dalleUrl, // Fallback to URL only
+            image_type: "infographic_card",
+            avoided_foods: previousMeals,
+            filtered_allergies: allergies
+          };
+        }
+      })
+    );
 
     // 5️⃣ Track filtered-out meals
     const filteredMeals = (meals as any[])

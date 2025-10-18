@@ -58,8 +58,8 @@ export async function POST(req: NextRequest) {
       // Construct full image URL if relative path
       let fullImageUrl = product?.image_url;
       if (fullImageUrl && !fullImageUrl.startsWith('http')) {
-        // Assume images are in /drinks/ directory
-        fullImageUrl = `https://thewater.bar/drinks/${fullImageUrl}`;
+        // Images are in /public/ directory (served at root)
+        fullImageUrl = `https://thewater.bar/${fullImageUrl}`;
       }
       
       return {

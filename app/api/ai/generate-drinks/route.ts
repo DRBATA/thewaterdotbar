@@ -145,10 +145,10 @@ Return JSON:
       "id": "product-uuid",
       "name": "Product Name",
       "quantity": 1,
-      "reason": "Brief explanation of why this helps"
+      "reason": "PERSONALIZED explanation that includes: (1) Which specific deficit(s) this addresses, (2) How much it provides relative to what's needed (e.g., '30% of your sodium gap'), (3) Why this source is optimal (natural/balanced/gentle caffeine/etc.). Example: 'You need 1080mg sodium—this provides 320mg (30%) from natural celery, plus 750mg potassium to rebalance electrolytes after activity.'"
     }
   ],
-  "summary": "Overall strategy for hydration"
+  "summary": "Overall strategy for this hydration plan, highlighting the biggest deficits being addressed"
 }`
         },
         {

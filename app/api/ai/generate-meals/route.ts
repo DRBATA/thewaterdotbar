@@ -367,12 +367,17 @@ export async function POST(request: NextRequest) {
     - PROTEIN RULE: If protein_g deficit is 0 or negative, AVOID high-protein foods. Focus on other deficits instead.
     
     MEAL REQUIREMENTS (CRITICAL):
-    - A "meal" MUST contain at least 2 different food groups (e.g., protein + vegetable, grain + legume)
+    - A "meal" MUST contain at least 2-3 different food groups (e.g., protein + vegetable + grain)
+    - AIM FOR 3 ITEMS per meal when possible for variety and completeness
     - A "meal" MUST be primarily solid foods that require chewing
     - A "meal" MUST make culinary sense (foods that are commonly eaten together)
     - NEVER create a "meal" that is just condiments, supplements, or single items
     - Examples of VALID meals: "Chickpea curry with rice", "Greek salad with feta and olives"
     - Examples of INVALID meals: "3 pickles", "Protein powder smoothie", "Olives and salt"
+    
+    INGREDIENT NAMING:
+    - Use simple, local names (e.g., "Rocket" not "Arugula", "Coriander" not "Cilantro")
+    - Match UAE/UK terminology when possible
     
     Quantities:
     - For each item, provide grams or mL. Keep portions realistic.
@@ -386,7 +391,7 @@ export async function POST(request: NextRequest) {
       "items": [
         { "name": "Food item name", "grams": 150 }
       ],
-      "explanation": "Targets sodium and potassium deficits",
+      "explanation": "PERSONALIZED explanation that includes: (1) Which TOP deficits this addresses (biggest gaps first), (2) How much it provides relative to what's needed (e.g., 'covers 40% of your potassium gap'), (3) Why these foods work together. Example: 'You need 2316mg potassium—this meal provides 950mg (41%) from potato and rocket, plus 880mg sodium from the salad dressing to rebalance electrolytes.'",
       "wild_card": false
     }
   ],
@@ -396,7 +401,7 @@ export async function POST(request: NextRequest) {
       "items": [
         { "name": "Food item", "grams": 50 }
       ],
-      "explanation": "Quick energy boost"
+      "explanation": "PERSONALIZED explanation of which deficits this snack addresses and why"
     }
   ],
   "summary": "Overall plan summary"
@@ -406,8 +411,10 @@ NOTES:
 - Always use "grams" for solid foods (never "ml")
 - Liquids (if any) should still use grams for consistency
 - Each item must have both "name" and "grams" fields
+- AIM FOR 3 ITEMS PER MEAL (not 1-2, not 5+)
 - SODIUM PRIORITY: If sodium deficit exists, at least ONE meal MUST target sodium-rich foods (>600mg)
-Explanations must explicitly mention which TOP deficits (largest first) the foods address.
+- Explanations must be PERSONALIZED with specific numbers and percentages
+- Use simple ingredient names (Rocket not Arugula, Coriander not Cilantro)
 `;
 
     const shortlistForLLM = shortlist.map((f) => ({
