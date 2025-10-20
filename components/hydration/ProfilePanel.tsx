@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { ChevronRight } from 'lucide-react'
 import { useHydrationContext } from '@/contexts'
 import { useState, useEffect } from 'react'
+import { useLocation } from '@/components/location-provider'
 import styles from './hydration-assessment.module.css'
 
 interface ProfilePanelProps {
@@ -19,19 +20,38 @@ interface ProfilePanelProps {
 
 export function ProfilePanel({ venueId, onVenueChange, onNext }: ProfilePanelProps) {
   const { profile } = useHydrationContext()
+  const { calculateDistance, locationEnabled } = useLocation()
   const [venues, setVenues] = useState<any[]>([])
   const [editingField, setEditingField] = useState<string | null>(null)
   const [tempWeight, setTempWeight] = useState<string>(String(profile.weight || ''))
   const [tempBodyFat, setTempBodyFat] = useState<string>(String(profile.manualBodyFat || ''))
   const [sessionMinutes, setSessionMinutes] = useState<number>(Math.round((profile.sessionHours || 0) * 60))
   const [tempSessionMinutes, setTempSessionMinutes] = useState<string>(String(sessionMinutes || ''))
-  // Fetch venues on mount
+  // Fetch venues on mount and sort by distance
   useEffect(() => {
     fetch('/api/venues')
       .then(res => res.json())
-      .then(data => setVenues(data || []))
+      .then(data => {
+        if (!data) return
+        
+        // Calculate distance for each venue
+        const venuesWithDistance = data.map((venue: any) => ({
+          ...venue,
+          distance: calculateDistance(venue.lat, venue.lng)
+        }))
+        
+        // Sort by distance (nearest first)
+        const sortedVenues = venuesWithDistance.sort((a: any, b: any) => a.distance - b.distance)
+        
+        setVenues(sortedVenues)
+        
+        // Auto-select nearest venue if none selected
+        if (!venueId && sortedVenues.length > 0 && onVenueChange) {
+          onVenueChange(sortedVenues[0].id)
+        }
+      })
       .catch(err => console.error('Error fetching venues:', err))
-  }, [])
+  }, [calculateDistance])
   
   return (
     <Card className={styles.panelCard}>
@@ -53,7 +73,12 @@ export function ProfilePanel({ venueId, onVenueChange, onNext }: ProfilePanelPro
             <SelectContent>
               {venues.map(venue => (
                 <SelectItem key={venue.id} value={venue.id}>
-                  {venue.name}
+                  {venue.name} 
+                  {locationEnabled && venue.distance < 999 && (
+                    <span className="text-xs text-muted-foreground ml-2">
+                      ({venue.distance < 1 ? `${Math.round(venue.distance * 1000)}m` : `${venue.distance.toFixed(1)}km`})
+                    </span>
+                  )}
                 </SelectItem>
               ))}
             </SelectContent>
